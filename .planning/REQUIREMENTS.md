@@ -112,13 +112,67 @@
 
 ## Traceability
 
-Будет заполнено roadmapper'ом после генерации ROADMAP.md.
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| INFR-01 | Phase 1 | Pending |
+| INFR-02 | Phase 1 | Pending |
+| INFR-03 | Phase 1 | Pending |
+| INFR-04 | Phase 1 | Pending |
+| INFR-05 | Phase 1 | Pending |
+| INFR-06 | Phase 1 | Pending |
+| INFR-07 | Phase 1 | Pending |
+| INFR-08 | Phase 1 | Pending |
+| LP-01 | Phase 2 | Pending |
+| LP-02 | Phase 2 | Pending |
+| LP-03 | Phase 2 | Pending |
+| LP-04 | Phase 2 | Pending |
+| LP-05 | Phase 2 | Pending |
+| LP-06 | Phase 5 | Pending |
+| LP-07 | Phase 2 | Pending |
+| LP-08 | Phase 2 | Pending |
+| BM-01 | Phase 3 | Pending |
+| BM-02 | Phase 3 | Pending |
+| BM-03 | Phase 3 | Pending |
+| BM-04 | Phase 4 | Pending |
+| BM-05 | Phase 3 | Pending |
+| BM-06 | Phase 3 | Pending |
+| BM-07 | Phase 3 | Pending |
+| BM-08 | Phase 3 | Pending |
+| BM-09 | Phase 5 | Pending |
+| BM-10 | Phase 5 | Pending |
+| BM-11 | Phase 5 | Pending |
+| BM-12 | Phase 6 | Pending |
+| QA-01 | Phase 7 | Pending |
+| QA-02 | Phase 1 | Pending |
+| QA-03 | Phase 1 | Pending |
+| QA-04 | Phase 2 | Pending |
+| QA-05 | Phase 2 | Pending |
+| QA-06 | Phase 5 | Pending |
+| QA-07 | Phase 3 | Pending |
+| QA-08 | Phase 6 | Pending |
+| QA-09 | Phase 7 | Pending |
+| QA-10 | Phase 1 | Pending |
+| DOC-01 | Phase 7 | Pending |
+| DOC-02 | Phase 7 | Pending |
+| DOC-03 | Phase 7 | Pending |
+| DOC-04 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 41 total
-- Mapped to phases: 0 (TBD by roadmapper)
-- Unmapped: 41 ⚠️ (will be 0 after roadmap)
+- v1 requirements: 42 total
+- Mapped to phases: 42 (100%)
+- Unmapped: 0
+
+**Per-phase distribution:**
+- Phase 1 (Skeleton + Infrastructure): 12 requirements (INFR-01..08, QA-02, QA-03, QA-10) — note QA-01 enforcement starts here but ownership accepted in Phase 7
+- Phase 2 (line-provider domain): 9 requirements (LP-01..05, LP-07, LP-08, QA-04, QA-05)
+- Phase 3 (bet-maker DB): 8 requirements (BM-01..03, BM-05..08, QA-07)
+- Phase 4 (HTTP integration): 1 requirement (BM-04)
+- Phase 5 (RabbitMQ integration): 5 requirements (LP-06, BM-09..11, QA-06)
+- Phase 6 (Reconciliation): 2 requirements (BM-12, QA-08)
+- Phase 7 (Polish + Documentation): 5 requirements (DOC-01..04, QA-01, QA-09)
+
+Note: QA-01 (`mypy --strict`) is **enforced from Phase 1** (CI gate established with QA-10) but **owned** by Phase 7 because final-pass verification of zero strict-mode errors across both packages is the polish-phase deliverable.
 
 ---
 *Requirements defined: 2026-05-13*
-*Last updated: 2026-05-13 after initial definition*
+*Last updated: 2026-05-13 after roadmap creation (traceability filled by roadmapper)*
