@@ -39,7 +39,16 @@ Phase 2 and Phase 3 can be developed in parallel after Phase 1 completes (no sha
   - **D6**: pin `python:3.10-slim-bookworm` (not rolling `-slim` tag)
   - **D8**: services bind `0.0.0.0`, use compose service names (not `localhost`); RabbitMQ management UI bound to `127.0.0.1:15672`
   - **A7**: structlog `contextvars` configured via middleware with `clear_contextvars` in `try/finally`
-**Plans**: TBD
+**Plans:** 7 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — pyproject.toml + uv.lock + .python-version + .gitignore foundation (Wave 1)
+- [ ] 01-02-PLAN.md — src/config/ shared internal package (logging, settings_base, time) (Wave 2)
+- [ ] 01-03-PLAN.md — src/line_provider/ FastAPI skeleton (factory, lifespan, middleware, /health) (Wave 3)
+- [ ] 01-04-PLAN.md — src/bet_maker/ skeleton + async Alembic env (Wave 3)
+- [ ] 01-05-PLAN.md — Dockerfile (multi-stage) + docker-compose.yml + .env.example + checkpoint (Wave 4)
+- [ ] 01-06-PLAN.md — GitHub Actions CI workflow + pre-commit hooks (Wave 4)
+- [ ] 01-07-PLAN.md — tests/ smoke scaffold + README stub (Wave 4)
 
 ### Phase 2: line-provider domain
 **Goal**: line-provider exposes a complete HTTP CRUD surface over an in-memory event store, ready to be wired to RabbitMQ in P5.
@@ -162,7 +171,7 @@ Phase 2 and Phase 3 can be developed in parallel after Phase 1 completes (no sha
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Skeleton + Infrastructure | 0/? | Not started | - |
+| 1. Skeleton + Infrastructure | 0/7 | Planned | - |
 | 2. line-provider domain | 0/? | Not started | - |
 | 3. bet-maker domain (DB) | 0/? | Not started | - |
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
@@ -173,3 +182,4 @@ Phase 2 and Phase 3 can be developed in parallel after Phase 1 completes (no sha
 ---
 *Roadmap created: 2026-05-13 from REQUIREMENTS.md + ARCHITECTURE.md*
 *Coverage: 42/42 v1 requirements mapped (no orphans)*
+*Phase 1 plans created: 2026-05-13 (7 plans across 4 waves)*
