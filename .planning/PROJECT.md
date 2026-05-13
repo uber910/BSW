@@ -90,7 +90,7 @@
 | RabbitMQ + FastStream для межсервисного обмена | Надёжность (durable + ack + DLQ), декларативный FastStream, естественная асинхронность | — Pending |
 | Reconciliation job в bet-maker | Закрывает требование «ставка не зависает» если сообщение потеряно | — Pending |
 | Unit of Work + Repository pattern для PG | Lazy commits, единая транзакция на бизнес-операцию, тестируемость | — Pending |
-| Слоистая архитектура (entrypoints/facade/interactor/selector/helper) | Чёткое разделение ответственности, CQRS lite (interactor=write, selector=read), удобное unit-тестирование | — Pending |
+| Слоистая архитектура (entrypoints / facades / interactors / selectors / helpers) | Чёткое разделение ответственности, CQRS lite (interactors=write use cases, selectors=read-only queries), helpers — чистые функции без сайд-эффектов, удобное unit-тестирование | — Pending |
 | Монорепо, src/ layout, 2 пакета | `src/line_provider/` + `src/bet_maker/`, общий pyproject и dev-deps, меньше дублирования | — Pending |
 | uv как менеджер пакетов | Современный, быстрый, lockfile, замена pip+venv+pip-tools | — Pending |
 | structlog для логов | JSON-логи с контекстом, production-style — показывает зрелость | — Pending |
