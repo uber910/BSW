@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+status: ready_to_plan
 last_updated: "2026-05-14T10:48:33.709Z"
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
   completed_plans: 7
-  percent: 100
+  percent: 29
 ---
 
 # Project State: BSW Betting System
@@ -28,9 +28,9 @@ Phase: 01 (skeleton-infrastructure) — COMPLETE (all 7 plans landed)
 Plan: 7/7 plans complete (01-01..01-07)
 
 - **Milestone:** v1
-- **Phase:** 1 (Skeleton + Infrastructure) — COMPLETE, ready for `/gsd-transition` to Phase 2
-- **Plan:** 01-05 complete — Dockerfile multi-stage (ARG SERVICE, slim-bookworm pinned, non-root app:1000, sentinel CMD) + docker-compose.yml (4 services postgres/rabbitmq/line-provider/bet-maker; healthchecks pg_isready / rabbitmq-diagnostics check_port_connectivity / curl /health; condition: service_healthy on apps; named volumes postgres_data/rabbitmq_data; hostname: rabbitmq pinned for R10; per-service `command: ["python","-m","<svc>"]` JSON-array exec-form → Python = PID 1, SIGTERM долетает напрямую; stop_grace_period 30s; Management UI bound 127.0.0.1:15672 closing Open Question + T-05-01; PG/AMQP ports НЕ опубликованы — T-05-02/03 mitigated) + .env.example (D-16 секции shared/postgres/rabbitmq/line-provider/bet-maker). Live `docker compose up` smoke-test (12-step protocol) APPROVED by operator: все 4 (healthy) за <=35s, оба /health 200, named volumes созданы и durable через `down && up`, Management UI на 127.0.0.1, PID 1 = python в обоих app (D-04 буквально), graceful shutdown exit 0 в <30s с JSON shutdown logs, PG (5432) и AMQP (5672) недоступны на host. Closes INFR-03/04/05.
-- **Status:** Phase 01 COMPLETE — all 7 plans landed, all 6 ROADMAP success criteria verified
+- **Phase:** 2
+- **Plan:** Not started
+- **Status:** Ready to plan
 - **Progress:** [██████████] 100% (Phase 1 plans, 7/7)
 
 ```
