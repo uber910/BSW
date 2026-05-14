@@ -1,0 +1,103 @@
+name: bsw
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bsw}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bsw}
+      POSTGRES_DB: ${POSTGRES_DB:-bsw}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  rabbitmq:
+    image: rabbitmq:4.2-management-alpine
+    restart: always
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+    ports:
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q check_port_connectivity"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  line-provider:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: line_provider
+    command: ["python", "-m", "line_provider"]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    env_file:
+      - .env
+    environment:
+      LINE_PROVIDER_HOST: 0.0.0.0
+      LINE_PROVIDER_PORT: 8000
+      LINE_PROVIDER_RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-guest}:${RABBITMQ_DEFAULT_PASS:-guest}@rabbitmq:5672/
+      LINE_PROVIDER_LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  bet-maker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: bet_maker
+    command: ["python", "-m", "bet_maker"]
+    restart: unless-stopped
+    stop_grace_period: 30s
+    env_file:
+      - .env
+    environment:
+      BET_MAKER_HOST: 0.0.0.0
+      BET_MAKER_PORT: 8001
+      BET_MAKER_POSTGRES_DSN: postgresql+asyncpg://${POSTGRES_USER:-bsw}:${POSTGRES_PASSWORD:-bsw}@postgres:5432/${POSTGRES_DB:-bsw}
+      BET_MAKER_RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER:-guest}:${RABBITMQ_DEFAULT_PASS:-guest}@rabbitmq:5672/
+      BET_MAKER_LINE_PROVIDER_BASE_URL: http://line-provider:8000
+      BET_MAKER_RECONCILIATION_INTERVAL_S: ${BET_MAKER_RECONCILIATION_INTERVAL_S:-30}
+      BET_MAKER_LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8001/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
