@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-14T09:23:18.421Z"
+last_updated: "2026-05-14T09:29:23.312Z"
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 7
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 14
 ---
 
 # Project State: BSW Betting System
 
-**Last updated:** 2026-05-13 (initial)
+**Last updated:** 2026-05-14 (after Phase 1 Plan 1)
 
 ## Project Reference
 
@@ -25,13 +25,13 @@ progress:
 ## Current Position
 
 Phase: 01 (skeleton-infrastructure) — EXECUTING
-Plan: 1 of 7
+Plan: 2 of 7 (Plan 1 complete)
 
 - **Milestone:** v1
 - **Phase:** 1 (Skeleton + Infrastructure)
-- **Plan:** none yet — awaiting `/gsd-plan-phase 1`
+- **Plan:** 01-01 complete — root pyproject.toml + uv.lock + .python-version + .gitignore
 - **Status:** Executing Phase 01
-- **Progress:** Phase 0 / 7 complete
+- **Progress:** [█░░░░░░░░░] 14%
 
 ```
 [░░░░░░░] 0/7 phases (0%)
@@ -41,10 +41,11 @@ Plan: 1 of 7
 
 | Metric | Value |
 |--------|-------|
-| Phases planned | 0/7 |
+| Phases planned | 1/7 |
 | Phases complete | 0/7 |
 | Requirements mapped | 42/42 (100%) |
-| Plans complete | 0/0 |
+| Plans complete | 1/7 |
+| Plan 01-01 duration | ~4 min |
 
 ## Accumulated Context
 
@@ -55,6 +56,9 @@ Plan: 1 of 7
 - **2026-05-13**: 7-phase build order adopted from research/ARCHITECTURE.md (validated minimum-dependency DAG); Phase 2 and Phase 3 parallelizable after Phase 1.
 - **2026-05-13**: Critical path = 1 → 2 → 5 → 6 → 7 (covers Core Value end-to-end).
 - **2026-05-13**: Phase 5 is the risk-heavy phase (~50% of identified pitfalls cluster there) and warrants double code-review attention.
+- **2026-05-14 (Plan 01-01)**: Root pyproject.toml established with hatch packages = src/line_provider, src/bet_maker, src/config (D-01); no [tool.uv.workspace] section. uv.lock locks 68 packages, deterministic via uv sync --frozen.
+- **2026-05-14 (Plan 01-01)**: Python pinned to 3.10.20 via .python-version (D-09). Pytest configured with asyncio_mode=auto, pythonpath=['src'] (D-13). ruff rule set includes E,W,F,I,B,UP,N,SIM,ASYNC,PL,RUF; mypy strict=true with pydantic.mypy plugin (QA-02 / QA-01 baseline).
+- **2026-05-14 (Plan 01-01)**: Rule 3 deviation — empty __init__.py stubs created for src/line_provider, src/bet_maker, src/config plus placeholder README.md; required for hatch editable build during `uv sync --frozen`. No code or behaviour added. Plans 02/03/04 will populate.
 
 ### Open Todos
 
@@ -72,15 +76,15 @@ Plan: 1 of 7
 
 ### Last Session
 
-- **Started:** 2026-05-13
-- **Ended:** 2026-05-13
-- **Activity:** Roadmap synthesis from REQUIREMENTS.md + research/ARCHITECTURE.md.
-- **Outcome:** ROADMAP.md (7 phases, 42/42 requirements mapped), STATE.md initialized, REQUIREMENTS.md traceability filled.
+- **Started:** 2026-05-14T09:24:00Z
+- **Ended:** 2026-05-14T09:27:59Z
+- **Activity:** Executed 01-01-PLAN.md (skeleton: pyproject.toml + uv.lock + .python-version + .gitignore).
+- **Outcome:** Two atomic commits (0af1bcd, 2dcbd3d); 01-01-SUMMARY.md created; INFR-01, INFR-02, QA-02, QA-10 requirements addressed. One Rule 3 deviation (Rule 3 — blocking: empty __init__.py stubs + README.md placeholder needed for hatch editable build).
 
 ### Next Session
 
-- **Recommended command:** `/gsd-plan-phase 1`
-- **Goal:** Decompose Phase 1 (Skeleton + Infrastructure) into executable plans satisfying its 6 success criteria.
+- **Recommended command:** `/gsd-execute-phase` (continue Phase 1) — next plan in Phase 1 sequence (Dockerfiles / docker-compose / .env.example per ROADMAP).
+- **Goal:** Continue Phase 1 plans 02..N covering INFR-03..08, QA-03.
 
 ### Open Questions for Next Phase
 

@@ -7,8 +7,8 @@
 
 ### Infrastructure (INFR)
 
-- [ ] **INFR-01**: Монорепо с src/ layout: `src/line_provider/` и `src/bet_maker/`, общий `pyproject.toml`
-- [ ] **INFR-02**: uv как менеджер пакетов, `uv.lock` коммитится в репозиторий
+- [x] **INFR-01**: Монорепо с src/ layout: `src/line_provider/` и `src/bet_maker/`, общий `pyproject.toml`
+- [x] **INFR-02**: uv как менеджер пакетов, `uv.lock` коммитится в репозиторий
 - [ ] **INFR-03**: Dockerfile для каждого сервиса на базе `python:3.10-slim-bookworm` (без rolling tag)
 - [ ] **INFR-04**: docker-compose.yml поднимает 4 сервиса: postgres, rabbitmq, line-provider, bet-maker
 - [ ] **INFR-05**: Healthcheck в docker-compose для postgres (`pg_isready`) и rabbitmq (`rabbitmq-diagnostics ping`); сервисы используют `service_healthy`
@@ -45,7 +45,7 @@
 ### Quality (QA)
 
 - [ ] **QA-01**: Полные type hints во всём коде; `mypy --strict` проходит без ошибок
-- [ ] **QA-02**: `ruff check` + `ruff format` без замечаний; конфигурация в pyproject.toml
+- [x] **QA-02**: `ruff check` + `ruff format` без замечаний; конфигурация в pyproject.toml
 - [ ] **QA-03**: pre-commit hooks: ruff, mypy, end-of-file, trailing-whitespace, toml-lint
 - [ ] **QA-04**: Unit-тесты на каждый слой (interactors/selectors/helpers/repositories) — pytest + pytest-asyncio
 - [ ] **QA-05**: Integration-тесты на API через httpx AsyncClient (line-provider и bet-maker)
@@ -53,7 +53,7 @@
 - [ ] **QA-07**: PG-тесты с реальной БД через testcontainers (НЕ SQLite, чтобы ловить `FOR UPDATE` баги)
 - [ ] **QA-08**: Один e2e сценарий: создать событие → поставить ставку → завершить событие → проверить, что ставка стала WON/LOST через consumer + ещё одну через reconciler
 - [ ] **QA-09**: pytest-cov с минимальным порогом покрытия (≥80%)
-- [ ] **QA-10**: GitHub Actions CI: lint + typecheck + unit + integration на каждый push/PR
+- [x] **QA-10**: GitHub Actions CI: lint + typecheck + unit + integration на каждый push/PR
 
 ### Documentation (DOC)
 
@@ -114,8 +114,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFR-01 | Phase 1 | Pending |
-| INFR-02 | Phase 1 | Pending |
+| INFR-01 | Phase 1 | Complete |
+| INFR-02 | Phase 1 | Complete |
 | INFR-03 | Phase 1 | Pending |
 | INFR-04 | Phase 1 | Pending |
 | INFR-05 | Phase 1 | Pending |
@@ -143,7 +143,7 @@
 | BM-11 | Phase 5 | Pending |
 | BM-12 | Phase 6 | Pending |
 | QA-01 | Phase 7 | Pending |
-| QA-02 | Phase 1 | Pending |
+| QA-02 | Phase 1 | Complete |
 | QA-03 | Phase 1 | Pending |
 | QA-04 | Phase 2 | Pending |
 | QA-05 | Phase 2 | Pending |
@@ -151,7 +151,7 @@
 | QA-07 | Phase 3 | Pending |
 | QA-08 | Phase 6 | Pending |
 | QA-09 | Phase 7 | Pending |
-| QA-10 | Phase 1 | Pending |
+| QA-10 | Phase 1 | Complete |
 | DOC-01 | Phase 7 | Pending |
 | DOC-02 | Phase 7 | Pending |
 | DOC-03 | Phase 7 | Pending |

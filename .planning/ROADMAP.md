@@ -42,7 +42,7 @@ Phase 2 and Phase 3 can be developed in parallel after Phase 1 completes (no sha
 **Plans:** 7 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — pyproject.toml + uv.lock + .python-version + .gitignore foundation (Wave 1)
+- [x] 01-01-PLAN.md — pyproject.toml + uv.lock + .python-version + .gitignore foundation (Wave 1)
 - [ ] 01-02-PLAN.md — src/config/ shared internal package (logging, settings_base, time) (Wave 2)
 - [ ] 01-03-PLAN.md — src/line_provider/ FastAPI skeleton (factory, lifespan, middleware, /health) (Wave 3)
 - [ ] 01-04-PLAN.md — src/bet_maker/ skeleton + async Alembic env (Wave 3)
