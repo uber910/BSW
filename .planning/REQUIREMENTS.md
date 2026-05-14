@@ -12,7 +12,7 @@
 - [ ] **INFR-03**: Dockerfile для каждого сервиса на базе `python:3.10-slim-bookworm` (без rolling tag)
 - [ ] **INFR-04**: docker-compose.yml поднимает 4 сервиса: postgres, rabbitmq, line-provider, bet-maker
 - [ ] **INFR-05**: Healthcheck в docker-compose для postgres (`pg_isready`) и rabbitmq (`rabbitmq-diagnostics ping`); сервисы используют `service_healthy`
-- [ ] **INFR-06**: Alembic с async-окружением (`alembic init -t async`) для bet-maker
+- [x] **INFR-06**: Alembic с async-окружением (`alembic init -t async`) для bet-maker — env.py reads DSN from BetMakerSettings (Anti-Pattern 7 mitigated); alembic.ini + async env.py + script.py.mako + versions/ skeleton delivered in plan 01-04. Initial migration creating schema lands in P3.
 - [x] **INFR-07**: `.env.example` и pydantic-settings для типизированной конфигурации (DSN, RabbitMQ URL, log level, reconciliation interval) — pydantic-settings BaseAppSettings parent class delivered in plan 01-02; `.env.example` deferred to plan 01-05
 - [x] **INFR-08**: structlog с JSON-форматом и `bind_contextvars` для request_id-пропагации
 
@@ -119,7 +119,7 @@
 | INFR-03 | Phase 1 | Pending |
 | INFR-04 | Phase 1 | Pending |
 | INFR-05 | Phase 1 | Pending |
-| INFR-06 | Phase 1 | Pending |
+| INFR-06 | Phase 1 | Complete (plan 01-04) |
 | INFR-07 | Phase 1 | In progress (pydantic-settings parent done plan 01-02; .env.example pending plan 01-05) |
 | INFR-08 | Phase 1 | Complete |
 | LP-01 | Phase 2 | Pending |

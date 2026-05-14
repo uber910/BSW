@@ -45,7 +45,7 @@ Plans:
 - [x] 01-01-PLAN.md — pyproject.toml + uv.lock + .python-version + .gitignore foundation (Wave 1)
 - [x] 01-02-PLAN.md — src/config/ shared internal package (logging, settings_base, time) (Wave 2)
 - [x] 01-03-PLAN.md — src/line_provider/ FastAPI skeleton (factory, lifespan, middleware, /health) (Wave 3)
-- [ ] 01-04-PLAN.md — src/bet_maker/ skeleton + async Alembic env (Wave 3)
+- [x] 01-04-PLAN.md — src/bet_maker/ skeleton + async Alembic env (Wave 3)
 - [ ] 01-05-PLAN.md — Dockerfile (multi-stage) + docker-compose.yml + .env.example + checkpoint (Wave 4)
 - [ ] 01-06-PLAN.md — GitHub Actions CI workflow + pre-commit hooks (Wave 4)
 - [ ] 01-07-PLAN.md — tests/ smoke scaffold + README stub (Wave 4)
