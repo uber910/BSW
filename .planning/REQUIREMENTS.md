@@ -13,7 +13,7 @@
 - [ ] **INFR-04**: docker-compose.yml поднимает 4 сервиса: postgres, rabbitmq, line-provider, bet-maker
 - [ ] **INFR-05**: Healthcheck в docker-compose для postgres (`pg_isready`) и rabbitmq (`rabbitmq-diagnostics ping`); сервисы используют `service_healthy`
 - [ ] **INFR-06**: Alembic с async-окружением (`alembic init -t async`) для bet-maker
-- [ ] **INFR-07**: `.env.example` и pydantic-settings для типизированной конфигурации (DSN, RabbitMQ URL, log level, reconciliation interval) — pydantic-settings BaseAppSettings parent class delivered in plan 01-02; `.env.example` deferred to plan 01-05
+- [x] **INFR-07**: `.env.example` и pydantic-settings для типизированной конфигурации (DSN, RabbitMQ URL, log level, reconciliation interval) — pydantic-settings BaseAppSettings parent class delivered in plan 01-02; `.env.example` deferred to plan 01-05
 - [x] **INFR-08**: structlog с JSON-форматом и `bind_contextvars` для request_id-пропагации
 
 ### line-provider (LP)
