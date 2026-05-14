@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-13T17:11:41.933Z"
+last_updated: "2026-05-14T09:23:18.421Z"
 progress:
   total_phases: 7
   completed_phases: 0
@@ -20,14 +20,17 @@ progress:
 
 **Core Value:** Ставка никогда не остаётся в статусе PENDING после того, как её событие завершилось.
 
-**Current focus:** Phase 1 — Skeleton + Infrastructure. Establish the foundation (pyproject + uv.lock, Dockerfiles, docker-compose with PG + RabbitMQ healthchecks + volumes, structlog, pydantic-settings, pre-commit, ruff + mypy strict, GitHub Actions CI, README skeleton, empty `/health` endpoints on both services).
+**Current focus:** Phase 01 — skeleton-infrastructure
 
 ## Current Position
+
+Phase: 01 (skeleton-infrastructure) — EXECUTING
+Plan: 1 of 7
 
 - **Milestone:** v1
 - **Phase:** 1 (Skeleton + Infrastructure)
 - **Plan:** none yet — awaiting `/gsd-plan-phase 1`
-- **Status:** Ready to execute
+- **Status:** Executing Phase 01
 - **Progress:** Phase 0 / 7 complete
 
 ```
