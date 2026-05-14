@@ -46,7 +46,7 @@
 
 - [ ] **QA-01**: Полные type hints во всём коде; `mypy --strict` проходит без ошибок
 - [x] **QA-02**: `ruff check` + `ruff format` без замечаний; конфигурация в pyproject.toml
-- [ ] **QA-03**: pre-commit hooks: ruff, mypy, end-of-file, trailing-whitespace, toml-lint
+- [x] **QA-03**: pre-commit hooks: ruff, mypy, end-of-file, trailing-whitespace, toml-lint
 - [ ] **QA-04**: Unit-тесты на каждый слой (interactors/selectors/helpers/repositories) — pytest + pytest-asyncio
 - [ ] **QA-05**: Integration-тесты на API через httpx AsyncClient (line-provider и bet-maker)
 - [ ] **QA-06**: Consumer тесты через `TestRabbitBroker` (FastStream native)
@@ -144,7 +144,7 @@
 | BM-12 | Phase 6 | Pending |
 | QA-01 | Phase 7 | Pending |
 | QA-02 | Phase 1 | Complete |
-| QA-03 | Phase 1 | Pending |
+| QA-03 | Phase 1 | Complete |
 | QA-04 | Phase 2 | Pending |
 | QA-05 | Phase 2 | Pending |
 | QA-06 | Phase 5 | Pending |

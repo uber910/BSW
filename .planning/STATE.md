@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-14T09:44:47Z"
+last_updated: "2026-05-14T09:53:38.668Z"
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 7
-  completed_plans: 4
-  percent: 57
+  completed_plans: 5
+  percent: 71
 ---
 
 # Project State: BSW Betting System
 
-**Last updated:** 2026-05-14 (after Phase 1 Plan 4)
+**Last updated:** 2026-05-14 (after Phase 1 Plan 6)
 
 ## Project Reference
 
@@ -25,13 +25,13 @@ progress:
 ## Current Position
 
 Phase: 01 (skeleton-infrastructure) — EXECUTING
-Plan: 5 of 7 (Plans 1–4 complete)
+Plan: 5/7 plans complete (01-01..01-04 + 01-06; 01-05 in parallel; 01-07 next)
 
 - **Milestone:** v1
 - **Phase:** 1 (Skeleton + Infrastructure)
-- **Plan:** 01-04 complete — bet_maker FastAPI skeleton (build_app factory, python -m on 8001, /health stub, RequestContextMiddleware with A7 double-clear, structlog-aware lifespan, BetMakerSettings with postgres_dsn/rabbitmq_url/line_provider_base_url/reconciliation_interval_s) plus async Alembic skeleton (alembic.ini, env.py reading DSN from BetMakerSettings, script.py.mako, versions/.gitkeep)
+- **Plan:** 01-06 complete — GitHub Actions CI workflow (single quality job on ubuntu-latest: ruff check + ruff format --check + mypy strict + pytest -q via uv 0.11.14 and Python 3.10.20 pinned) plus .pre-commit-config.yaml with 9 hooks (ruff fix/format v0.15.12 matching pyproject pin, pre-commit-hooks v5.0.0 hygiene set, local mypy strict via uv run). Closes QA-02 (already in 01-01), QA-03 (new), QA-10 (already in 01-01).
 - **Status:** Executing Phase 01
-- **Progress:** [█████░░░░░] 57%
+- **Progress:** [███████░░░] 71%
 
 ```
 [░░░░░░░] 0/7 phases (0%)
@@ -44,11 +44,12 @@ Plan: 5 of 7 (Plans 1–4 complete)
 | Phases planned | 1/7 |
 | Phases complete | 0/7 |
 | Requirements mapped | 42/42 (100%) |
-| Plans complete | 4/7 |
+| Plans complete | 5/7 |
 | Plan 01-01 duration | ~4 min |
 | Plan 01-02 duration | ~4 min |
 | Plan 01-03 duration | ~2 min (2 tasks, 10 files) |
 | Plan 01-04 duration | ~2 min (3 tasks, 14 files) |
+| Plan 01-06 duration | ~2 min (2 tasks, 3 files) |
 
 ## Accumulated Context
 
@@ -65,6 +66,7 @@ Plan: 5 of 7 (Plans 1–4 complete)
 - **2026-05-14 (Plan 01-02)**: src/config/ shared internal-only package created (D-02). configure_structlog locked to D-17 processors chain [merge_contextvars, add_log_level, TimeStamper(iso,utc), dict_tracebacks, JSONRenderer]; wrapper_class=make_filtering_bound_logger(level), logger_factory=PrintLoggerFactory(stdout). BaseAppSettings(BaseSettings) is the parent for service-specific settings classes (service_name required, log_level default INFO, .env utf-8, case-insensitive, extra=ignore). utc_now() centralised in src/config/time.py for freeze_time. py.typed PEP 561 marker present. Closes INFR-07 + INFR-08.
 - **2026-05-14 (Plan 01-03)**: line_provider FastAPI skeleton — build_app() factory, `python -m line_provider` entrypoint via uvicorn.run(factory=True, host=0.0.0.0, port=8000, log_config=None) (D-03, D-08). LineProviderSettings(BaseAppSettings) with env_prefix=LINE_PROVIDER_ and defaults host/port/rabbitmq_url (D-15). Lifespan calls configure_structlog before yield (D-17). RequestContextMiddleware uses A7 double-clear: defensive clear on entry + finally clear in cleanup (D-18). GET /health returns {"status":"ok"} without dep-pings (D-19). Closes INFR-01 (line-provider runnable skeleton), reaffirms INFR-07/INFR-08.
 - **2026-05-14 (Plan 01-04)**: bet_maker FastAPI skeleton mirrors line_provider shape — build_app() factory, `python -m bet_maker` via uvicorn.run(factory=True, host=0.0.0.0, port=8001, log_config=None) (D-03, D-08). BetMakerSettings(BaseAppSettings) with env_prefix=BET_MAKER_ and typed DSN fields (PostgresDsn, AmqpDsn, HttpUrl) plus reconciliation_interval_s=30 (D-15). A7 double-clear middleware reused verbatim (D-18). Async Alembic skeleton: alembic.ini at repo root with NO sqlalchemy.url line; alembic/env.py imports BetMakerSettings and calls config.set_main_option('sqlalchemy.url', str(settings.postgres_dsn)) at module load — single source of truth (Anti-Pattern 7 mitigated). target_metadata=None placeholder until P3 declarative models land. Closes INFR-06 (Alembic async env wired), reaffirms INFR-01/INFR-07/INFR-08.
+- **2026-05-14 (Plan 01-06)**: CI workflow .github/workflows/ci.yml — one quality job on ubuntu-latest with D-06 step chain (checkout v4 → setup-uv@v3 version 0.11.14 with uv.lock-keyed cache → uv python install 3.10.20 → uv sync --frozen --all-extras → ruff check + ruff format --check + mypy src + pytest -q). D-07 triggers: push on any branch, pull_request to main. D-08: no PG/RMQ services in P1 (deferred to P3/P5). D-09: single Python pin, no matrix. permissions: contents: read at workflow level (T-06-01) and concurrency cancel-in-progress (T-06-05) added. .pre-commit-config.yaml with all 9 D-10 hooks: ruff v0.15.12 (matched to pyproject pin — T-06-04), ruff-format, check-merge-conflict, end-of-file-fixer, trailing-whitespace, check-yaml, check-toml, check-added-large-files --maxkb=500 (T-06-06), local mypy strict via `uv run mypy --strict src` with pass_filenames=false (NOT mirrors-mypy — preserves pydantic.mypy plugin). Closes QA-03 (pre-commit). One Rule 3 auto-fix: out-of-scope trailing-whitespace fixes in two planning docs reverted and logged in .planning/phases/01-skeleton-infrastructure/deferred-items.md.
 
 ### Open Todos
 
@@ -82,15 +84,15 @@ Plan: 5 of 7 (Plans 1–4 complete)
 
 ### Last Session
 
-- **Started:** 2026-05-14T09:42:32Z
-- **Ended:** 2026-05-14T09:44:47Z
-- **Activity:** Executed 01-04-PLAN.md (bet_maker FastAPI + Alembic skeleton: scaffold settings/health/middleware/lifespan, wire build_app + python -m entrypoint, async Alembic skeleton with DSN sourced from BetMakerSettings).
-- **Outcome:** Three atomic commits (2234cb3, 5f2b74c, 114d40e); 01-04-SUMMARY.md created; INFR-06 closed (Alembic async env), INFR-01/INFR-07/INFR-08 reaffirmed. Zero deviations — plan executed exactly as written. mypy strict + ruff check + ruff format --check all green for src/bet_maker/ (10 files) and alembic/env.py; ASGI smoke-check via httpx.AsyncClient + ASGITransport returns 200 OK on /health with X-Request-ID header; runtime smoke (`python -m bet_maker`) confirms bind on 0.0.0.0:8001 with structlog JSON startup/shutdown.
+- **Started:** 2026-05-14T09:49:56Z
+- **Ended:** 2026-05-14T09:52:13Z
+- **Activity:** Executed 01-06-PLAN.md (CI workflow + pre-commit). Created .github/workflows/ci.yml (single quality job on ubuntu-latest, D-06 chain, D-07 triggers, D-08 no PG/RMQ, D-09 single pin, workflow-level least privilege, concurrency cancel-in-progress) and .pre-commit-config.yaml (9 D-10 hooks; ruff v0.15.12 matched to pyproject pin; local mypy strict via uv run so pydantic.mypy plugin survives).
+- **Outcome:** Two atomic commits (1000775, 5d7e4a7); 01-06-SUMMARY.md created. QA-03 closed; QA-02/QA-10 reaffirmed. One Rule 3 auto-fix (out-of-scope trailing-whitespace in two planning docs — reverted; logged in deferred-items.md). `uv run pre-commit run --all-files` smoke run all green (ruff/ruff-format/check-merge-conflict/end-of-file-fixer/check-yaml/check-toml/check-added-large-files/mypy strict). `uv run pre-commit install` ran (`.git/hooks/pre-commit` written).
 
 ### Next Session
 
-- **Recommended command:** `/gsd-execute-phase` (continue Phase 1) — next plan 01-05 (Dockerfile multi-stage + docker-compose.yml + .env.example, Wave 4). Plans 01-05, 01-06, 01-07 all in Wave 4 and parallelizable.
-- **Goal:** Continue Phase 1 plans 05..07 covering INFR-03, INFR-04, INFR-05, finalize INFR-07 (.env.example), QA-03 (pre-commit hooks).
+- **Recommended command:** `/gsd-execute-phase` (finish Phase 1) — remaining plans: 01-05 (Dockerfile multi-stage + docker-compose.yml + .env.example, parallel with this plan) and 01-07 (tests/ smoke scaffold + README stub) — both Wave 4. After all three Wave 4 plans complete and the Phase 1 success criteria pass, run `/gsd-transition` to close Phase 1.
+- **Goal:** Close INFR-03/INFR-04/INFR-05 via 01-05 and finalize INFR-07 (.env.example) + smoke tests + README badge via 01-07.
 
 ### Open Questions for Next Phase
 
