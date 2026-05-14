@@ -39,7 +39,7 @@ Phase 2 and Phase 3 can be developed in parallel after Phase 1 completes (no sha
   - **D6**: pin `python:3.10-slim-bookworm` (not rolling `-slim` tag)
   - **D8**: services bind `0.0.0.0`, use compose service names (not `localhost`); RabbitMQ management UI bound to `127.0.0.1:15672`
   - **A7**: structlog `contextvars` configured via middleware with `clear_contextvars` in `try/finally`
-**Plans:** 5/7 plans executed
+**Plans:** 6/7 plans executed
 
 Plans:
 - [x] 01-01-PLAN.md — pyproject.toml + uv.lock + .python-version + .gitignore foundation (Wave 1)
@@ -48,7 +48,7 @@ Plans:
 - [x] 01-04-PLAN.md — src/bet_maker/ skeleton + async Alembic env (Wave 3)
 - [ ] 01-05-PLAN.md — Dockerfile (multi-stage) + docker-compose.yml + .env.example + checkpoint (Wave 4)
 - [x] 01-06-PLAN.md — GitHub Actions CI workflow + pre-commit hooks (Wave 4)
-- [ ] 01-07-PLAN.md — tests/ smoke scaffold + README stub (Wave 4)
+- [x] 01-07-PLAN.md — tests/ smoke scaffold + README stub (Wave 4)
 
 ### Phase 2: line-provider domain
 **Goal**: line-provider exposes a complete HTTP CRUD surface over an in-memory event store, ready to be wired to RabbitMQ in P5.
@@ -171,7 +171,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Skeleton + Infrastructure | 5/7 | In Progress|  |
+| 1. Skeleton + Infrastructure | 6/7 | In Progress|  |
 | 2. line-provider domain | 0/? | Not started | - |
 | 3. bet-maker domain (DB) | 0/? | Not started | - |
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |

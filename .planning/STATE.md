@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-14T09:53:38.668Z"
+last_updated: "2026-05-14T10:01:27.743Z"
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 7
-  completed_plans: 5
-  percent: 71
+  completed_plans: 6
+  percent: 86
 ---
 
 # Project State: BSW Betting System
 
-**Last updated:** 2026-05-14 (after Phase 1 Plan 6)
+**Last updated:** 2026-05-14 (after Phase 1 Plan 7)
 
 ## Project Reference
 
@@ -25,13 +25,13 @@ progress:
 ## Current Position
 
 Phase: 01 (skeleton-infrastructure) — EXECUTING
-Plan: 5/7 plans complete (01-01..01-04 + 01-06; 01-05 in parallel; 01-07 next)
+Plan: 6/7 plans complete (01-01..01-04 + 01-06 + 01-07; 01-05 remaining, parallel Wave 4)
 
 - **Milestone:** v1
 - **Phase:** 1 (Skeleton + Infrastructure)
-- **Plan:** 01-06 complete — GitHub Actions CI workflow (single quality job on ubuntu-latest: ruff check + ruff format --check + mypy strict + pytest -q via uv 0.11.14 and Python 3.10.20 pinned) plus .pre-commit-config.yaml with 9 hooks (ruff fix/format v0.15.12 matching pyproject pin, pre-commit-hooks v5.0.0 hygiene set, local mypy strict via uv run). Closes QA-02 (already in 01-01), QA-03 (new), QA-10 (already in 01-01).
+- **Plan:** 01-07 complete — tests/ scaffold per D-12 (root conftest + line_provider/ + bet_maker/ + e2e/) with canonical ASGITransport client fixture per service; 4 smoke tests pass (2 per service: QA-10 status-ok + INFR-08 X-Request-ID echo as the only HTTP-level E2E proof of structlog request-id propagation). README.md expanded from 5-line placeholder to full D-14 stub (Quick start, Development, Architecture/Reliability TODO, CI badge with OWNER/REPO placeholder, explicit guest:guest disclaimer — loopback-only, test-task scope, not for production). Closes QA-10; reaffirms INFR-08.
 - **Status:** Executing Phase 01
-- **Progress:** [███████░░░] 71%
+- **Progress:** [█████████░] 86%
 
 ```
 [░░░░░░░] 0/7 phases (0%)
@@ -44,12 +44,13 @@ Plan: 5/7 plans complete (01-01..01-04 + 01-06; 01-05 in parallel; 01-07 next)
 | Phases planned | 1/7 |
 | Phases complete | 0/7 |
 | Requirements mapped | 42/42 (100%) |
-| Plans complete | 5/7 |
+| Plans complete | 6/7 |
 | Plan 01-01 duration | ~4 min |
 | Plan 01-02 duration | ~4 min |
 | Plan 01-03 duration | ~2 min (2 tasks, 10 files) |
 | Plan 01-04 duration | ~2 min (3 tasks, 14 files) |
 | Plan 01-06 duration | ~2 min (2 tasks, 3 files) |
+| Plan 01-07 duration | ~2.5 min (2 tasks, 10 files) |
 
 ## Accumulated Context
 
@@ -67,6 +68,7 @@ Plan: 5/7 plans complete (01-01..01-04 + 01-06; 01-05 in parallel; 01-07 next)
 - **2026-05-14 (Plan 01-03)**: line_provider FastAPI skeleton — build_app() factory, `python -m line_provider` entrypoint via uvicorn.run(factory=True, host=0.0.0.0, port=8000, log_config=None) (D-03, D-08). LineProviderSettings(BaseAppSettings) with env_prefix=LINE_PROVIDER_ and defaults host/port/rabbitmq_url (D-15). Lifespan calls configure_structlog before yield (D-17). RequestContextMiddleware uses A7 double-clear: defensive clear on entry + finally clear in cleanup (D-18). GET /health returns {"status":"ok"} without dep-pings (D-19). Closes INFR-01 (line-provider runnable skeleton), reaffirms INFR-07/INFR-08.
 - **2026-05-14 (Plan 01-04)**: bet_maker FastAPI skeleton mirrors line_provider shape — build_app() factory, `python -m bet_maker` via uvicorn.run(factory=True, host=0.0.0.0, port=8001, log_config=None) (D-03, D-08). BetMakerSettings(BaseAppSettings) with env_prefix=BET_MAKER_ and typed DSN fields (PostgresDsn, AmqpDsn, HttpUrl) plus reconciliation_interval_s=30 (D-15). A7 double-clear middleware reused verbatim (D-18). Async Alembic skeleton: alembic.ini at repo root with NO sqlalchemy.url line; alembic/env.py imports BetMakerSettings and calls config.set_main_option('sqlalchemy.url', str(settings.postgres_dsn)) at module load — single source of truth (Anti-Pattern 7 mitigated). target_metadata=None placeholder until P3 declarative models land. Closes INFR-06 (Alembic async env wired), reaffirms INFR-01/INFR-07/INFR-08.
 - **2026-05-14 (Plan 01-06)**: CI workflow .github/workflows/ci.yml — one quality job on ubuntu-latest with D-06 step chain (checkout v4 → setup-uv@v3 version 0.11.14 with uv.lock-keyed cache → uv python install 3.10.20 → uv sync --frozen --all-extras → ruff check + ruff format --check + mypy src + pytest -q). D-07 triggers: push on any branch, pull_request to main. D-08: no PG/RMQ services in P1 (deferred to P3/P5). D-09: single Python pin, no matrix. permissions: contents: read at workflow level (T-06-01) and concurrency cancel-in-progress (T-06-05) added. .pre-commit-config.yaml with all 9 D-10 hooks: ruff v0.15.12 (matched to pyproject pin — T-06-04), ruff-format, check-merge-conflict, end-of-file-fixer, trailing-whitespace, check-yaml, check-toml, check-added-large-files --maxkb=500 (T-06-06), local mypy strict via `uv run mypy --strict src` with pass_filenames=false (NOT mirrors-mypy — preserves pydantic.mypy plugin). Closes QA-03 (pre-commit). One Rule 3 auto-fix: out-of-scope trailing-whitespace fixes in two planning docs reverted and logged in .planning/phases/01-skeleton-infrastructure/deferred-items.md.
+- **2026-05-14 (Plan 01-07)**: tests/ scaffold per D-12 — root conftest + line_provider/ + bet_maker/ + e2e/ (last empty until P6). Per-service `client` fixture: `httpx.AsyncClient + ASGITransport(app=build_app())`. 4 smoke tests collected (2 per service); `test_health_returns_status_ok` closes QA-10 (200 + `{status:ok}`); `test_health_echoes_request_id_header` is the only HTTP-level E2E proof of INFR-08 (X-Request-ID echo through RequestContextMiddleware). README.md expanded from 5-line placeholder to D-14 stub: Quick start (docker compose + curl both /health), Development (uv commands), Architecture and Reliability sections marked TODO with links to research/, CI badge with OWNER/REPO placeholder (P7 follow-up), explicit `guest:guest` disclaimer (loopback-only, test-task scope, not for production — T-07-01 mitigation). Project-wide convention established: REQ-IDs cited in test docstrings for grep-traceability. Closes QA-10; reaffirms INFR-08.
 
 ### Open Todos
 
@@ -84,15 +86,15 @@ Plan: 5/7 plans complete (01-01..01-04 + 01-06; 01-05 in parallel; 01-07 next)
 
 ### Last Session
 
-- **Started:** 2026-05-14T09:49:56Z
-- **Ended:** 2026-05-14T09:52:13Z
-- **Activity:** Executed 01-06-PLAN.md (CI workflow + pre-commit). Created .github/workflows/ci.yml (single quality job on ubuntu-latest, D-06 chain, D-07 triggers, D-08 no PG/RMQ, D-09 single pin, workflow-level least privilege, concurrency cancel-in-progress) and .pre-commit-config.yaml (9 D-10 hooks; ruff v0.15.12 matched to pyproject pin; local mypy strict via uv run so pydantic.mypy plugin survives).
-- **Outcome:** Two atomic commits (1000775, 5d7e4a7); 01-06-SUMMARY.md created. QA-03 closed; QA-02/QA-10 reaffirmed. One Rule 3 auto-fix (out-of-scope trailing-whitespace in two planning docs — reverted; logged in deferred-items.md). `uv run pre-commit run --all-files` smoke run all green (ruff/ruff-format/check-merge-conflict/end-of-file-fixer/check-yaml/check-toml/check-added-large-files/mypy strict). `uv run pre-commit install` ran (`.git/hooks/pre-commit` written).
+- **Started:** 2026-05-14T09:56:22Z
+- **Ended:** 2026-05-14T09:58:50Z
+- **Activity:** Executed 01-07-PLAN.md (tests scaffold + README stub). Created tests/ tree per D-12 (root conftest stub + line_provider/ + bet_maker/ + empty e2e/), per-service `client` fixture (httpx.AsyncClient + ASGITransport(app=build_app())), 2 smoke tests per service (test_health_returns_status_ok for QA-10 + test_health_echoes_request_id_header for INFR-08 HTTP-level E2E). Expanded README.md from 5-line placeholder to D-14 stub with Quick start (docker compose + curl both /health), Development (uv commands), Architecture/Reliability TODOs, CI badge with OWNER/REPO placeholder, and explicit guest:guest disclaimer (loopback-only, not for production — T-07-01 mitigation).
+- **Outcome:** Two atomic commits (1a1e2f6, 2994260); 01-07-SUMMARY.md created. QA-10 closed; INFR-08 gets its only HTTP-level E2E proof. `uv run pytest -q` → 4 passed in 0.17s. `uv run mypy --strict tests/` clean (9 files). `uv run ruff check tests/` + `uv run ruff format --check tests/` clean. No emoji anywhere (regex-validated). No deviations.
 
 ### Next Session
 
-- **Recommended command:** `/gsd-execute-phase` (finish Phase 1) — remaining plans: 01-05 (Dockerfile multi-stage + docker-compose.yml + .env.example, parallel with this plan) and 01-07 (tests/ smoke scaffold + README stub) — both Wave 4. After all three Wave 4 plans complete and the Phase 1 success criteria pass, run `/gsd-transition` to close Phase 1.
-- **Goal:** Close INFR-03/INFR-04/INFR-05 via 01-05 and finalize INFR-07 (.env.example) + smoke tests + README badge via 01-07.
+- **Recommended command:** `/gsd-execute-phase` (close Phase 1) — only 01-05 remains (Dockerfile multi-stage + docker-compose.yml + .env.example, parallel Wave 4). After 01-05 lands and Phase 1 success criteria pass, run `/gsd-transition`.
+- **Goal:** Close INFR-03/INFR-04/INFR-05 via 01-05, then transition out of Phase 1.
 
 ### Open Questions for Next Phase
 
