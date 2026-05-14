@@ -43,7 +43,7 @@ Phase 2 and Phase 3 can be developed in parallel after Phase 1 completes (no sha
 
 Plans:
 - [x] 01-01-PLAN.md — pyproject.toml + uv.lock + .python-version + .gitignore foundation (Wave 1)
-- [ ] 01-02-PLAN.md — src/config/ shared internal package (logging, settings_base, time) (Wave 2)
+- [x] 01-02-PLAN.md — src/config/ shared internal package (logging, settings_base, time) (Wave 2)
 - [ ] 01-03-PLAN.md — src/line_provider/ FastAPI skeleton (factory, lifespan, middleware, /health) (Wave 3)
 - [ ] 01-04-PLAN.md — src/bet_maker/ skeleton + async Alembic env (Wave 3)
 - [ ] 01-05-PLAN.md — Dockerfile (multi-stage) + docker-compose.yml + .env.example + checkpoint (Wave 4)
@@ -171,7 +171,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Skeleton + Infrastructure | 0/7 | Planned | - |
+| 1. Skeleton + Infrastructure | 2/7 | Executing | - |
 | 2. line-provider domain | 0/? | Not started | - |
 | 3. bet-maker domain (DB) | 0/? | Not started | - |
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
