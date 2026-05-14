@@ -7,7 +7,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Skeleton + Infrastructure** — Both services boot via `docker compose up` with green CI and healthy deps
+- [x] **Phase 1: Skeleton + Infrastructure** — Both services boot via `docker compose up` with green CI and healthy deps
 - [ ] **Phase 2: line-provider domain** — In-memory event store with full HTTP API (no AMQP yet)
 - [ ] **Phase 3: bet-maker domain (DB)** — PostgreSQL persistence, UoW, place/list bets via HTTP
 - [ ] **Phase 4: bet-maker HTTP integration with line-provider** — `GET /events` proxy with retry and TTL cache
@@ -39,14 +39,14 @@ Phase 2 and Phase 3 can be developed in parallel after Phase 1 completes (no sha
   - **D6**: pin `python:3.10-slim-bookworm` (not rolling `-slim` tag)
   - **D8**: services bind `0.0.0.0`, use compose service names (not `localhost`); RabbitMQ management UI bound to `127.0.0.1:15672`
   - **A7**: structlog `contextvars` configured via middleware with `clear_contextvars` in `try/finally`
-**Plans:** 6/7 plans executed
+**Plans:** 7/7 plans executed (Phase 1 complete 2026-05-14)
 
 Plans:
 - [x] 01-01-PLAN.md — pyproject.toml + uv.lock + .python-version + .gitignore foundation (Wave 1)
 - [x] 01-02-PLAN.md — src/config/ shared internal package (logging, settings_base, time) (Wave 2)
 - [x] 01-03-PLAN.md — src/line_provider/ FastAPI skeleton (factory, lifespan, middleware, /health) (Wave 3)
 - [x] 01-04-PLAN.md — src/bet_maker/ skeleton + async Alembic env (Wave 3)
-- [ ] 01-05-PLAN.md — Dockerfile (multi-stage) + docker-compose.yml + .env.example + checkpoint (Wave 4)
+- [x] 01-05-PLAN.md — Dockerfile (multi-stage) + docker-compose.yml + .env.example + checkpoint (Wave 4)
 - [x] 01-06-PLAN.md — GitHub Actions CI workflow + pre-commit hooks (Wave 4)
 - [x] 01-07-PLAN.md — tests/ smoke scaffold + README stub (Wave 4)
 
@@ -171,7 +171,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Skeleton + Infrastructure | 6/7 | In Progress|  |
+| 1. Skeleton + Infrastructure | 7/7 | Complete | 2026-05-14 |
 | 2. line-provider domain | 0/? | Not started | - |
 | 3. bet-maker domain (DB) | 0/? | Not started | - |
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
