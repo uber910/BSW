@@ -79,18 +79,18 @@ async def session_factory(
     return async_sessionmaker(async_engine, expire_on_commit=False)
 
 
-@pytest_asyncio.fixture(autouse=True)
+@pytest_asyncio.fixture
 async def truncate_bets(async_engine: AsyncEngine) -> AsyncIterator[None]:
-    """Per-test isolation via TRUNCATE — autouse, function-scoped.
+    """Per-test isolation via TRUNCATE — explicit, function-scoped.
 
     D-23: TRUNCATE bets RESTART IDENTITY CASCADE in teardown. NOT a savepoint
     rollback — tests exercising real COMMIT-based UoW (and P5 FOR UPDATE
     SKIP LOCKED) need actual transactions. Cost ~50-100ms per test, acceptable
     at test-task scale.
 
-    NOTE: only triggers for tests that actually require PG schema. Tests that
-    don't touch the DB still pay the engine.begin() roundtrip — measured
-    cost negligible.
+    autouse is declared in tests/bet_maker/conftest.py (scope-contained to
+    bet_maker tests) to avoid pulling postgres_container for line_provider
+    or health-check tests that do not touch the bets table.
     """
     yield
     async with async_engine.begin() as conn:
