@@ -47,8 +47,8 @@
 - [ ] **QA-01**: Полные type hints во всём коде; `mypy --strict` проходит без ошибок
 - [x] **QA-02**: `ruff check` + `ruff format` без замечаний; конфигурация в pyproject.toml
 - [x] **QA-03**: pre-commit hooks: ruff, mypy, end-of-file, trailing-whitespace, toml-lint
-- [ ] **QA-04**: Unit-тесты на каждый слой (interactors/selectors/helpers/repositories) — pytest + pytest-asyncio
-- [ ] **QA-05**: Integration-тесты на API через httpx AsyncClient (line-provider и bet-maker)
+- [ ] **QA-04**: Unit-тесты на каждый слой (interactors/selectors/helpers/repositories) — pytest + pytest-asyncio (line-provider test infrastructure: asgi-lifespan + LifespanManager fixture + coverage config 85% — landed in plan 02-01; per-layer tests land in plans 02-02 .. 02-07)
+- [ ] **QA-05**: Integration-тесты на API через httpx AsyncClient (line-provider и bet-maker) (line-provider fixture infra: LifespanManager + (app, client) split — landed in plan 02-01; actual route integration tests land in plan 02-07)
 - [ ] **QA-06**: Consumer тесты через `TestRabbitBroker` (FastStream native)
 - [ ] **QA-07**: PG-тесты с реальной БД через testcontainers (НЕ SQLite, чтобы ловить `FOR UPDATE` баги)
 - [ ] **QA-08**: Один e2e сценарий: создать событие → поставить ставку → завершить событие → проверить, что ставка стала WON/LOST через consumer + ещё одну через reconciler
@@ -145,8 +145,8 @@
 | QA-01 | Phase 7 | Pending |
 | QA-02 | Phase 1 | Complete |
 | QA-03 | Phase 1 | Complete |
-| QA-04 | Phase 2 | Pending |
-| QA-05 | Phase 2 | Pending |
+| QA-04 | Phase 2 | In progress (test infrastructure landed plan 02-01; per-layer tests in 02-02..02-07) |
+| QA-05 | Phase 2 | In progress (LifespanManager fixture landed plan 02-01; route integration tests in plan 02-07) |
 | QA-06 | Phase 5 | Pending |
 | QA-07 | Phase 3 | Pending |
 | QA-08 | Phase 6 | Pending |

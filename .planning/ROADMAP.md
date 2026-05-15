@@ -66,10 +66,10 @@ Plans:
   - **R9 / R12**: interactor mutates the in-memory store **before** any side-effect; publish ordering enforced in P5 but discipline established here
   - **Anti-Pattern 6** (concurrent dict access): all state mutations guarded by `asyncio.Lock`; pure reads can skip the lock
   - **A7**: line-provider's `/health` and request-id middleware reuse the same `clear_contextvars` pattern as bet-maker
-**Plans:** 7 plans across 4 waves
+**Plans:** 1/7 plans executed
 
 Plans:
-- [ ] 02-01-PLAN.md — Foundations: asgi-lifespan dev-dep + REQUIREMENTS.md LP-02 sync (UUID4) + conftest LifespanManager + coverage config (Wave 0)
+- [x] 02-01-PLAN.md — Foundations: asgi-lifespan dev-dep + REQUIREMENTS.md LP-02 sync (UUID4) + conftest LifespanManager + coverage config (Wave 0)
 - [ ] 02-02-PLAN.md — Schemas: EventState, EventCreate/Update/Read, Event (frozen), EventFinishedMessage, helpers/money.quantize_coefficient (Wave 1)
 - [ ] 02-03-PLAN.md — Pure state-machine helper (is_transition_allowed, TransitionForbiddenError, ALLOWED_TRANSITIONS) (Wave 1)
 - [ ] 02-04-PLAN.md — InMemoryEventStore with asyncio.Lock + (new, previous_state) update tuple + concurrent gather tests (Wave 1)
@@ -181,7 +181,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Skeleton + Infrastructure | 7/7 | Complete | 2026-05-14 |
-| 2. line-provider domain | 0/? | Not started | - |
+| 2. line-provider domain | 1/7 | In Progress|  |
 | 3. bet-maker domain (DB) | 0/? | Not started | - |
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
 | 5. RabbitMQ integration | 0/? | Not started | - |
