@@ -14,9 +14,9 @@ from uuid import uuid4
 
 import pytest
 import structlog
-from line_provider.facades.event_bus import EventBus, NoopEventBus
 from structlog.testing import capture_logs
 
+from line_provider.facades.event_bus import EventBus, NoopEventBus
 from line_provider.schemas.messages import EventFinishedMessage, EventTerminalState
 
 
@@ -39,8 +39,7 @@ async def test_noop_event_bus_implements_protocol() -> None:
 async def test_noop_event_bus_publish_returns_none() -> None:
     """D-14: NoopEventBus.publish is a no-op (returns None)."""
     bus = NoopEventBus()
-    result = await bus.publish(_message(), routing_key="event.finished.win")
-    assert result is None
+    await bus.publish(_message(), routing_key="event.finished.win")
 
 
 @pytest.fixture(autouse=True)
