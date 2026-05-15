@@ -16,8 +16,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-settings = BetMakerSettings()
-config.set_main_option("sqlalchemy.url", str(settings.postgres_dsn))
+if not config.get_main_option("sqlalchemy.url", None):
+    settings = BetMakerSettings()
+    config.set_main_option("sqlalchemy.url", str(settings.postgres_dsn))
 
 target_metadata = Base.metadata
 

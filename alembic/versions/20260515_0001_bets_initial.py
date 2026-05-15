@@ -56,7 +56,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum(
+            postgresql.ENUM(
                 "PENDING",
                 "WON",
                 "LOST",

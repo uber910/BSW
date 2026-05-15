@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator, Iterator
 
 import pytest
 import pytest_asyncio
 import sqlalchemy as sa
 from alembic import command
+
+os.environ.setdefault("TESTCONTAINERS_RYUK_DISABLED", "true")
 from alembic.config import Config
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
