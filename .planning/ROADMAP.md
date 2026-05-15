@@ -73,7 +73,7 @@ Plans:
 - [x] 02-02-PLAN.md — Schemas: EventState, EventCreate/Update/Read, Event (frozen), EventFinishedMessage, helpers/money.quantize_coefficient (Wave 1)
 - [x] 02-03-PLAN.md — Pure state-machine helper (is_transition_allowed, TransitionForbiddenError, ALLOWED_TRANSITIONS) (Wave 2)
 - [x] 02-04-PLAN.md — InMemoryEventStore with asyncio.Lock + (new, previous_state) update tuple + concurrent gather tests (Wave 1)
-- [ ] 02-05-PLAN.md — Facades (EventBus Protocol + NoopEventBus + DI providers) + Interactors (create_event + set_event_state with commit→publish ordering) + FakeEventBus shared fake (Wave 2)
+- [x] 02-05-PLAN.md — Facades (EventBus Protocol + NoopEventBus + DI providers) + Interactors (create_event + set_event_state with commit→publish ordering) + FakeEventBus shared fake (Wave 2)
 - [ ] 02-06-PLAN.md — Selectors (get_event_by_id + list_active_events with monkey-patched utc_now) (Wave 2)
 - [ ] 02-07-PLAN.md — HTTP routes (4 endpoints) + lifespan wiring + integration tests + phase-gate coverage ≥85% (Wave 3)
 

@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-15T08:35:38.933Z"
+last_updated: "2026-05-15T08:49:47.816Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 14
-  completed_plans: 11
-  percent: 79
+  completed_plans: 12
+  percent: 86
 ---
 
 # Project State: BSW Betting System
 
-**Last updated:** 2026-05-15 (after Phase 2 Plan 04 — InMemoryEventStore Wave 2 complete)
+**Last updated:** 2026-05-15 (after Phase 2 Plan 05 — Facades + Interactors Wave 3 complete)
 
 ## Project Reference
 
@@ -25,13 +25,13 @@ progress:
 ## Current Position
 
 Phase: 02 (line-provider-domain) — EXECUTING
-Plan: 5 of 7 (Plans 01–04 complete — Wave 0 foundations + Schemas Wave 1 + State machine Wave 2 + In-memory store Wave 2)
+Plan: 6 of 7 (Plans 01–05 complete — Wave 0 foundations + Schemas Wave 1 + State machine Wave 2 + In-memory store Wave 2 + Facades+Interactors Wave 3 first half)
 
 - **Milestone:** v1
 - **Phase:** 2
-- **Plan:** 02-04 complete (Wave 2 — InMemoryEventStore); next 02-05 (Interactors, Wave 3 — consumes schemas + state_machine + store)
+- **Plan:** 02-05 complete (Wave 3 first half — Facades + Interactors with commit->publish ordering); next 02-06 (Selectors, Wave 3 second half — list_active_events filter consumed by GET /events route)
 - **Status:** Executing Phase 02
-- **Progress:** [████████░░] 79%
+- **Progress:** [█████████░] 86%
 
 ```
 [█░░░░░░] 1/7 phases (14%)
@@ -44,7 +44,7 @@ Plan: 5 of 7 (Plans 01–04 complete — Wave 0 foundations + Schemas Wave 1 + S
 | Phases planned | 2/7 |
 | Phases complete | 1/7 |
 | Requirements mapped | 42/42 (100%) |
-| Plans complete | 11/14 (Phase 1 complete; Phase 2 4/7 plans complete) |
+| Plans complete | 12/14 (Phase 1 complete; Phase 2 5/7 plans complete) |
 | Plan 01-01 duration | ~4 min |
 | Plan 01-02 duration | ~4 min |
 | Plan 01-03 duration | ~2 min (2 tasks, 10 files) |
@@ -56,6 +56,7 @@ Plan: 5 of 7 (Plans 01–04 complete — Wave 0 foundations + Schemas Wave 1 + S
 | Plan 02-02 duration | ~3.5 min (3 tasks, 6 files, 22 unit tests added) |
 | Plan 02-03 duration | ~1m47s (2 tasks, 2 files, 12 unit tests added) |
 | Plan 02-04 duration | ~4 min (2 tasks, 4 files, 13 unit tests added) |
+| Plan 02-05 duration | ~5 min (3 tasks, 10 files, 15 unit tests added) |
 
 ## Accumulated Context
 
@@ -79,6 +80,7 @@ Plan: 5 of 7 (Plans 01–04 complete — Wave 0 foundations + Schemas Wave 1 + S
 - **2026-05-15 (Plan 02-03)**: Phase 2 Wave 2 — pure-function state-machine helper. `src/line_provider/helpers/state_machine.py` exposes three names: `ALLOWED_TRANSITIONS: frozenset[tuple[EventState, EventState]]` with exactly 2 entries `{(NEW, FINISHED_WIN), (NEW, FINISHED_LOSE)}` (T-03-01 mitigation — immutable, test asserts `isinstance(..., frozenset)` + `len == 2`), `class TransitionForbiddenError(Exception)` that takes `(current, new)` and stores `.current`/`.new` attributes + formats `f"state transition {current.value}->{new.value} not allowed"` per D-08 wording (T-03-02 mitigation), and `is_transition_allowed(current, new) -> bool` that short-circuits on `current == new → True` (D-09 no-op semantics) before falling back to `(current, new) in ALLOWED_TRANSITIONS`. Single import dependency — only `from line_provider.schemas.events import EventState` (no structlog, no config.time, no FastAPI, no DI). `tests/line_provider/test_state_machine.py` covers all 9 cells of the 3x3 truth table via single `@pytest.mark.parametrize`, plus 3 standalone tests on `ALLOWED_TRANSITIONS` shape/content, `TransitionForbiddenError` attributes+message, and Exception subclass raisability. Full suite 38 passed (26 P1+P2-02 baseline + 12 new); mypy strict 2 source files OK; ruff All checks passed. Closes LP-08 fully (state-transition validation invariant). Two cosmetic auto-fixes folded into commits (ruff I001 import block spacing; ruff format collapsed multi-line statements that fit within 100-char limit) — no semantic change. No architectural decisions / Rule 4 / checkpoints needed. Plan 02-04 (in-memory store, also depends_on=[01,02]) remains independently startable.
 - **2026-05-15 (Plan 02-02)**: Phase 2 Wave 1 — Pydantic v2 schema layer для line-provider. `src/line_provider/schemas/events.py`: EventState `(str, Enum)` с 3 членами (NEW/FINISHED_WIN/FINISHED_LOSE — `StrEnum` заменён на `(str, Enum)` из-за Python 3.10, Rule 1 auto-fix), reusable `Coefficient = Annotated[Decimal, Field(gt=0, max_digits=8, decimal_places=2), AfterValidator(_quantize)]` (AfterValidator выполняется ПОСЛЕ Field-gate — `'10.123'` отвергается как >2dp, `'10'` принимается и квантизуется до `'10.00'` — Pitfall 3 closed), `FutureDeadline = Annotated[AwareDatetime, AfterValidator(_deadline_in_future)]` (только на EventCreate per D-07), EventCreate/EventUpdate/Event(frozen)/EventRead все с `extra='forbid'`. `src/line_provider/schemas/messages.py`: EventTerminalState (2 members, subset of EventState), EventFinishedMessage с `frozen=True + extra='forbid' + schema_version: int = 1 (Field(ge=1)) + event_id: UUID` (D-13, D-05) — готов к консьюминг'у Phase 5 RabbitEventBus и P3 bet-maker consumer без правок. `src/line_provider/helpers/money.py`: `quantize_coefficient(Decimal) -> Decimal` (2dp, ROUND_HALF_UP) — single source of truth для нормализации, переиспользуется bet-amount в P3/P4. `tests/line_provider/test_schemas.py` — 22 unit tests в 6 классах: Quantize (pad/keep/round), EventCreate (happy + 8 rejection cases + quantize round-trip), EventUpdate (D-07 past-deadline acceptance, D-04 event_id rejection), Event frozen, EventRead cross-model conversion, EventFinishedMessage (happy/frozen/schema_version=0/extra-field rejection + EventTerminalState ↔ EventState value parity); 23 REQ-ID references в docstrings (LP-02/LP-04/LP-08/D-04/D-07/D-13/D-17). Full suite 26 passed (4 P1 baseline + 22 new); mypy strict 6 source files OK; ruff All checks passed. Closes LP-02 (UUID4 event_id, Decimal 2dp coefficient, AwareDatetime deadline, state enum) и LP-04 (HTTP-схемы EventCreate/EventUpdate/EventRead); частично LP-08 (валидаторы coefficient>0, ≤2dp, deadline>now на POST — full state-transition validation остаётся за Plan 02-03 state-machine helper).
 - [Phase ?]: 2026-05-15 (Plan 02-04): Phase 2 Wave 2 (parallel branch) — InMemoryEventStore. src/line_provider/infrastructure/store/in_memory.py содержит dict[UUID, Event] под одним asyncio.Lock; add/update держат лок; get_by_id/list_all lock-free (D-15) — безопасно потому что CPython dict ops атомарны на bytecode-уровне и Event frozen. update() возвращает кортеж (new_event, previous_state) атомарно под локом — Plan 02-05 interactor сравнит previous_state != NEW для решения publish (D-12, T-04-03 mitigation visible на API). Два доменных Exception: EventAlreadyExistsError + EventNotFoundError с .event_id атрибутом. tests/line_provider/test_in_memory_store.py — 13 unit-тестов включая 3 concurrent gather (Anti-Pattern 6 mitigation proven: 100 distinct → 100 saved; 20 same id → 1 success + 19 EventAlreadyExistsError; 2 update same id → serialised under lock). TDD цикл: fc7c07c RED smoke -> 69a7beb GREEN impl -> 44f071a full test suite. Full suite 51 passed (38 baseline + 13 new); mypy strict 4 files OK; ruff All checks passed. Один ruff E501 auto-fix (docstring 109->88 chars). Closes LP-01 fully; LP-08 частично.
+- [Phase 02]: 2026-05-15 (Plan 02-05): Phase 2 Wave 3 first half — facades layer (EventBus Protocol + NoopEventBus + StoreDep/EventBusDep) and interactors layer (create_event + set_event_state with strict commit->publish ordering). EventBus Protocol structurally typed so NoopEventBus today / FakeEventBus in tests / RabbitEventBus in P5 all satisfy without inheritance. set_event_state: lock-free store.get_by_id -> is_transition_allowed (raises TransitionForbiddenError BEFORE mutation) -> store.update returns (new_event, previous_state) atomically under asyncio.Lock -> publish-gate previous_state == EventState.NEW AND new_state in _TERMINAL_TO_ROUTING. previous_state is the post-mutation atomic observation — closes Pitfall 5 TOCTOU (concurrent NEW->FINISHED_WIN + NEW->FINISHED_LOSE on same id publishes exactly once). FakeEventBus.fail=True records THEN raises, proving D-12 store.update commits BEFORE event_bus.publish (Anti-Pattern 2 mitigation). occurred_at=new_event.deadline (atomic under lock, stable in tests). 7 atomic commits across 3 task-pairs: 51b97fb/e6c77b9 facades, 4452263/b950b7f create_event, a6efc85/467ee5b set_event_state, plus 81f807e style import re-sort. Full suite 64 passed (49 baseline + 15 new), mypy strict 39 files clean, ruff All checks passed. Three auto-fixes folded (mypy func-returns-value, ruff SIM105 contextlib.suppress, ruff I001 RED-then-GREEN drift). LP-01/LP-03/LP-05/LP-08 still partial — full closure in Plan 02-07 routes.
 
 ### Open Todos
 
@@ -96,15 +98,15 @@ Plan: 5 of 7 (Plans 01–04 complete — Wave 0 foundations + Schemas Wave 1 + S
 
 ### Last Session
 
-- **Started:** 2026-05-15T08:31:23Z
-- **Ended:** 2026-05-15T08:33:13Z
-- **Activity:** Executed 02-04-PLAN.md (Phase 2 Wave 2 — InMemoryEventStore) — 2 atomic tasks, fully autonomous, TDD discipline. Task 1: `src/line_provider/infrastructure/store/in_memory.py` (InMemoryEventStore с asyncio.Lock на add/update, lock-free get_by_id/list_all per D-15, update() returns (new, previous_state) tuple under lock per D-12, EventAlreadyExistsError + EventNotFoundError domain exceptions; no docstrings/comments per plan). Task 2: `tests/line_provider/test_in_memory_store.py` (13 unit tests — 9 CRUD/snapshot + 3 concurrent gather + 1 smoke; Anti-Pattern 6 mitigation proven by 100 distinct ids → 100 saved, 20 same id → 1 success + 19 EventAlreadyExistsError, 2 update same id serialised under lock).
-- **Outcome:** 3 atomic commits (fc7c07c test RED smoke, 69a7beb feat GREEN impl, 44f071a test full suite). Verification: pytest 51 passed (38 baseline + 13 new), mypy strict 4 files OK, ruff All checks passed. One ruff E501 auto-fix folded into Task 1 RED commit (smoke docstring 109→88 chars, no semantic change); ruff import reordering between RED/GREEN as module went from non-existent to first-party (auto-fixed by pre-commit). No architectural decisions / Rule 4 / checkpoints. LP-01 closed (in-memory store + asyncio.Lock — главное технологическое требование P2). LP-08 still partial (full state-transition validation lands when interactor 02-05 combines state_machine + store).
+- **Started:** 2026-05-15T08:38:31Z
+- **Ended:** 2026-05-15T08:43:36Z
+- **Activity:** Executed 02-05-PLAN.md (Phase 2 Wave 3 first half — Facades + Interactors) — 3 atomic tasks, fully autonomous, TDD discipline. Task 1: `src/line_provider/facades/{event_bus,deps}.py` (EventBus Protocol + NoopEventBus structlog no-op + get_store/get_event_bus + StoreDep/EventBusDep). Task 2: `src/line_provider/interactors/create_event.py` + `tests/line_provider/_fakes.py` (FakeEventBus recording publish calls with fail flag). Task 3: `src/line_provider/interactors/set_event_state.py` — strict commit->publish ordering (lock-free read -> state-machine check raises BEFORE mutation -> store.update under lock returns previous_state -> publish-gate previous_state == NEW AND new_state in _TERMINAL_TO_ROUTING). 15 unit tests added (3 facades + 3 create_event + 9 set_event_state covering happy paths, no-op D-09, reverse transition guard, commit-before-publish via failing FakeEventBus, concurrent Pitfall 5 single-publish proof). 9 set_event_state tests pass on first GREEN run; concurrent test stable across 5 repeated runs.
+- **Outcome:** 7 atomic commits (51b97fb test RED facades, e6c77b9 feat GREEN facades, 4452263 test RED create_event+fakes, b950b7f feat GREEN create_event, a6efc85 test RED set_event_state, 467ee5b feat GREEN set_event_state, 81f807e style import re-sort). Verification: pytest 64 passed (49 baseline + 15 new), mypy strict 39 source files clean, ruff All checks passed across src + tests. Three auto-fixes folded into respective commits (Rule 1 mypy func-returns-value bug — dropped `result = await publish` assignment; Rule 1 ruff SIM105 — try-except-pass → contextlib.suppress; ruff I001 RED-then-GREEN import classification drift across three test files). No architectural decisions / Rule 4 / checkpoints. LP-01/LP-03/LP-05/LP-08 advanced partial — full closure in Plan 02-07 routes.
 
 ### Next Session
 
-- **Recommended command:** `/gsd-execute-phase` (Phase 2 Plan 05 — Interactors, Wave 3) — consumes schemas (02-02) + state_machine (02-03) + store (02-04).
-- **Goal:** Phase 2 EventInteractor — orchestrates create_event / update_event with state-machine validation (TransitionForbiddenError on illegal transition), store add/update calls, и commit→publish ordering (D-12) когда previous_state == NEW and new state is terminal.
+- **Recommended command:** `/gsd-execute-phase` (Phase 2 Plan 06 — Selectors, Wave 3 second half) — consumes schemas (02-02) + store (02-04); independent of 02-05.
+- **Goal:** `list_active_events` selector that filters store.list_all by `deadline > utc_now() AND state == NEW` — Plan 02-07's GET /events route handler will call it directly. Pure selector layer (no mutation, no event_bus).
 
 ### Open Questions for Next Phase
 
