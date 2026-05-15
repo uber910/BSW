@@ -3,48 +3,48 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-15T18:21:06.891Z"
+last_updated: "2026-05-15T20:00:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 23
-  completed_plans: 22
-  percent: 96
+  completed_plans: 23
+  percent: 100
 ---
 
 # Project State: BSW Betting System
 
-**Last updated:** 2026-05-15 (after Phase 3 Plan 08 — HTTP routes + lifespan + health; 7 tasks, 8 files, 25 new integration tests)
+**Last updated:** 2026-05-15 (after Phase 3 Plan 09 — phase-gate; coverage 94.28% src/bet_maker; manual alembic compose rehearsal approved; REQUIREMENTS.md+ROADMAP.md+STATE.md+03-VALIDATION.md synced)
 
 ## Project Reference
 
 **Core Value:** Ставка никогда не остаётся в статусе PENDING после того, как её событие завершилось.
 
-**Current focus:** Phase 03 — bet-maker-domain-db
+**Current focus:** Phase 04 — bet-maker HTTP integration with line-provider
 
 ## Current Position
 
-Phase: 03 (bet-maker-domain-db) — EXECUTING
-Plan: 8 of 9
+Phase: 03 (bet-maker-domain-db) — COMPLETE (9/9 plans). Ready for Phase 4 (bet-maker HTTP integration with line-provider).
+Plan: 9 of 9 (Plans 01–09 complete — REQUIREMENTS sync + Wave 0 test scaffolding + Schemas/helpers + Bet model+migration + Infra+facades+UoW+repo + Interactor+selectors + HTTP routes+lifespan+health + Phase-gate)
 
 - **Milestone:** v1
-- **Phase:** 2 (COMPLETE)
-- **Plan:** 03-08 complete (Wave 5 — HTTP routes POST/GET /bet + GET /bets + GET /bet/{id} + live health PG check + lifespan wiring; 25 new integration tests); next Phase 3 Plan 09 (phase-gate)
-- **Status:** Executing Phase 03
-- **Progress:** [██████████] 96%
+- **Phase:** 3 (COMPLETE)
+- **Plan:** 03-09 complete (Wave 6 — phase-gate; coverage src/bet_maker 94.28% (≥80% passed); manual alembic compose rehearsal verified approved; REQUIREMENTS.md+ROADMAP.md+STATE.md+03-VALIDATION.md synced)
+- **Status:** Phase 3 complete; awaiting Phase 4 kickoff
+- **Progress:** [██████████] 100% of planned phases (3/3 planned phases complete; 4 phases yet to be planned)
 
 ```
-[██░░░░░] 2/7 phases (28%)
+[███░░░░] 3/7 phases (43%)
 ```
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Phases planned | 2/7 |
-| Phases complete | 2/7 |
-| Requirements mapped | 42/42 (100%) |
-| Plans complete | 14/14 (Phase 1 complete; Phase 2 complete) |
+| Phases planned | 3/7 |
+| Phases complete | 3/7 |
+| Requirements mapped | 43/43 (100%) |
+| Plans complete | 23/23 (Phase 1 complete; Phase 2 complete; Phase 3 complete) |
 | Plan 01-01 duration | ~4 min |
 | Plan 01-02 duration | ~4 min |
 | Plan 01-03 duration | ~2 min (2 tasks, 10 files) |
@@ -59,12 +59,15 @@ Plan: 8 of 9
 | Plan 02-05 duration | ~5 min (3 tasks, 10 files, 15 unit tests added) |
 | Plan 02-06 duration | ~2m17s (2 tasks, 4 files, 8 unit tests added) |
 | Plan 02-07 duration | ~6 min total across two agent sessions (3 implementation tasks + 1 wrap-up; 5 implementation commits + final docs commit; 5 production files modified, 1 new test file with 23 tests, 1 new SUMMARY.md) |
-| Phase 03-bet-maker-domain-db P02 | 8min | 5 tasks | 16 files |
-| Phase 03-bet-maker-domain-db P03 | ~3.5min | 3 tasks | 7 files |
-| Phase 03-bet-maker-domain-db P05 | ~4m20s | 3 tasks | 5 files |
-| Phase 03-bet-maker-domain-db P06 | ~25min | 3 tasks | 9 files + 3 test replacements |
-| Phase 03-bet-maker-domain-db P07 | ~10min | 4 tasks | 8 files (5 new + 3 modified) + 13 new tests |
-| Phase 03-bet-maker-domain-db P08 | ~15min | 7 tasks | 8 files (1 new + 7 modified) + 25 new integration tests |
+| Plan 03-01 duration | ~3 min (4 tasks, 1 file — REQUIREMENTS.md sync) |
+| Plan 03-02 duration | ~8 min (5 tasks, 16 files — Wave 0 test scaffolding + pyproject + test_schemas stub) |
+| Plan 03-03 duration | ~3.5 min (3 tasks, 7 files — schemas + helpers + 18+ unit tests) |
+| Plan 03-04 duration | TBD (6 files — Bet ORM + alembic env.py + migration + 12+4 tests) |
+| Plan 03-05 duration | ~4m20s (3 tasks, 5 files — DB infrastructure: engine + pings tenacity) |
+| Plan 03-06 duration | ~25 min (3 tasks, 9 files + 3 test replacements — facades + repository + event_lookup + deps) |
+| Plan 03-07 duration | ~10 min (4 tasks, 8 files (5 new + 3 modified) + 13 new tests) |
+| Plan 03-08 duration | ~15 min (7 tasks, 8 files (1 new + 7 modified) + 25 new integration tests) |
+| Plan 03-09 duration | TBD (4 files — phase-gate + docs sync) |
 
 ## Accumulated Context
 
@@ -95,6 +98,7 @@ Plan: 8 of 9
 - **2026-05-15 (Plan 03-05)**: DB infrastructure layer — `infrastructure/db/engine.py` factory `create_engine_and_sessionmaker(settings)` with D-16 QueuePool params (pool_size=10, max_overflow=20, pool_pre_ping=True, pool_recycle=1800) + D-15 `async_sessionmaker(engine, expire_on_commit=False)`. `infrastructure/db/pings.py`: `wait_for_postgres` tenacity 10-attempt exponential-backoff startup gate (D-27), `ping_postgres` single SELECT 1 returning bool with `except SQLAlchemyError` only (D-26/D-29, T-03-5 DSN leak mitigated). `tests/bet_maker/test_db_engine.py`: 5 tests replacing Wave 0 stub. Two Rule 1 auto-fixes: (1) asyncpg 0.31.0 does NOT wrap ConnectionRefusedError as SQLAlchemyError — D-29 False-path test switched to AsyncMock injection; (2) session-scoped `async_engine` unusable in function-loop tests — happy-path test uses throwaway engine. 138 passed total (+5). mypy strict + ruff clean. BM-02 + BM-08 advanced. sessionmaker ready for Plan 03-06 AsyncUnitOfWork.
 - **2026-05-15 (Plan 03-03)**: Bet-maker domain primitives — EventState(str,Enum) D-12 duplication with value-parity test, Amount = Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=2), AfterValidator(quantize_amount)], BetCreate + BetRead with extra='forbid', quantize_amount ROUND_HALF_UP helper, status stub raises NotImplementedError for P5. Commit order: Task 2 (schemas) created before Task 1 commit because pre-commit mypy requires schemas/ for status.py imports. 20 tests in 6 classes (TestQuantize, TestBetCreate, TestBetRead, TestEnums, TestStatusStub, TestExtraForbid); 117 total passed. Closes BM-03, BM-05, BM-06.
 - **2026-05-15 (Plan 03-02)**: Phase 3 Wave 0 test scaffolding — testcontainers 4.14.2 в dev-deps; asyncio_default_fixture_loop_scope="session" в pytest ini_options для session-scoped async fixtures (ScopeMismatch prevention); 6 PG fixtures в root tests/conftest.py (postgres_container session-scoped PostgresContainer("postgres:16-alpine", driver="asyncpg") + pg_dsn + apply_migrations (alembic upgrade head x2 idempotency) + async_engine + session_factory + truncate_bets explicit); bet_maker/conftest.py обновлён до app+client+seed_event с LifespanManager (зеркалит P2 line_provider shape); 11 Wave 0 stub файлов с pytestmark.skip покрывают планы 03-03..03-08; truncate_bets не autouse в root — Rule 1 fix: autouse в root ломал test_health.py (PG chain тянулась для нон-PG тестов); P1 baseline 97 passed сохранён; QA-07 закрыт.
+- [Phase 03]: 2026-05-15 (Plan 03-09): Phase 3 closed — bet_maker domain (DB) — 9 plans across 6 waves, 9 requirements complete (BM-01/BM-02/BM-03/BM-05/BM-06/BM-07/BM-08/BM-13/QA-07). Stack: SQLAlchemy 2.0.49 async + asyncpg 0.31.0 + Alembic 1.18.4 + tenacity 9.1.4 + testcontainers 4.x. Архитектура: models/bet.py (Bet ORM, PG-ENUM bet_status, Numeric(12,2)), schemas/bets.py (BetCreate Annotated Decimal AfterValidator + BetRead extra='forbid' + from_attributes=True), schemas/events.py (EventState duplicated D-12), helpers/money.py (quantize_amount ROUND_HALF_UP), helpers/status.py (P5 stub), repositories/bets.py (BetRepository.add no-commit), facades/uow.py (AsyncUnitOfWork over async_sessionmaker.begin), facades/event_lookup.py (EventLookup Protocol + EventSnapshot frozen + StubEventLookup), facades/deps.py (6 providers + 6 Annotated aliases), infrastructure/db/engine.py (D-16 params + expire_on_commit=False), infrastructure/db/pings.py (wait_for_postgres tenacity + ping_postgres bool), interactors/place_bet.py (3-branch EventNotBettable BEFORE UoW open + model_validate inside session for A1), selectors/list_bets.py (ORDER BY created_at DESC) + get_bet.py (scalar_one_or_none → BetRead | None), entrypoints/api/bets.py (POST /bet 201/422 + GET /bets + GET /bet/{id} 200/404 + EventNotBettable→422 with detail), entrypoints/api/health.py REPLACED (per-request SELECT 1 → 200 with checks.postgres="ok" or 503 degraded), entrypoints/lifespan.py EXTENDED (engine+sessionmaker+wait_for_postgres tenacity 10 attempts+StubEventLookup+app.state pins+finally engine.dispose). Migration: alembic/versions/20260515_0001_bets_initial.py (ENUM.create checkfirst=True + create_type=False — verified idempotent через 3 successive command.upgrade calls в test_alembic.py + manual docker compose rehearsal approved). Final phase-gate (Plan 03-09): `uv run pytest -q` → 193 passed; `uv run pytest --cov=src/bet_maker --cov-fail-under=80` → 94.28%; `uv run pytest --cov=src/line_provider --cov-fail-under=85` → 96.42%; mypy strict 95 files clean; ruff check All checks passed; ruff format 98 files formatted. Phase 3 complete.
 - [Phase 02]: 2026-05-15 (Plan 02-05): Phase 2 Wave 3 first half — facades layer (EventBus Protocol + NoopEventBus + StoreDep/EventBusDep) and interactors layer (create_event + set_event_state with strict commit->publish ordering). EventBus Protocol structurally typed so NoopEventBus today / FakeEventBus in tests / RabbitEventBus in P5 all satisfy without inheritance. set_event_state: lock-free store.get_by_id -> is_transition_allowed (raises TransitionForbiddenError BEFORE mutation) -> store.update returns (new_event, previous_state) atomically under asyncio.Lock -> publish-gate previous_state == EventState.NEW AND new_state in _TERMINAL_TO_ROUTING. previous_state is the post-mutation atomic observation — closes Pitfall 5 TOCTOU (concurrent NEW->FINISHED_WIN + NEW->FINISHED_LOSE on same id publishes exactly once). FakeEventBus.fail=True records THEN raises, proving D-12 store.update commits BEFORE event_bus.publish (Anti-Pattern 2 mitigation). occurred_at=new_event.deadline (atomic under lock, stable in tests). 7 atomic commits across 3 task-pairs: 51b97fb/e6c77b9 facades, 4452263/b950b7f create_event, a6efc85/467ee5b set_event_state, plus 81f807e style import re-sort. Full suite 64 passed (49 baseline + 15 new), mypy strict 39 files clean, ruff All checks passed. Three auto-fixes folded (mypy func-returns-value, ruff SIM105 contextlib.suppress, ruff I001 RED-then-GREEN drift). LP-01/LP-03/LP-05/LP-08 still partial — full closure in Plan 02-07 routes.
 
 ### Open Todos
@@ -113,16 +117,16 @@ Plan: 8 of 9
 
 ### Last Session
 
-- **Started:** 2026-05-15 (Plan 03-08 — HTTP routes + lifespan + health)
-- **Ended:** 2026-05-15 (Plan 03-08 complete)
-- **Activity:** Extended lifespan.py (1a4728d). Replaced health stub with PG ping (1fb6fe0). Added bets.py routes + app.py wire (00a2f13). Updated test_health.py + fixed conftest session-scoped app/client (18bd0c9). Replaced test_bet_routes Wave 0 stub with 17 tests (590e650). Replaced test_lifespan Wave 0 stub with 5 tests (d898182).
-- **Outcome:** 6 task commits + 1 docs commit for Plan 03-08. `uv run pytest -q --no-cov` → 193 passed (+23). mypy strict + ruff clean. BM-05, BM-06, BM-07, BM-08, BM-13 complete.
+- **Started:** 2026-05-15 (Plan 03-09 phase-gate session)
+- **Ended:** 2026-05-15 (Phase 3 closed)
+- **Activity:** Executed 03-09-PLAN.md (Plan 03-09 Wave 6 — phase-gate). Quality gate verified: `uv run pytest -q` → 193 passed; coverage src/bet_maker 94.28% (gate ≥80% passed); src/line_provider coverage 96.42% (P2 baseline ≥85% preserved); mypy strict 95 files clean; ruff check All checks passed; ruff format 98 files formatted. Manual docker compose alembic rehearsal: approved — 6-step sequence verified by operator (Steps 3, 4, 5 outputs documented in 03-09-SUMMARY.md). REQUIREMENTS.md flipped 9 statuses (BM-01..03, BM-05..08, BM-13, QA-07) to Complete (Plan 03-09); ROADMAP.md Phase 3 checkbox closed + 9/9 plans listed + Progress table 9/9 Complete 2026-05-15; 03-VALIDATION.md per-task map flipped to ✅ green. One atomic docs commit.
+- **Outcome:** Phase 3 complete; 23 plans across phases 1-3 executed (14 + 9). Coverage src/bet_maker 94.28%, src/line_provider 96.42%. Next: Phase 4 planning (`/gsd-plan-phase 4` — `bet-maker HTTP integration with line-provider` — BM-04 single requirement).
 
 ### Next Session
 
-- **Recommended command:** `/gsd-execute-phase 03-bet-maker-domain-db` (Plan 03-09 — phase-gate: coverage + docs)
-- **Goal:** Phase 3 gate — coverage check ≥85%, README/docstrings, final phase completion.
-- **Note:** Plan 03-08 complete; all bet-maker functionality visible through HTTP endpoints.
+- **Recommended command:** `/gsd-plan-phase 4` (Phase 4 — bet-maker HTTP integration with line-provider). Plans not yet decomposed; planner produces atomic plans covering BM-04 (single requirement: GET /events proxy via httpx with tenacity retry + TTL cache).
+- **Goal:** bet-maker exposes `GET /events` proxying line-provider; tenacity retries transient httpx failures; singleton AsyncClient in lifespan; integration test drives both apps via httpx.AsyncClient(transport=ASGITransport) without docker. Per ROADMAP Phase 4 success criteria. POST /bet validation (BM-06) now uses real line_provider_client to resolve event (replaces StubEventLookup with HttpEventLookup — same Protocol).
+- **Note:** Phase 4 depends on Phase 2 (line_provider GET /event/{id} + GET /events) AND Phase 3 (uses same lifespan + Depends graph). Both prerequisites complete.
 
 ### Open Questions for Next Phase
 

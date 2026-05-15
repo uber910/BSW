@@ -9,7 +9,7 @@
 
 - [x] **Phase 1: Skeleton + Infrastructure** — Both services boot via `docker compose up` with green CI and healthy deps
 - [x] **Phase 2: line-provider domain** — In-memory event store with full HTTP API (no AMQP yet)
-- [ ] **Phase 3: bet-maker domain (DB)** — PostgreSQL persistence, UoW, place/list bets via HTTP
+- [x] **Phase 3: bet-maker domain (DB)** — PostgreSQL persistence, UoW, place/list bets via HTTP
 - [ ] **Phase 4: bet-maker HTTP integration with line-provider** — `GET /events` proxy with retry and TTL cache
 - [ ] **Phase 5: RabbitMQ integration** — Publisher in line-provider, durable consumer + DLQ in bet-maker, atomic settle
 - [ ] **Phase 6: Reconciliation job** — Background worker recovers stuck PENDING bets via HTTP poll (defence-in-depth)
@@ -97,7 +97,18 @@ Plans:
   - **A6**: `alembic init -t async`; `env.py` reads DSN from `BetMakerSettings`, no hardcoded `sqlalchemy.url`
   - **Anti-Pattern 1**: repositories `flush()`, only UoW commits
   - **D2**: `/health` lifespan pings PG with `tenacity` retry — must surface bad DSN at startup, not at first request
-**Plans**: TBD
+**Plans:** 9/9 plans executed (Phase 3 complete 2026-05-15)
+
+Plans:
+- [x] 03-01-PLAN.md — REQUIREMENTS.md sync (BM-01/BM-05 remove coefficient, BM-13 added) per D-01/D-02 (Wave 0)
+- [x] 03-02-PLAN.md — Test scaffolding (testcontainers PG fixtures + 10 stubs + pyproject coverage) (Wave 0)
+- [x] 03-03-PLAN.md — Schemas + helpers (BetCreate, BetRead, BetStatus, EventState duplicate, quantize_amount, status stub) (Wave 1)
+- [x] 03-04-PLAN.md — Bet ORM + alembic env.py target_metadata + 0001_bets_initial migration (idempotent ENUM) (Wave 1)
+- [x] 03-05-PLAN.md — DB Infrastructure (engine + pings tenacity wait_for_postgres + ping_postgres) (Wave 3)
+- [x] 03-06-PLAN.md — Facades & Repositories (UoW + BetRepository + EventLookup Protocol + Stub + deps Annotated aliases) (Wave 3)
+- [x] 03-07-PLAN.md — Interactor place_bet (3-branch EventNotBettable) + selectors list_bets/get_bet (Wave 4)
+- [x] 03-08-PLAN.md — HTTP routes (POST /bet 201/422, GET /bets, GET /bet/{id}) + lifespan extension + /health PG ping + 14+ integration tests (Wave 5)
+- [x] 03-09-PLAN.md — Phase-gate (coverage ≥80%, manual alembic rehearsal, docs sync) (Wave 6)
 
 ### Phase 4: bet-maker HTTP integration with line-provider
 **Goal**: bet-maker exposes `GET /events` by proxying line-provider via `httpx.AsyncClient` with retry + tiny TTL cache, and establishes the HTTP client that reconciliation will reuse in P6.
@@ -182,7 +193,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Skeleton + Infrastructure | 7/7 | Complete | 2026-05-14 |
 | 2. line-provider domain | 7/7 | Complete | 2026-05-15 |
-| 3. bet-maker domain (DB) | 8/9 | In Progress|  |
+| 3. bet-maker domain (DB) | 9/9 | Complete | 2026-05-15 |
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
 | 5. RabbitMQ integration | 0/? | Not started | - |
 | 6. Reconciliation job | 0/? | Not started | - |
@@ -192,3 +203,4 @@ Plans:
 *Roadmap created: 2026-05-13 from REQUIREMENTS.md + ARCHITECTURE.md*
 *Coverage: 42/42 v1 requirements mapped (no orphans)*
 *Phase 1 plans created: 2026-05-13 (7 plans across 4 waves)*
+*Phase 3 plans created: 2026-05-15 (9 plans across 6 waves)*

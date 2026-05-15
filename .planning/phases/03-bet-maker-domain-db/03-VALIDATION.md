@@ -40,37 +40,39 @@ created: 2026-05-15
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 03-01-01 | 01 | 0 | BM-01, BM-05 | T-03-1-DOC | TZ drift verified — POST /bet body без coefficient | doc | `grep -q "ТЗ стр. 3" .planning/REQUIREMENTS.md` | OK | pending |
-| 03-01-02 | 01 | 0 | BM-01 | T-03-1-DOC | BM-01 переписан per D-01 (без coefficient) | doc | `bash -c "! grep -q 'BM-01.*coefficient Decimal 6.2' .planning/REQUIREMENTS.md"` | OK | pending |
-| 03-01-03 | 01 | 0 | BM-05 | T-03-1-DOC | BM-05 переписан per D-01; BM-13 добавлен per D-02 | doc | `grep -q "BM-13" .planning/REQUIREMENTS.md` | OK | pending |
-| 03-01-04 | 01 | 0 | BM-01, BM-05 | T-03-2-DOC | Traceability table расширена BM-13 → Phase 3 | doc | `grep -q "BM-13 \| Phase 3 \| Pending" .planning/REQUIREMENTS.md` | OK | pending |
-| 03-02-01 | 02 | 0 | QA-07 | — | testcontainers в dev-deps + coverage расширен на src/bet_maker + asyncio_default_fixture_loop_scope | shell | `uv run python -c "from testcontainers.postgres import PostgresContainer"` | W0 | pending |
-| 03-02-02 | 02 | 0 | QA-07 | — | tests/conftest.py 6 PG fixtures (postgres_container + pg_dsn + apply_migrations + async_engine + session_factory + truncate_bets) | unit | `grep -c "PostgresContainer(\"postgres:16-alpine\"" tests/conftest.py` | W0 | pending |
-| 03-02-03 | 02 | 0 | QA-07 | — | tests/bet_maker/conftest.py app + client + seed_event с LifespanManager | unit | `uv run pytest tests/bet_maker/test_health.py -q` | W0 | pending |
-| 03-02-04 | 02 | 0 | QA-07 | — | 11 Wave 0 stub файлов созданы с pytest.mark.skip (test_schemas + test_models + test_db_engine + test_repositories + test_uow + test_event_lookup + test_place_bet + test_selectors + test_bet_routes + test_lifespan + test_alembic) | unit | `uv run pytest tests/bet_maker --collect-only -q` | W0 | pending |
-| 03-02-05 | 02 | 0 | QA-07 | — | 03-VALIDATION.md frontmatter wave_0_complete=true | doc | `grep -q "wave_0_complete: true" .planning/phases/03-bet-maker-domain-db/03-VALIDATION.md` | OK | pending |
-| 03-03-01 | 03 | 1 | BM-05, BM-06 | T-03-3 | EventState (str, Enum) duplicated; BetStatus (str, Enum); helpers/money.quantize_amount | unit | `uv run pytest tests/bet_maker/test_schemas.py -q` | W0 | pending |
-| 03-03-02 | 03 | 1 | BM-05 | T-03-3 | BetCreate (Annotated Decimal max_digits=12, decimal_places=2, AfterValidator) + BetRead (extra='forbid', from_attributes=True) | unit | same | W0 | pending |
-| 03-03-03 | 03 | 1 | BM-03 | — | helpers/status.py stub (event_state_to_bet_status — NotImplementedError для P5) | unit | `grep -q "raise NotImplementedError" src/bet_maker/helpers/status.py` | W0 | pending |
-| 03-04-01 | 04 | 1 | BM-01 | T-03-3 | Bet model: Mapped[Decimal] = mapped_column(Numeric(12, 2)) + PG-ENUM bet_status | unit | `uv run pytest tests/bet_maker/test_models.py -q` | W0 | pending |
-| 03-04-02 | 04 | 1 | BM-01 | — | alembic/env.py target_metadata = Base.metadata (PATTERNS.md Key Invariant 2) | unit | `grep -q "target_metadata = Base.metadata" alembic/env.py` | W0 | pending |
-| 03-04-03 | 04 | 1 | BM-01 | T-03-6 | alembic/versions/0001_bets_initial.py with ENUM.create checkfirst=True | unit | `uv run pytest tests/bet_maker/test_alembic.py -q` | W0 | pending |
-| 03-05-01 | 05 | 3 | BM-02 | T-03-1-pool | infrastructure/db/engine.py: create_async_engine с D-16 params + async_sessionmaker expire_on_commit=False | unit | `grep -q "pool_pre_ping=True" src/bet_maker/infrastructure/db/engine.py` | W0 | pending |
-| 03-05-02 | 05 | 3 | BM-08 | T-03-2-DoS, T-03-5 | infrastructure/db/pings.py wait_for_postgres tenacity-decorated (stop_after_attempt=10, wait_exponential) + ping_postgres bool (SQLAlchemyError handler, no bare Exception) | unit | `grep -q "@retry" src/bet_maker/infrastructure/db/pings.py` | W0 | pending |
-| 03-05-03 | 05 | 3 | BM-02, BM-08 | — | tests/bet_maker/test_db_engine.py replaces Wave 0 stub — 4+ tests covering engine params + ping_postgres True/False contract | unit | `uv run pytest tests/bet_maker/test_db_engine.py -q` | W0 | pending |
-| 03-06-01 | 06 | 3 | BM-02 | T-03-3-Anti1 | facades/uow.py AsyncUnitOfWork + repositories/bets.py BetRepository (add + get_by_id, NO commit/rollback — grep-verified) | unit | `uv run pytest tests/bet_maker/test_uow.py tests/bet_maker/test_repositories.py -q` | W0 | pending |
-| 03-06-02 | 06 | 3 | BM-06 | T-03-3-extra, T-03-3-frozen | facades/event_lookup.py: EventLookup Protocol + StubEventLookup (dict-backed seed/seed_active) + EventSnapshot frozen + extra='forbid' | unit | `uv run pytest tests/bet_maker/test_event_lookup.py -q` | W0 | pending |
-| 03-06-03 | 06 | 3 | BM-03 | — | facades/deps.py: 6 providers (get_settings/get_engine/get_sessionmaker/get_session/get_uow/get_event_lookup) + 6 Annotated aliases | unit | `grep -c "Annotated\[" src/bet_maker/facades/deps.py` | W0 | pending |
-| 03-07-01 | 07 | 4 | BM-05, BM-06 | T-03-3, T-03-3-rejection | interactors/place_bet.py: 3-branch validation (None / deadline / state) → EventNotBettable; happy path → BetRead inside session | unit | `uv run pytest tests/bet_maker/test_place_bet.py -q` | W0 | pending |
-| 03-07-02 | 07 | 4 | BM-07 | — | selectors/list_bets.py: order_by(created_at DESC) + model_validate from_attributes | unit | `uv run pytest tests/bet_maker/test_selectors.py -q` | W0 | pending |
-| 03-07-03 | 07 | 4 | BM-13 | — | selectors/get_bet.py: scalar_one_or_none → BetRead \| None | unit | same | W0 | pending |
-| 03-08-01 | 08 | 5 | BM-08 | T-03-3, T-03-5 | health.py REPLACE: SELECT 1 via engine.connect → 200/503 JSON + structlog.warning health.check.failed | integration | `uv run pytest tests/bet_maker/test_health.py -q` | OK | pending |
-| 03-08-02 | 08 | 5 | BM-08 | T-03-3 | lifespan.py EXTEND: create_async_engine + await wait_for_postgres (tenacity) + app.state.engine/sessionmaker/event_lookup | integration | `uv run pytest tests/bet_maker/test_lifespan.py -q` | W0 | pending |
-| 03-08-03 | 08 | 5 | BM-05, BM-06, BM-07, BM-13 | T-03-3 | bets.py: POST /bet 201/422 + GET /bets 200 ordered + GET /bet/{id} 200/404; Decimal round-trip "10.00" | integration | `uv run pytest tests/bet_maker/test_bet_routes.py -q` | W0 | pending |
-| 03-08-04 | 08 | 5 | BM-05 | — | app.py: include_router(bets.router) + P1 health test assertion update | integration | `uv run pytest tests/bet_maker -q` | OK | pending |
-| 03-09-01 | 09 | 6 | QA-07 | — | Full bet_maker suite зелёный + coverage ≥80% src/bet_maker | shell | `uv run pytest --cov=src/bet_maker --cov-fail-under=80 tests/bet_maker -q` | OK | pending |
-| 03-09-02 | 09 | 6 | BM-08 | T-03-6 | Manual alembic idempotency rehearsal через docker compose (см. Manual-Only Verifications) | manual | manual; documented in 03-09-SUMMARY | OK | pending |
-| 03-09-03 | 09 | 6 | BM-01..03, BM-05..08, BM-13, QA-07 | — | REQUIREMENTS.md status flip + ROADMAP P3 checkbox + STATE.md advance | doc | `grep -q "Phase 3 complete" .planning/STATE.md` | OK | pending |
+| 03-01-01 | 01 | 0 | BM-01, BM-05 | T-03-1-DOC | TZ drift verified — POST /bet body без coefficient | doc | `grep -q "ТЗ стр. 3" .planning/REQUIREMENTS.md` | OK | ✅ green |
+| 03-01-02 | 01 | 0 | BM-01 | T-03-1-DOC | BM-01 переписан per D-01 (без coefficient) | doc | `bash -c "! grep -q 'BM-01.*coefficient Decimal 6.2' .planning/REQUIREMENTS.md"` | OK | ✅ green |
+| 03-01-03 | 01 | 0 | BM-05 | T-03-1-DOC | BM-05 переписан per D-01; BM-13 добавлен per D-02 | doc | `grep -q "BM-13" .planning/REQUIREMENTS.md` | OK | ✅ green |
+| 03-01-04 | 01 | 0 | BM-01, BM-05 | T-03-2-DOC | Traceability table расширена BM-13 → Phase 3 | doc | `grep -q "BM-13 \| Phase 3 \| Pending" .planning/REQUIREMENTS.md` | OK | ✅ green |
+| 03-02-01 | 02 | 0 | QA-07 | — | testcontainers в dev-deps + coverage расширен на src/bet_maker + asyncio_default_fixture_loop_scope | shell | `uv run python -c "from testcontainers.postgres import PostgresContainer"` | W0 | ✅ green |
+| 03-02-02 | 02 | 0 | QA-07 | — | tests/conftest.py 6 PG fixtures (postgres_container + pg_dsn + apply_migrations + async_engine + session_factory + truncate_bets) | unit | `grep -c "PostgresContainer(\"postgres:16-alpine\"" tests/conftest.py` | W0 | ✅ green |
+| 03-02-03 | 02 | 0 | QA-07 | — | tests/bet_maker/conftest.py app + client + seed_event с LifespanManager | unit | `uv run pytest tests/bet_maker/test_health.py -q` | W0 | ✅ green |
+| 03-02-04 | 02 | 0 | QA-07 | — | 11 Wave 0 stub файлов созданы с pytest.mark.skip (test_schemas + test_models + test_db_engine + test_repositories + test_uow + test_event_lookup + test_place_bet + test_selectors + test_bet_routes + test_lifespan + test_alembic) | unit | `uv run pytest tests/bet_maker --collect-only -q` | W0 | ✅ green |
+| 03-02-05 | 02 | 0 | QA-07 | — | 03-VALIDATION.md frontmatter wave_0_complete=true | doc | `grep -q "wave_0_complete: true" .planning/phases/03-bet-maker-domain-db/03-VALIDATION.md` | OK | ✅ green |
+| 03-03-01 | 03 | 1 | BM-05, BM-06 | T-03-3 | EventState (str, Enum) duplicated; BetStatus (str, Enum); helpers/money.quantize_amount | unit | `uv run pytest tests/bet_maker/test_schemas.py -q` | W0 | ✅ green |
+| 03-03-02 | 03 | 1 | BM-05 | T-03-3 | BetCreate (Annotated Decimal max_digits=12, decimal_places=2, AfterValidator) + BetRead (extra='forbid', from_attributes=True) | unit | same | W0 | ✅ green |
+| 03-03-03 | 03 | 1 | BM-03 | — | helpers/status.py stub (event_state_to_bet_status — NotImplementedError для P5) | unit | `grep -q "raise NotImplementedError" src/bet_maker/helpers/status.py` | W0 | ✅ green |
+| 03-04-01 | 04 | 1 | BM-01 | T-03-3 | Bet model: Mapped[Decimal] = mapped_column(Numeric(12, 2)) + PG-ENUM bet_status | unit | `uv run pytest tests/bet_maker/test_models.py -q` | W0 | ✅ green |
+| 03-04-02 | 04 | 1 | BM-01 | — | alembic/env.py target_metadata = Base.metadata (PATTERNS.md Key Invariant 2) | unit | `grep -q "target_metadata = Base.metadata" alembic/env.py` | W0 | ✅ green |
+| 03-04-03 | 04 | 1 | BM-01 | T-03-6 | alembic/versions/0001_bets_initial.py with ENUM.create checkfirst=True | unit | `uv run pytest tests/bet_maker/test_alembic.py -q` | W0 | ✅ green |
+| 03-05-01 | 05 | 3 | BM-02 | T-03-1-pool | infrastructure/db/engine.py: create_async_engine с D-16 params + async_sessionmaker expire_on_commit=False | unit | `grep -q "pool_pre_ping=True" src/bet_maker/infrastructure/db/engine.py` | W0 | ✅ green |
+| 03-05-02 | 05 | 3 | BM-08 | T-03-2-DoS, T-03-5 | infrastructure/db/pings.py wait_for_postgres tenacity-decorated (stop_after_attempt=10, wait_exponential) + ping_postgres bool (SQLAlchemyError handler, no bare Exception) | unit | `grep -q "@retry" src/bet_maker/infrastructure/db/pings.py` | W0 | ✅ green |
+| 03-05-03 | 05 | 3 | BM-02, BM-08 | — | tests/bet_maker/test_db_engine.py replaces Wave 0 stub — 4+ tests covering engine params + ping_postgres True/False contract | unit | `uv run pytest tests/bet_maker/test_db_engine.py -q` | W0 | ✅ green |
+| 03-06-01 | 06 | 3 | BM-02 | T-03-3-Anti1 | facades/uow.py AsyncUnitOfWork + repositories/bets.py BetRepository (add + get_by_id, NO commit/rollback — grep-verified) | unit | `uv run pytest tests/bet_maker/test_uow.py tests/bet_maker/test_repositories.py -q` | W0 | ✅ green |
+| 03-06-02 | 06 | 3 | BM-06 | T-03-3-extra, T-03-3-frozen | facades/event_lookup.py: EventLookup Protocol + StubEventLookup (dict-backed seed/seed_active) + EventSnapshot frozen + extra='forbid' | unit | `uv run pytest tests/bet_maker/test_event_lookup.py -q` | W0 | ✅ green |
+| 03-06-03 | 06 | 3 | BM-03 | — | facades/deps.py: 6 providers (get_settings/get_engine/get_sessionmaker/get_session/get_uow/get_event_lookup) + 6 Annotated aliases | unit | `grep -c "Annotated\[" src/bet_maker/facades/deps.py` | W0 | ✅ green |
+| 03-07-01 | 07 | 4 | BM-05, BM-06 | T-03-3, T-03-3-rejection | interactors/place_bet.py: 3-branch validation (None / deadline / state) → EventNotBettable; happy path → BetRead inside session | unit | `uv run pytest tests/bet_maker/test_place_bet.py -q` | W0 | ✅ green |
+| 03-07-02 | 07 | 4 | BM-07 | — | selectors/list_bets.py: order_by(created_at DESC) + model_validate from_attributes | unit | `uv run pytest tests/bet_maker/test_selectors.py -q` | W0 | ✅ green |
+| 03-07-03 | 07 | 4 | BM-13 | — | selectors/get_bet.py: scalar_one_or_none → BetRead \| None | unit | same | W0 | ✅ green |
+| 03-08-01 | 08 | 5 | BM-08 | T-03-3, T-03-5 | health.py REPLACE: SELECT 1 via engine.connect → 200/503 JSON + structlog.warning health.check.failed | integration | `uv run pytest tests/bet_maker/test_health.py -q` | OK | ✅ green |
+| 03-08-02 | 08 | 5 | BM-08 | T-03-3 | lifespan.py EXTEND: create_async_engine + await wait_for_postgres (tenacity) + app.state.engine/sessionmaker/event_lookup | integration | `uv run pytest tests/bet_maker/test_lifespan.py -q` | W0 | ✅ green |
+| 03-08-03 | 08 | 5 | BM-05, BM-06, BM-07, BM-13 | T-03-3 | bets.py: POST /bet 201/422 + GET /bets 200 ordered + GET /bet/{id} 200/404; Decimal round-trip "10.00" | integration | `uv run pytest tests/bet_maker/test_bet_routes.py -q` | W0 | ✅ green |
+| 03-08-04 | 08 | 5 | BM-05 | — | app.py: include_router(bets.router) + P1 health test assertion update | integration | `uv run pytest tests/bet_maker -q` | OK | ✅ green |
+| 03-09-01 | 09 | 6 | QA-07 | — | Full bet_maker suite зелёный + coverage ≥80% src/bet_maker | shell | `uv run pytest --cov=src/bet_maker --cov-fail-under=80 tests/bet_maker -q` | OK | ✅ green |
+| 03-09-02 | 09 | 6 | BM-08 | T-03-6 | Manual alembic idempotency rehearsal через docker compose (см. Manual-Only Verifications) | manual | manual; documented in 03-09-SUMMARY | OK | ✅ green |
+| 03-09-03 | 09 | 6 | BM-01..03, BM-05..08, BM-13, QA-07 | — | REQUIREMENTS.md status flip + ROADMAP P3 checkbox + STATE.md advance | doc | `grep -q "Phase 3 complete" .planning/STATE.md` | OK | ✅ green |
+
+> All Per-Task statuses updated 2026-05-15 by Plan 03-09 phase-gate.
 
 > All 10 risk axes mapped to at least one Per-Task Verification Map row (verified by gsd-plan-checker).
 

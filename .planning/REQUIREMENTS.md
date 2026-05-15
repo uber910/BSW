@@ -131,26 +131,26 @@
 | LP-06 | Phase 5 | Pending |
 | LP-07 | Phase 2 | Complete |
 | LP-08 | Phase 2 | Complete |
-| BM-01 | Phase 3 | Complete |
-| BM-02 | Phase 3 | Complete |
-| BM-03 | Phase 3 | Complete |
+| BM-01 | Phase 3 | Complete (Plan 03-09) |
+| BM-02 | Phase 3 | Complete (Plan 03-09) |
+| BM-03 | Phase 3 | Complete (Plan 03-09) |
 | BM-04 | Phase 4 | Pending |
-| BM-05 | Phase 3 | Complete |
-| BM-06 | Phase 3 | Complete |
-| BM-07 | Phase 3 | Complete |
-| BM-08 | Phase 3 | Complete |
+| BM-05 | Phase 3 | Complete (Plan 03-09) |
+| BM-06 | Phase 3 | Complete (Plan 03-09) |
+| BM-07 | Phase 3 | Complete (Plan 03-09) |
+| BM-08 | Phase 3 | Complete (Plan 03-09) |
 | BM-09 | Phase 5 | Pending |
 | BM-10 | Phase 5 | Pending |
 | BM-11 | Phase 5 | Pending |
 | BM-12 | Phase 6 | Pending |
-| BM-13 | Phase 3 | Complete |
+| BM-13 | Phase 3 | Complete (Plan 03-09) |
 | QA-01 | Phase 7 | Pending |
 | QA-02 | Phase 1 | Complete |
 | QA-03 | Phase 1 | Complete |
 | QA-04 | Phase 2 | Complete |
 | QA-05 | Phase 2 | Complete |
 | QA-06 | Phase 5 | Pending |
-| QA-07 | Phase 3 | Complete |
+| QA-07 | Phase 3 | Complete (Plan 03-09) |
 | QA-08 | Phase 6 | Pending |
 | QA-09 | Phase 7 | Pending |
 | QA-10 | Phase 1 | Complete |
@@ -177,4 +177,4 @@ Note: QA-01 (`mypy --strict`) is **enforced from Phase 1** (CI gate established 
 
 ---
 *Requirements defined: 2026-05-13*
-*Last updated: 2026-05-13 after roadmap creation (traceability filled by roadmapper)*
+*Last updated: 2026-05-15 after Phase 3 completion (Plan 03-09 — BM-01..03, BM-05..08, BM-13, QA-07 complete)*
