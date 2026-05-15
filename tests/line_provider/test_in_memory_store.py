@@ -7,22 +7,158 @@ Anti-Pattern 6 (PITFALLS.md): concurrent dict access mitigated by single asyncio
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
+
 from line_provider.infrastructure.store.in_memory import (
     EventAlreadyExistsError,
     EventNotFoundError,
     InMemoryEventStore,
 )
-
 from line_provider.schemas.events import Event, EventState
 
 
 def _future() -> datetime:
     return datetime.now(timezone.utc) + timedelta(hours=1)
+
+
+def _event(state: EventState = EventState.NEW, event_id: UUID | None = None) -> Event:
+    return Event(
+        event_id=event_id or uuid4(),
+        coefficient=Decimal("1.50"),
+        deadline=_future(),
+        state=state,
+    )
+
+
+async def test_add_returns_event() -> None:
+    """LP-01: add returns the stored event."""
+    store = InMemoryEventStore()
+    event = _event()
+    result = await store.add(event)
+    assert result == event
+
+
+async def test_add_persists_event() -> None:
+    """LP-01: stored event is retrievable via get_by_id."""
+    store = InMemoryEventStore()
+    event = _event()
+    await store.add(event)
+    assert await store.get_by_id(event.event_id) == event
+
+
+async def test_add_duplicate_raises() -> None:
+    """LP-01: duplicate event_id raises EventAlreadyExistsError."""
+    store = InMemoryEventStore()
+    event = _event()
+    await store.add(event)
+    with pytest.raises(EventAlreadyExistsError) as exc:
+        await store.add(event)
+    assert str(event.event_id) in str(exc.value)
+
+
+async def test_update_returns_new_and_previous() -> None:
+    """LP-08: update returns (new_event, previous_state)."""
+    store = InMemoryEventStore()
+    event = _event(state=EventState.NEW)
+    await store.add(event)
+    new_event, previous = await store.update(
+        event.event_id,
+        coefficient=Decimal("3.00"),
+        deadline=event.deadline,
+        state=EventState.FINISHED_WIN,
+    )
+    assert previous == EventState.NEW
+    assert new_event.state == EventState.FINISHED_WIN
+    assert new_event.coefficient == Decimal("3.00")
+    assert new_event.event_id == event.event_id
+
+
+async def test_update_creates_new_object_not_mutating_current() -> None:
+    """D-16/D-17: update produces a new frozen object; original kept references stay intact."""
+    store = InMemoryEventStore()
+    event = _event(state=EventState.NEW)
+    await store.add(event)
+    snapshot = await store.get_by_id(event.event_id)
+    assert snapshot is not None
+    await store.update(
+        event.event_id,
+        coefficient=Decimal("9.00"),
+        deadline=event.deadline,
+        state=EventState.FINISHED_LOSE,
+    )
+    assert snapshot.coefficient == Decimal("1.50")
+    assert snapshot.state == EventState.NEW
+
+
+async def test_update_no_op_state_preserves_previous_marker() -> None:
+    """D-09: previous_state reports the state BEFORE update, even on no-op."""
+    store = InMemoryEventStore()
+    event = _event(state=EventState.FINISHED_WIN)
+    await store.add(event)
+    new_event, previous = await store.update(
+        event.event_id,
+        coefficient=Decimal("4.00"),
+        deadline=event.deadline,
+        state=EventState.FINISHED_WIN,
+    )
+    assert previous == EventState.FINISHED_WIN
+    assert new_event.state == EventState.FINISHED_WIN
+    assert new_event.coefficient == Decimal("4.00")
+
+
+async def test_update_missing_raises() -> None:
+    """LP-08: update on absent id raises EventNotFoundError."""
+    store = InMemoryEventStore()
+    with pytest.raises(EventNotFoundError):
+        await store.update(
+            uuid4(),
+            coefficient=Decimal("1.00"),
+            deadline=_future(),
+            state=EventState.NEW,
+        )
+
+
+async def test_get_by_id_returns_none_for_missing() -> None:
+    """LP-01: get_by_id returns None when event absent (caller decides 404)."""
+    store = InMemoryEventStore()
+    assert await store.get_by_id(uuid4()) is None
+
+
+async def test_list_all_returns_snapshot() -> None:
+    """LP-01/D-16: list_all returns a snapshot; later add does not retroactively appear."""
+    store = InMemoryEventStore()
+    await store.add(_event())
+    snapshot = await store.list_all()
+    await store.add(_event())
+    assert len(snapshot) == 1
+    assert len(await store.list_all()) == 2
+
+
+async def test_concurrent_add_distinct_ids_all_succeed() -> None:
+    """LP-01: asyncio.gather of 100 add() with distinct ids — all stored."""
+    store = InMemoryEventStore()
+    events = [_event() for _ in range(100)]
+    await asyncio.gather(*[store.add(e) for e in events])
+    assert len(await store.list_all()) == 100
+
+
+async def test_concurrent_add_same_id_exactly_one_succeeds() -> None:
+    """LP-01: 20 concurrent add() of same event_id — exactly 1 succeeds."""
+    store = InMemoryEventStore()
+    event = _event()
+    results = await asyncio.gather(
+        *[store.add(event) for _ in range(20)],
+        return_exceptions=True,
+    )
+    successes = [r for r in results if isinstance(r, Event)]
+    failures = [r for r in results if isinstance(r, EventAlreadyExistsError)]
+    assert len(successes) == 1
+    assert len(failures) == 19
 
 
 async def test_smoke_crud_lifecycle() -> None:
@@ -60,3 +196,28 @@ async def test_smoke_crud_lifecycle() -> None:
     assert retrieved is not None
     assert retrieved.state == EventState.FINISHED_WIN
     assert len(await store.list_all()) == 1
+
+
+async def test_concurrent_update_serialised_under_lock() -> None:
+    """LP-08/Anti-Pattern 6: two concurrent update() on same id are serialised — the second
+    observes previous_state set by the first, not the original state.
+    """
+    store = InMemoryEventStore()
+    event = _event(state=EventState.NEW)
+    await store.add(event)
+
+    async def do(new_state: EventState) -> tuple[Event, EventState]:
+        return await store.update(
+            event.event_id,
+            coefficient=Decimal("2.00"),
+            deadline=event.deadline,
+            state=new_state,
+        )
+
+    results = await asyncio.gather(
+        do(EventState.FINISHED_WIN),
+        do(EventState.FINISHED_LOSE),
+    )
+    previous_states = [prev for (_, prev) in results]
+    assert EventState.NEW in previous_states
+    assert any(p != EventState.NEW for p in previous_states)
