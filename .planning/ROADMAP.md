@@ -8,7 +8,7 @@
 ## Phases
 
 - [x] **Phase 1: Skeleton + Infrastructure** — Both services boot via `docker compose up` with green CI and healthy deps
-- [ ] **Phase 2: line-provider domain** — In-memory event store with full HTTP API (no AMQP yet)
+- [x] **Phase 2: line-provider domain** — In-memory event store with full HTTP API (no AMQP yet)
 - [ ] **Phase 3: bet-maker domain (DB)** — PostgreSQL persistence, UoW, place/list bets via HTTP
 - [ ] **Phase 4: bet-maker HTTP integration with line-provider** — `GET /events` proxy with retry and TTL cache
 - [ ] **Phase 5: RabbitMQ integration** — Publisher in line-provider, durable consumer + DLQ in bet-maker, atomic settle
@@ -66,7 +66,7 @@ Plans:
   - **R9 / R12**: interactor mutates the in-memory store **before** any side-effect; publish ordering enforced in P5 but discipline established here
   - **Anti-Pattern 6** (concurrent dict access): all state mutations guarded by `asyncio.Lock`; pure reads can skip the lock
   - **A7**: line-provider's `/health` and request-id middleware reuse the same `clear_contextvars` pattern as bet-maker
-**Plans:** 6/7 plans executed
+**Plans:** 7/7 plans executed (Phase 2 complete 2026-05-15)
 
 Plans:
 - [x] 02-01-PLAN.md — Foundations: asgi-lifespan dev-dep + REQUIREMENTS.md LP-02 sync (UUID4) + conftest LifespanManager + coverage config (Wave 0)
@@ -75,7 +75,7 @@ Plans:
 - [x] 02-04-PLAN.md — InMemoryEventStore with asyncio.Lock + (new, previous_state) update tuple + concurrent gather tests (Wave 1)
 - [x] 02-05-PLAN.md — Facades (EventBus Protocol + NoopEventBus + DI providers) + Interactors (create_event + set_event_state with commit→publish ordering) + FakeEventBus shared fake (Wave 2)
 - [x] 02-06-PLAN.md — Selectors (get_event_by_id + list_active_events with monkey-patched utc_now) (Wave 2)
-- [ ] 02-07-PLAN.md — HTTP routes (4 endpoints) + lifespan wiring + integration tests + phase-gate coverage ≥85% (Wave 3)
+- [x] 02-07-PLAN.md — HTTP routes (4 endpoints) + lifespan wiring + integration tests + phase-gate coverage ≥85% (Wave 3)
 
 ### Phase 3: bet-maker domain (DB)
 **Goal**: bet-maker persists bets in PostgreSQL through UoW + Repository, exposes `POST /bet` and `GET /bets`, and `/health` pings PG. No AMQP, no HTTP integration with line-provider yet.
@@ -181,7 +181,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Skeleton + Infrastructure | 7/7 | Complete | 2026-05-14 |
-| 2. line-provider domain | 1/7 | In Progress|  |
+| 2. line-provider domain | 7/7 | Complete | 2026-05-15 |
 | 3. bet-maker domain (DB) | 0/? | Not started | - |
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
 | 5. RabbitMQ integration | 0/? | Not started | - |

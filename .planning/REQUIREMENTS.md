@@ -20,11 +20,11 @@
 
 - [x] **LP-01**: Хранение событий в in-memory структуре, защищённой `asyncio.Lock` от гонок
 - [x] **LP-02**: Модель `Event`: event_id (UUID4, client-generated), coefficient (Decimal, ровно 2 знака после запятой, > 0), deadline (UTC-aware datetime), state (NEW / FINISHED_WIN / FINISHED_LOSE). Per D-05 (Phase 2 CONTEXT.md): event_id — UUID4, не str; согласовано через line-provider, AMQP `EventFinishedMessage.event_id` и `bet_maker.bets.event_id`.
-- [ ] **LP-03**: `PUT /event` — создание нового события или обновление существующего (с валидацией перехода статуса)
+- [x] **LP-03**: `PUT /event` — создание нового события или обновление существующего (с валидацией перехода статуса)
 - [x] **LP-04**: `GET /event/{event_id}` — получение события по id; 404 если не найдено
-- [ ] **LP-05**: `GET /events` — список активных событий (`deadline > now`)
+- [x] **LP-05**: `GET /events` — список активных событий (`deadline > now`)
 - [ ] **LP-06**: При смене статуса с NEW на FINISHED_WIN/FINISHED_LOSE — публикация сообщения `EventFinishedMessage` в RabbitMQ exchange `events` (topic) с routing key `event.finished.{win|lose}`
-- [ ] **LP-07**: Endpoint `GET /health` с проверкой подключения к RabbitMQ
+- [x] **LP-07**: Endpoint `GET /health` с проверкой подключения к RabbitMQ
 - [x] **LP-08**: Валидация бизнес-инвариантов: coefficient > 0, deadline в будущем при создании, запрет обратных переходов FINISHED → NEW
 
 ### bet-maker (BM)
@@ -47,8 +47,8 @@
 - [ ] **QA-01**: Полные type hints во всём коде; `mypy --strict` проходит без ошибок
 - [x] **QA-02**: `ruff check` + `ruff format` без замечаний; конфигурация в pyproject.toml
 - [x] **QA-03**: pre-commit hooks: ruff, mypy, end-of-file, trailing-whitespace, toml-lint
-- [ ] **QA-04**: Unit-тесты на каждый слой (interactors/selectors/helpers/repositories) — pytest + pytest-asyncio (line-provider test infrastructure: asgi-lifespan + LifespanManager fixture + coverage config 85% — landed in plan 02-01; per-layer tests land in plans 02-02 .. 02-07)
-- [ ] **QA-05**: Integration-тесты на API через httpx AsyncClient (line-provider и bet-maker) (line-provider fixture infra: LifespanManager + (app, client) split — landed in plan 02-01; actual route integration tests land in plan 02-07)
+- [x] **QA-04**: Unit-тесты на каждый слой (interactors/selectors/helpers/repositories) — pytest + pytest-asyncio (line-provider: schemas/state-machine/store/facades/interactors/selectors unit-тесты в плагинах 02-02..02-06; bet-maker — Phase 3 / Phase 5)
+- [x] **QA-05**: Integration-тесты на API через httpx AsyncClient (line-provider и bet-maker) (line-provider: 23-тестная HTTP-матрица через httpx.AsyncClient + ASGITransport + LifespanManager landed in plan 02-07; bet-maker — Phase 3)
 - [ ] **QA-06**: Consumer тесты через `TestRabbitBroker` (FastStream native)
 - [ ] **QA-07**: PG-тесты с реальной БД через testcontainers (НЕ SQLite, чтобы ловить `FOR UPDATE` баги)
 - [ ] **QA-08**: Один e2e сценарий: создать событие → поставить ставку → завершить событие → проверить, что ставка стала WON/LOST через consumer + ещё одну через reconciler
@@ -124,11 +124,11 @@
 | INFR-08 | Phase 1 | Complete |
 | LP-01 | Phase 2 | Complete |
 | LP-02 | Phase 2 | Complete |
-| LP-03 | Phase 2 | Pending |
+| LP-03 | Phase 2 | Complete |
 | LP-04 | Phase 2 | Complete |
-| LP-05 | Phase 2 | Pending |
+| LP-05 | Phase 2 | Complete |
 | LP-06 | Phase 5 | Pending |
-| LP-07 | Phase 2 | Pending |
+| LP-07 | Phase 2 | Complete |
 | LP-08 | Phase 2 | Complete |
 | BM-01 | Phase 3 | Pending |
 | BM-02 | Phase 3 | Pending |
@@ -145,8 +145,8 @@
 | QA-01 | Phase 7 | Pending |
 | QA-02 | Phase 1 | Complete |
 | QA-03 | Phase 1 | Complete |
-| QA-04 | Phase 2 | In progress (test infrastructure landed plan 02-01; per-layer tests in 02-02..02-07) |
-| QA-05 | Phase 2 | In progress (LifespanManager fixture landed plan 02-01; route integration tests in plan 02-07) |
+| QA-04 | Phase 2 | Complete |
+| QA-05 | Phase 2 | Complete |
 | QA-06 | Phase 5 | Pending |
 | QA-07 | Phase 3 | Pending |
 | QA-08 | Phase 6 | Pending |
