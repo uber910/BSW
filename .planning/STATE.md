@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-15T18:12:12.829Z"
+last_updated: "2026-05-15T18:21:06.891Z"
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 23
-  completed_plans: 21
-  percent: 91
+  completed_plans: 22
+  percent: 96
 ---
 
 # Project State: BSW Betting System
 
-**Last updated:** 2026-05-15 (after Phase 3 Plan 07 — Interactor place_bet + Selectors; 4 tasks, 8 files, 13 new tests)
+**Last updated:** 2026-05-15 (after Phase 3 Plan 08 — HTTP routes + lifespan + health; 7 tasks, 8 files, 25 new integration tests)
 
 ## Project Reference
 
@@ -25,13 +25,13 @@ progress:
 ## Current Position
 
 Phase: 03 (bet-maker-domain-db) — EXECUTING
-Plan: 7 of 9
+Plan: 8 of 9
 
 - **Milestone:** v1
 - **Phase:** 2 (COMPLETE)
-- **Plan:** 02-07 complete (Wave 3 — HTTP routes (4 endpoints) + lifespan wiring + 23 integration tests + coverage 96.42% ≥85% phase-gate); next Phase 3 (bet-maker domain DB)
+- **Plan:** 03-08 complete (Wave 5 — HTTP routes POST/GET /bet + GET /bets + GET /bet/{id} + live health PG check + lifespan wiring; 25 new integration tests); next Phase 3 Plan 09 (phase-gate)
 - **Status:** Executing Phase 03
-- **Progress:** [████████░░] 78%
+- **Progress:** [██████████] 96%
 
 ```
 [██░░░░░] 2/7 phases (28%)
@@ -64,6 +64,7 @@ Plan: 7 of 9
 | Phase 03-bet-maker-domain-db P05 | ~4m20s | 3 tasks | 5 files |
 | Phase 03-bet-maker-domain-db P06 | ~25min | 3 tasks | 9 files + 3 test replacements |
 | Phase 03-bet-maker-domain-db P07 | ~10min | 4 tasks | 8 files (5 new + 3 modified) + 13 new tests |
+| Phase 03-bet-maker-domain-db P08 | ~15min | 7 tasks | 8 files (1 new + 7 modified) + 25 new integration tests |
 
 ## Accumulated Context
 
@@ -112,16 +113,16 @@ Plan: 7 of 9
 
 ### Last Session
 
-- **Started:** 2026-05-15 (Plan 03-07 — Interactor place_bet + Selectors)
-- **Ended:** 2026-05-15 (Plan 03-07 complete)
-- **Activity:** Created place_bet interactor + EventNotBettable (11325ef). Created list_bets + get_bet_by_id selectors (e100971). Replaced test_place_bet Wave 0 stub with 7 tests (1c6c556) — Rule 2 deviation: added autouse truncate_bets to bet_maker conftest. Replaced test_selectors Wave 0 stub with 6 tests (5938747).
-- **Outcome:** 4 task commits + 1 docs commit for Plan 03-07. `uv run pytest -q --no-cov` → 170 passed (+13). mypy strict + ruff clean. BM-05, BM-06, BM-07, BM-13 advanced.
+- **Started:** 2026-05-15 (Plan 03-08 — HTTP routes + lifespan + health)
+- **Ended:** 2026-05-15 (Plan 03-08 complete)
+- **Activity:** Extended lifespan.py (1a4728d). Replaced health stub with PG ping (1fb6fe0). Added bets.py routes + app.py wire (00a2f13). Updated test_health.py + fixed conftest session-scoped app/client (18bd0c9). Replaced test_bet_routes Wave 0 stub with 17 tests (590e650). Replaced test_lifespan Wave 0 stub with 5 tests (d898182).
+- **Outcome:** 6 task commits + 1 docs commit for Plan 03-08. `uv run pytest -q --no-cov` → 193 passed (+23). mypy strict + ruff clean. BM-05, BM-06, BM-07, BM-08, BM-13 complete.
 
 ### Next Session
 
-- **Recommended command:** `/gsd-execute-phase 03-bet-maker-domain-db` (Plan 03-08 — HTTP routes: POST /bet, GET /bets, GET /bet/{id})
-- **Goal:** HTTP routes layer consuming place_bet interactor + list_bets + get_bet_by_id selectors from Plan 03-07.
-- **Note:** Plan 03-07 complete (place_bet + selectors); routes are the final wave.
+- **Recommended command:** `/gsd-execute-phase 03-bet-maker-domain-db` (Plan 03-09 — phase-gate: coverage + docs)
+- **Goal:** Phase 3 gate — coverage check ≥85%, README/docstrings, final phase completion.
+- **Note:** Plan 03-08 complete; all bet-maker functionality visible through HTTP endpoints.
 
 ### Open Questions for Next Phase
 
