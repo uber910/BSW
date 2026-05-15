@@ -131,11 +131,11 @@
 | LP-06 | Phase 5 | Pending |
 | LP-07 | Phase 2 | Complete |
 | LP-08 | Phase 2 | Complete |
-| BM-01 | Phase 3 | Pending |
+| BM-01 | Phase 3 | Complete |
 | BM-02 | Phase 3 | Pending |
 | BM-03 | Phase 3 | Pending |
 | BM-04 | Phase 4 | Pending |
-| BM-05 | Phase 3 | Pending |
+| BM-05 | Phase 3 | Complete |
 | BM-06 | Phase 3 | Pending |
 | BM-07 | Phase 3 | Pending |
 | BM-08 | Phase 3 | Pending |

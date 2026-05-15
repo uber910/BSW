@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-15T14:43:45.249Z"
+last_updated: "2026-05-15T14:55:29.357Z"
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 23
-  completed_plans: 14
-  percent: 61
+  completed_plans: 15
+  percent: 65
 ---
 
 # Project State: BSW Betting System
@@ -20,18 +20,18 @@ progress:
 
 **Core Value:** Ставка никогда не остаётся в статусе PENDING после того, как её событие завершилось.
 
-**Current focus:** Phase 02 — line-provider-domain
+**Current focus:** Phase 03 — bet-maker-domain-db
 
 ## Current Position
 
-Phase: 02 (line-provider-domain) — COMPLETE (7/7 plans). Ready for Phase 3 (bet-maker domain (DB)).
-Plan: 7 of 7 (Plans 01–07 complete — Wave 0 foundations + Schemas Wave 1 + State machine Wave 2 + In-memory store Wave 2 + Facades+Interactors Wave 3 first half + Selectors Wave 3 second half + HTTP routes + lifespan wiring + integration tests + phase-gate)
+Phase: 03 (bet-maker-domain-db) — EXECUTING
+Plan: 1 of 9
 
 - **Milestone:** v1
 - **Phase:** 2 (COMPLETE)
 - **Plan:** 02-07 complete (Wave 3 — HTTP routes (4 endpoints) + lifespan wiring + 23 integration tests + coverage 96.42% ≥85% phase-gate); next Phase 3 (bet-maker domain DB)
-- **Status:** Ready to execute
-- **Progress:** [██████████] 100% of planned phases (2/2 planned phases complete; 5 phases yet to be planned)
+- **Status:** Executing Phase 03
+- **Progress:** [███████░░░] 65%
 
 ```
 [██░░░░░] 2/7 phases (28%)
