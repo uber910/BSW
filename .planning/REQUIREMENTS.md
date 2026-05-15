@@ -30,7 +30,7 @@
 ### bet-maker (BM)
 
 - [x] **BM-01**: SQLAlchemy 2.0 async модели для ставок (id UUID, event_id UUID, amount Decimal 12.2, status enum (PENDING/WON/LOST), created_at, updated_at). Per D-01 (Phase 3 CONTEXT.md): coefficient НЕ хранится в Bet — это атрибут события, живёт в line-provider; ТЗ стр. 3 `POST /bet` body = `{идентификатор события, сумма ставки}` без coefficient.
-- [ ] **BM-02**: Unit of Work как async context manager поверх `async_sessionmaker.begin()`, репозитории флашат, UoW коммитит
+- [x] **BM-02**: Unit of Work как async context manager поверх `async_sessionmaker.begin()`, репозитории флашат, UoW коммитит
 - [x] **BM-03**: Слоистая архитектура: entrypoints / facades / interactors / selectors / helpers (множественное число; helpers — pure functions)
 - [ ] **BM-04**: `GET /events` — проксирует список активных событий из line-provider через httpx с retry (tenacity)
 - [x] **BM-05**: `POST /bet` — приём ставки; в теле `{event_id, amount}` (amount > 0, ровно 2 знака после запятой); ответ — 201 с BetRead `{id, event_id, amount, status, created_at}`; status=PENDING при создании. Per D-01 (Phase 3 CONTEXT.md): coefficient snapshot НЕ хранится — coefficient остаётся в line-provider; ТЗ стр. 3 не требует coefficient в Bet payload.
@@ -132,7 +132,7 @@
 | LP-07 | Phase 2 | Complete |
 | LP-08 | Phase 2 | Complete |
 | BM-01 | Phase 3 | Complete |
-| BM-02 | Phase 3 | Pending |
+| BM-02 | Phase 3 | Complete |
 | BM-03 | Phase 3 | Complete |
 | BM-04 | Phase 4 | Pending |
 | BM-05 | Phase 3 | Complete |
