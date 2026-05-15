@@ -29,11 +29,11 @@
 
 ### bet-maker (BM)
 
-- [ ] **BM-01**: SQLAlchemy 2.0 async модели для ставок (id UUID, event_id, amount Decimal 12.2, coefficient Decimal 6.2, status enum, created_at, updated_at)
+- [ ] **BM-01**: SQLAlchemy 2.0 async модели для ставок (id UUID, event_id UUID, amount Decimal 12.2, status enum (PENDING/WON/LOST), created_at, updated_at). Per D-01 (Phase 3 CONTEXT.md): coefficient НЕ хранится в Bet — это атрибут события, живёт в line-provider; ТЗ стр. 3 `POST /bet` body = `{идентификатор события, сумма ставки}` без coefficient.
 - [ ] **BM-02**: Unit of Work как async context manager поверх `async_sessionmaker.begin()`, репозитории флашат, UoW коммитит
 - [ ] **BM-03**: Слоистая архитектура: entrypoints / facades / interactors / selectors / helpers (множественное число; helpers — pure functions)
 - [ ] **BM-04**: `GET /events` — проксирует список активных событий из line-provider через httpx с retry (tenacity)
-- [ ] **BM-05**: `POST /bet` — приём ставки; в теле `{event_id, amount}` (amount > 0, 2 знака); ответ — id созданной ставки; снимок coefficient на момент создания
+- [ ] **BM-05**: `POST /bet` — приём ставки; в теле `{event_id, amount}` (amount > 0, ровно 2 знака после запятой); ответ — 201 с BetRead `{id, event_id, amount, status, created_at}`; status=PENDING при создании. Per D-01 (Phase 3 CONTEXT.md): coefficient snapshot НЕ хранится — coefficient остаётся в line-provider; ТЗ стр. 3 не требует coefficient в Bet payload.
 - [ ] **BM-06**: Валидация: проверка существования и активности события (deadline > now, state == NEW) перед сохранением ставки
 - [ ] **BM-07**: `GET /bets` — история всех ставок с полями id, event_id, amount, status (PENDING / WON / LOST), created_at
 - [ ] **BM-08**: Endpoint `GET /health` с проверкой PostgreSQL (`SELECT 1`) и RabbitMQ
@@ -41,6 +41,7 @@
 - [ ] **BM-10**: Interactor `settle_bets_for_event(event_id, outcome)`: вызывается консьюмером И reconciler'ом; идемпотентный; использует `SELECT FOR UPDATE SKIP LOCKED` чтобы не было гонок
 - [ ] **BM-11**: DLX `events.dlx` + DLQ `bet_maker.events.finished.dlq` с bounded retries (max 3) через `x-death` header
 - [ ] **BM-12**: Reconciliation job — asyncio background task в lifespan, период через pydantic-settings (default 30s); выбирает PENDING-ставки, тянет статус события из line-provider, доводит до WON/LOST
+- [ ] **BM-13**: `GET /bet/{bet_id}` — получение ставки по id; 200 + BetRead `{id, event_id, amount, status, created_at}` или 404 `{"detail":"bet {id} not found"}`. Per D-02 (Phase 3 CONTEXT.md): эндпоинт присутствует на диаграмме ТЗ стр. 3 (отсутствует в текстовом описании); реализуется в P3.
 
 ### Quality (QA)
 
@@ -142,6 +143,7 @@
 | BM-10 | Phase 5 | Pending |
 | BM-11 | Phase 5 | Pending |
 | BM-12 | Phase 6 | Pending |
+| BM-13 | Phase 3 | Pending |
 | QA-01 | Phase 7 | Pending |
 | QA-02 | Phase 1 | Complete |
 | QA-03 | Phase 1 | Complete |
@@ -158,14 +160,14 @@
 | DOC-04 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 42 total
-- Mapped to phases: 42 (100%)
+- v1 requirements: 43 total
+- Mapped to phases: 43 (100%)
 - Unmapped: 0
 
 **Per-phase distribution:**
 - Phase 1 (Skeleton + Infrastructure): 12 requirements (INFR-01..08, QA-02, QA-03, QA-10) — note QA-01 enforcement starts here but ownership accepted in Phase 7
 - Phase 2 (line-provider domain): 9 requirements (LP-01..05, LP-07, LP-08, QA-04, QA-05)
-- Phase 3 (bet-maker DB): 8 requirements (BM-01..03, BM-05..08, QA-07)
+- Phase 3 (bet-maker DB): 9 requirements (BM-01..03, BM-05..08, BM-13, QA-07)
 - Phase 4 (HTTP integration): 1 requirement (BM-04)
 - Phase 5 (RabbitMQ integration): 5 requirements (LP-06, BM-09..11, QA-06)
 - Phase 6 (Reconciliation): 2 requirements (BM-12, QA-08)
