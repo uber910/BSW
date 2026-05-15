@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-15T18:05:46.421Z"
+last_updated: "2026-05-15T18:12:12.829Z"
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 23
-  completed_plans: 20
-  percent: 87
+  completed_plans: 21
+  percent: 91
 ---
 
 # Project State: BSW Betting System
 
-**Last updated:** 2026-05-15 (after Phase 3 Plan 06 — Facades + Repositories; 3 tasks, 9 production files, 19 tests)
+**Last updated:** 2026-05-15 (after Phase 3 Plan 07 — Interactor place_bet + Selectors; 4 tasks, 8 files, 13 new tests)
 
 ## Project Reference
 
@@ -25,7 +25,7 @@ progress:
 ## Current Position
 
 Phase: 03 (bet-maker-domain-db) — EXECUTING
-Plan: 6 of 9
+Plan: 7 of 9
 
 - **Milestone:** v1
 - **Phase:** 2 (COMPLETE)
@@ -63,6 +63,7 @@ Plan: 6 of 9
 | Phase 03-bet-maker-domain-db P03 | ~3.5min | 3 tasks | 7 files |
 | Phase 03-bet-maker-domain-db P05 | ~4m20s | 3 tasks | 5 files |
 | Phase 03-bet-maker-domain-db P06 | ~25min | 3 tasks | 9 files + 3 test replacements |
+| Phase 03-bet-maker-domain-db P07 | ~10min | 4 tasks | 8 files (5 new + 3 modified) + 13 new tests |
 
 ## Accumulated Context
 
@@ -88,6 +89,7 @@ Plan: 6 of 9
 - [Phase ?]: 2026-05-15 (Plan 02-04): Phase 2 Wave 2 (parallel branch) — InMemoryEventStore. src/line_provider/infrastructure/store/in_memory.py содержит dict[UUID, Event] под одним asyncio.Lock; add/update держат лок; get_by_id/list_all lock-free (D-15) — безопасно потому что CPython dict ops атомарны на bytecode-уровне и Event frozen. update() возвращает кортеж (new_event, previous_state) атомарно под локом — Plan 02-05 interactor сравнит previous_state != NEW для решения publish (D-12, T-04-03 mitigation visible на API). Два доменных Exception: EventAlreadyExistsError + EventNotFoundError с .event_id атрибутом. tests/line_provider/test_in_memory_store.py — 13 unit-тестов включая 3 concurrent gather (Anti-Pattern 6 mitigation proven: 100 distinct → 100 saved; 20 same id → 1 success + 19 EventAlreadyExistsError; 2 update same id → serialised under lock). TDD цикл: fc7c07c RED smoke -> 69a7beb GREEN impl -> 44f071a full test suite. Full suite 51 passed (38 baseline + 13 new); mypy strict 4 files OK; ruff All checks passed. Один ruff E501 auto-fix (docstring 109->88 chars). Closes LP-01 fully; LP-08 частично.
 - [Phase 02]: 2026-05-15 (Plan 02-06): Phase 2 Wave 3 second half — pure read-only selectors. `src/line_provider/selectors/get_event_by_id.py` — async delegate `await store.get_by_id(event_id)` returns `Event | None` (None = "not found"; Plan 02-07 route maps to 404). `src/line_provider/selectors/list_active_events.py` — captures `now = utc_now()` once (snapshot consistency), returns `[e for e in await store.list_all() if e.state == EventState.NEW and e.deadline > now]` with strict `>` (boundary case `deadline == now` is NOT active — T-06-03 closed). Module-level `from config.time import utc_now` enables monkey-patch testability: `monkeypatch.setattr("line_provider.selectors.list_active_events.utc_now", lambda: _NOW)` — Open Question 4 fixed in favour of no-DI option (no freezegun). `tests/line_provider/test_selectors.py` — 8 async tests: get happy/miss + list filter by state/deadline/boundary/combined/empty + W-2 smoke. TDD discipline preserved: ef8e820 RED smoke → 065fb29 GREEN selectors impl → ef01829 test expansion. Full suite 72 passed (64 baseline + 8 new); mypy strict 4 files OK; ruff All checks passed. Two pre-commit auto-formats folded (RED-then-GREEN import re-classification; ruff format collapsed 5-line comprehension fitting 100-char limit) — no semantic change. LP-04 and LP-05 data-path implementation done; routes wiring + full closure happen in Plan 02-07.
 - [Phase 02]: 2026-05-15 (Plan 02-07): Phase 2 Wave 4 (final) — HTTP routes + lifespan wiring + integration matrix + phase-gate. `src/line_provider/entrypoints/api/events.py` exposes 4 routes (POST /event 201/409/422, PUT /event/{id} 200/404/422, GET /event/{id} 200/404, GET /events 200) as thin handlers that delegate to interactors (`create_event`, `set_event_state`) and selectors (`get_event_by_id`, `list_active_events`); domain exceptions translated to HTTP via try/except + `raise HTTPException(...) from exc` (PEP 3134 chain preserved, ruff B904). PUT route at `/event/{event_id}` per D-01/D-06 (W-1 revision — no `/state` suffix); only PUT injects `Request` to read `X-Request-ID` header forwarded as `correlation_id` to `set_event_state`. `src/line_provider/app.py` includes events router after health router (3 add_middleware/include_router calls; health-first order preserves P1 invariant). `src/line_provider/entrypoints/lifespan.py` adds `app.state.event_store = InMemoryEventStore()` + `app.state.event_bus = NoopEventBus()` after `app.state.settings = settings` (D-14); annotation `app.state.event_bus: EventBus = NoopEventBus()` dropped during pre-commit due to mypy strict-attribute-assign rejection — runtime contract preserved via Protocol structural typing. `tests/line_provider/test_event_routes.py` — 23 async integration tests in 7 classes (Wiring/Create/Update/Get/List/RequestId/Health): full validation matrix (409 on dup, 422 on negative/zero/3dp coefficient, past/naive deadline, extra field, invalid UUID); state-machine matrix (404 missing PUT, 422 reverse with detail string parity, 200 no-op no-publish, FakeEventBus publish proof with routing key `event.finished.win` + correlation_id propagation `trace-publish`/`trace-correlate`); LP-05 timing tests use `monkeypatch.setattr("line_provider.selectors.list_active_events.utc_now", lambda: fixed_now)` for clock determinism; LP-07 invariant re-asserted via TestHealth class. 5 atomic commits across two agent sessions: 2a1f02c (RED smoke for events router), 5b32493 (GREEN — events router), fefaa1f (RED for lifespan+app wiring), 879ba2b (GREEN — wire router + singletons), 1cfad52 (full 23-test integration matrix expansion). Final phase-gate verification: 97 pytest tests pass (95 line_provider + 2 bet_maker baseline), coverage `src/line_provider` = 96.42% (gate ≥85% passed by 11.42 percentage points; only uncovered line is `__main__.py` lines 1-20 and one `Protocol.publish` branch with `...` body — both expected), mypy strict 41 source files clean, ruff check clean, ruff format 41 files already formatted. One FastAPI deprecation warning (`HTTP_422_UNPROCESSABLE_ENTITY` → `HTTP_422_UNPROCESSABLE_CONTENT`) noted; renaming deferred (Phase 7 polish). REQUIREMENTS.md: LP-03/LP-05/LP-07/QA-04/QA-05 advanced from Pending/In-progress to Complete; LP-01/LP-02/LP-04/LP-08 remain Complete (carried from prior plans). ROADMAP.md: Phase 2 checkbox flipped to `[x]`, progress table updated to `7/7 Complete 2026-05-15`. Closes LP-01, LP-02, LP-03, LP-04, LP-05, LP-07, LP-08, QA-04, QA-05 — all 9 Phase 2 requirements complete.
+- **2026-05-15 (Plan 03-07)**: Business-logic layer complete. place_bet interactor (3-branch validation outside UoW, A1 mitigation: model_validate inside session after refresh). list_bets selector (DESC ordering). get_bet_by_id selector (BetRead|None). 13 new tests (7 test_place_bet + 6 test_selectors). Rule 2 deviation: autouse truncate_bets wired in bet_maker conftest via _auto_truncate wrapper. 170 total passed. Risk Axes 1+9 covered.
 - **2026-05-15 (Plan 03-06)**: Facades + Repositories layer complete. BetRepository (add no-flush no-commit / get_by_id scalar_one_or_none). AsyncUnitOfWork via async_sessionmaker.begin() — `_cm: Any` because SQLAlchemy _AsyncSessionContextManager is private type. EventLookup Protocol (not @runtime_checkable) + EventSnapshot(frozen+forbid) + StubEventLookup(instance-dict). 6 DI providers + 6 Annotated aliases. 19 tests replacing 3 Wave 0 stubs; Critical Risk Axes 3+8 covered. Key fix: @pytest.mark.asyncio(loop_scope="session") required on all async test classes using session-scoped session_factory (function loop cannot use session-scoped asyncpg connections). 157 passed total.
 - **2026-05-15 (Plan 03-05)**: DB infrastructure layer — `infrastructure/db/engine.py` factory `create_engine_and_sessionmaker(settings)` with D-16 QueuePool params (pool_size=10, max_overflow=20, pool_pre_ping=True, pool_recycle=1800) + D-15 `async_sessionmaker(engine, expire_on_commit=False)`. `infrastructure/db/pings.py`: `wait_for_postgres` tenacity 10-attempt exponential-backoff startup gate (D-27), `ping_postgres` single SELECT 1 returning bool with `except SQLAlchemyError` only (D-26/D-29, T-03-5 DSN leak mitigated). `tests/bet_maker/test_db_engine.py`: 5 tests replacing Wave 0 stub. Two Rule 1 auto-fixes: (1) asyncpg 0.31.0 does NOT wrap ConnectionRefusedError as SQLAlchemyError — D-29 False-path test switched to AsyncMock injection; (2) session-scoped `async_engine` unusable in function-loop tests — happy-path test uses throwaway engine. 138 passed total (+5). mypy strict + ruff clean. BM-02 + BM-08 advanced. sessionmaker ready for Plan 03-06 AsyncUnitOfWork.
 - **2026-05-15 (Plan 03-03)**: Bet-maker domain primitives — EventState(str,Enum) D-12 duplication with value-parity test, Amount = Annotated[Decimal, Field(gt=0, max_digits=12, decimal_places=2), AfterValidator(quantize_amount)], BetCreate + BetRead with extra='forbid', quantize_amount ROUND_HALF_UP helper, status stub raises NotImplementedError for P5. Commit order: Task 2 (schemas) created before Task 1 commit because pre-commit mypy requires schemas/ for status.py imports. 20 tests in 6 classes (TestQuantize, TestBetCreate, TestBetRead, TestEnums, TestStatusStub, TestExtraForbid); 117 total passed. Closes BM-03, BM-05, BM-06.
@@ -110,16 +112,16 @@ Plan: 6 of 9
 
 ### Last Session
 
-- **Started:** 2026-05-15 (Plan 03-06 Facades + Repositories — resumed from prior session)
-- **Ended:** 2026-05-15 (Plan 03-06 complete)
-- **Activity:** Resumed 03-06-PLAN.md. Task 1 already committed (f941bb5). Committed event_lookup.py + deps.py (0b0cdcb). Replaced 3 Wave 0 stubs with 19 real tests (1b6f11e). Two Rule 1 auto-fixes: (1) anti-pattern grep was too broad (hit docstring word "commit") → narrowed to regex for session.commit() call; (2) missing @pytest.mark.asyncio(loop_scope="session") → "Future attached to a different loop" in combined runs.
-- **Outcome:** 3 task commits + 1 docs commit for Plan 03-06. `uv run pytest -q --no-cov` → 157 passed (+19). mypy strict + ruff clean. BM-02 + BM-03 + BM-06 advanced.
+- **Started:** 2026-05-15 (Plan 03-07 — Interactor place_bet + Selectors)
+- **Ended:** 2026-05-15 (Plan 03-07 complete)
+- **Activity:** Created place_bet interactor + EventNotBettable (11325ef). Created list_bets + get_bet_by_id selectors (e100971). Replaced test_place_bet Wave 0 stub with 7 tests (1c6c556) — Rule 2 deviation: added autouse truncate_bets to bet_maker conftest. Replaced test_selectors Wave 0 stub with 6 tests (5938747).
+- **Outcome:** 4 task commits + 1 docs commit for Plan 03-07. `uv run pytest -q --no-cov` → 170 passed (+13). mypy strict + ruff clean. BM-05, BM-06, BM-07, BM-13 advanced.
 
 ### Next Session
 
-- **Recommended command:** `/gsd-execute-phase 03-bet-maker-domain-db` (Plan 03-07 — interactor place_bet)
-- **Goal:** place_bet interactor consuming AsyncUnitOfWork + EventLookup from Plan 03-06.
-- **Note:** Plan 03-06 depends_on=[05] — sessionmaker now available from create_engine_and_sessionmaker.
+- **Recommended command:** `/gsd-execute-phase 03-bet-maker-domain-db` (Plan 03-08 — HTTP routes: POST /bet, GET /bets, GET /bet/{id})
+- **Goal:** HTTP routes layer consuming place_bet interactor + list_bets + get_bet_by_id selectors from Plan 03-07.
+- **Note:** Plan 03-07 complete (place_bet + selectors); routes are the final wave.
 
 ### Open Questions for Next Phase
 

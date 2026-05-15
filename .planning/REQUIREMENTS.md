@@ -35,13 +35,13 @@
 - [ ] **BM-04**: `GET /events` — проксирует список активных событий из line-provider через httpx с retry (tenacity)
 - [x] **BM-05**: `POST /bet` — приём ставки; в теле `{event_id, amount}` (amount > 0, ровно 2 знака после запятой); ответ — 201 с BetRead `{id, event_id, amount, status, created_at}`; status=PENDING при создании. Per D-01 (Phase 3 CONTEXT.md): coefficient snapshot НЕ хранится — coefficient остаётся в line-provider; ТЗ стр. 3 не требует coefficient в Bet payload.
 - [x] **BM-06**: Валидация: проверка существования и активности события (deadline > now, state == NEW) перед сохранением ставки
-- [ ] **BM-07**: `GET /bets` — история всех ставок с полями id, event_id, amount, status (PENDING / WON / LOST), created_at
+- [x] **BM-07**: `GET /bets` — история всех ставок с полями id, event_id, amount, status (PENDING / WON / LOST), created_at
 - [ ] **BM-08**: Endpoint `GET /health` с проверкой PostgreSQL (`SELECT 1`) и RabbitMQ
 - [ ] **BM-09**: FastStream RabbitRouter consumer на очереди `bet_maker.events.finished` с `AckPolicy.MANUAL`, prefetch=20, durable=true
 - [ ] **BM-10**: Interactor `settle_bets_for_event(event_id, outcome)`: вызывается консьюмером И reconciler'ом; идемпотентный; использует `SELECT FOR UPDATE SKIP LOCKED` чтобы не было гонок
 - [ ] **BM-11**: DLX `events.dlx` + DLQ `bet_maker.events.finished.dlq` с bounded retries (max 3) через `x-death` header
 - [ ] **BM-12**: Reconciliation job — asyncio background task в lifespan, период через pydantic-settings (default 30s); выбирает PENDING-ставки, тянет статус события из line-provider, доводит до WON/LOST
-- [ ] **BM-13**: `GET /bet/{bet_id}` — получение ставки по id; 200 + BetRead `{id, event_id, amount, status, created_at}` или 404 `{"detail":"bet {id} not found"}`. Per D-02 (Phase 3 CONTEXT.md): эндпоинт присутствует на диаграмме ТЗ стр. 3 (отсутствует в текстовом описании); реализуется в P3.
+- [x] **BM-13**: `GET /bet/{bet_id}` — получение ставки по id; 200 + BetRead `{id, event_id, amount, status, created_at}` или 404 `{"detail":"bet {id} not found"}`. Per D-02 (Phase 3 CONTEXT.md): эндпоинт присутствует на диаграмме ТЗ стр. 3 (отсутствует в текстовом описании); реализуется в P3.
 
 ### Quality (QA)
 
@@ -137,13 +137,13 @@
 | BM-04 | Phase 4 | Pending |
 | BM-05 | Phase 3 | Complete |
 | BM-06 | Phase 3 | Complete |
-| BM-07 | Phase 3 | Pending |
+| BM-07 | Phase 3 | Complete |
 | BM-08 | Phase 3 | Pending |
 | BM-09 | Phase 5 | Pending |
 | BM-10 | Phase 5 | Pending |
 | BM-11 | Phase 5 | Pending |
 | BM-12 | Phase 6 | Pending |
-| BM-13 | Phase 3 | Pending |
+| BM-13 | Phase 3 | Complete |
 | QA-01 | Phase 7 | Pending |
 | QA-02 | Phase 1 | Complete |
 | QA-03 | Phase 1 | Complete |
