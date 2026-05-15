@@ -19,9 +19,9 @@
 ### line-provider (LP)
 
 - [ ] **LP-01**: Хранение событий в in-memory структуре, защищённой `asyncio.Lock` от гонок
-- [ ] **LP-02**: Модель `Event`: event_id (UUID4, client-generated), coefficient (Decimal, ровно 2 знака после запятой, > 0), deadline (UTC-aware datetime), state (NEW / FINISHED_WIN / FINISHED_LOSE). Per D-05 (Phase 2 CONTEXT.md): event_id — UUID4, не str; согласовано через line-provider, AMQP `EventFinishedMessage.event_id` и `bet_maker.bets.event_id`.
+- [x] **LP-02**: Модель `Event`: event_id (UUID4, client-generated), coefficient (Decimal, ровно 2 знака после запятой, > 0), deadline (UTC-aware datetime), state (NEW / FINISHED_WIN / FINISHED_LOSE). Per D-05 (Phase 2 CONTEXT.md): event_id — UUID4, не str; согласовано через line-provider, AMQP `EventFinishedMessage.event_id` и `bet_maker.bets.event_id`.
 - [ ] **LP-03**: `PUT /event` — создание нового события или обновление существующего (с валидацией перехода статуса)
-- [ ] **LP-04**: `GET /event/{event_id}` — получение события по id; 404 если не найдено
+- [x] **LP-04**: `GET /event/{event_id}` — получение события по id; 404 если не найдено
 - [ ] **LP-05**: `GET /events` — список активных событий (`deadline > now`)
 - [ ] **LP-06**: При смене статуса с NEW на FINISHED_WIN/FINISHED_LOSE — публикация сообщения `EventFinishedMessage` в RabbitMQ exchange `events` (topic) с routing key `event.finished.{win|lose}`
 - [ ] **LP-07**: Endpoint `GET /health` с проверкой подключения к RabbitMQ
@@ -123,9 +123,9 @@
 | INFR-07 | Phase 1 | In progress (pydantic-settings parent done plan 01-02; .env.example pending plan 01-05) |
 | INFR-08 | Phase 1 | Complete |
 | LP-01 | Phase 2 | Pending |
-| LP-02 | Phase 2 | Pending |
+| LP-02 | Phase 2 | Complete |
 | LP-03 | Phase 2 | Pending |
-| LP-04 | Phase 2 | Pending |
+| LP-04 | Phase 2 | Complete |
 | LP-05 | Phase 2 | Pending |
 | LP-06 | Phase 5 | Pending |
 | LP-07 | Phase 2 | Pending |

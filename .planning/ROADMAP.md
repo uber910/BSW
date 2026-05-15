@@ -70,7 +70,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Foundations: asgi-lifespan dev-dep + REQUIREMENTS.md LP-02 sync (UUID4) + conftest LifespanManager + coverage config (Wave 0)
-- [ ] 02-02-PLAN.md — Schemas: EventState, EventCreate/Update/Read, Event (frozen), EventFinishedMessage, helpers/money.quantize_coefficient (Wave 1)
+- [x] 02-02-PLAN.md — Schemas: EventState, EventCreate/Update/Read, Event (frozen), EventFinishedMessage, helpers/money.quantize_coefficient (Wave 1)
 - [ ] 02-03-PLAN.md — Pure state-machine helper (is_transition_allowed, TransitionForbiddenError, ALLOWED_TRANSITIONS) (Wave 1)
 - [ ] 02-04-PLAN.md — InMemoryEventStore with asyncio.Lock + (new, previous_state) update tuple + concurrent gather tests (Wave 1)
 - [ ] 02-05-PLAN.md — Facades (EventBus Protocol + NoopEventBus + DI providers) + Interactors (create_event + set_event_state with commit→publish ordering) + FakeEventBus shared fake (Wave 2)

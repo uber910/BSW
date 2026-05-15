@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-15T08:11:00Z"
+last_updated: "2026-05-15T08:21:07.653Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 14
-  completed_plans: 8
-  percent: 57
+  completed_plans: 9
+  percent: 64
 ---
 
 # Project State: BSW Betting System
 
-**Last updated:** 2026-05-15 (after Phase 2 Plan 01 — Wave 0 foundations complete)
+**Last updated:** 2026-05-15 (after Phase 2 Plan 02 — Schemas Wave 1 complete)
 
 ## Project Reference
 
@@ -25,13 +25,13 @@ progress:
 ## Current Position
 
 Phase: 02 (line-provider-domain) — EXECUTING
-Plan: 2 of 7 (Plan 01 complete — Wave 0 foundations)
+Plan: 3 of 7 (Plans 01–02 complete — Wave 0 foundations + Schemas Wave 1)
 
 - **Milestone:** v1
 - **Phase:** 2
-- **Plan:** 02-01 complete (Wave 0); next 02-02 (Schemas, Wave 1)
+- **Plan:** 02-02 complete (Wave 1 — Schemas); next 02-03 (State machine, Wave 2)
 - **Status:** Executing Phase 02
-- **Progress:** [█░░░░░░░░░] 14% (1/7 Phase 2 plans complete)
+- **Progress:** [██░░░░░░░░] 29% (2/7 Phase 2 plans complete)
 
 ```
 [█░░░░░░] 1/7 phases (14%)
@@ -44,7 +44,7 @@ Plan: 2 of 7 (Plan 01 complete — Wave 0 foundations)
 | Phases planned | 2/7 |
 | Phases complete | 1/7 |
 | Requirements mapped | 42/42 (100%) |
-| Plans complete | 8/14 (Phase 1 complete; Phase 2 1/7 plans complete) |
+| Plans complete | 9/14 (Phase 1 complete; Phase 2 2/7 plans complete) |
 | Plan 01-01 duration | ~4 min |
 | Plan 01-02 duration | ~4 min |
 | Plan 01-03 duration | ~2 min (2 tasks, 10 files) |
@@ -53,6 +53,7 @@ Plan: 2 of 7 (Plan 01 complete — Wave 0 foundations)
 | Plan 01-06 duration | ~2 min (2 tasks, 3 files) |
 | Plan 01-07 duration | ~2.5 min (2 tasks, 10 files) |
 | Plan 02-01 duration | ~3 min (4 tasks, 5 files) |
+| Plan 02-02 duration | ~3.5 min (3 tasks, 6 files, 22 unit tests added) |
 
 ## Accumulated Context
 
@@ -73,6 +74,7 @@ Plan: 2 of 7 (Plan 01 complete — Wave 0 foundations)
 - **2026-05-14 (Plan 01-07)**: tests/ scaffold per D-12 — root conftest + line_provider/ + bet_maker/ + e2e/ (last empty until P6). Per-service `client` fixture: `httpx.AsyncClient + ASGITransport(app=build_app())`. 4 smoke tests collected (2 per service); `test_health_returns_status_ok` closes QA-10 (200 + `{status:ok}`); `test_health_echoes_request_id_header` is the only HTTP-level E2E proof of INFR-08 (X-Request-ID echo through RequestContextMiddleware). README.md expanded from 5-line placeholder to D-14 stub: Quick start (docker compose + curl both /health), Development (uv commands), Architecture and Reliability sections marked TODO with links to research/, CI badge with OWNER/REPO placeholder (P7 follow-up), explicit `guest:guest` disclaimer (loopback-only, test-task scope, not for production — T-07-01 mitigation). Project-wide convention established: REQ-IDs cited in test docstrings for grep-traceability. Closes QA-10; reaffirms INFR-08.
 - **2026-05-14 (Plan 01-05)**: Docker-каркас закрывает Phase 1. Один параметризованный multi-stage Dockerfile (ARG SERVICE, FROM `python:3.10-slim-bookworm` pinned — Pitfall D6, builder с `uv sync --frozen --no-dev` → /opt/venv, runtime с non-root app:1000 + `USER app`, sentinel CMD — fail-loud на bare `docker run`). docker-compose.yml: 4 сервиса (postgres, rabbitmq, line-provider, bet-maker) + 2 named volumes (postgres_data, rabbitmq_data) + per-service `command: ["python","-m","<svc>"]` JSON-array exec-form (D-04 буквально, Pitfall D4 mitigation: Python = PID 1, SIGTERM долетает напрямую без shell-wrapper'а — альтернатива `CMD ["sh","-c","exec python -m $SERVICE"]` отвергнута, оставляет shell в startup chain). Healthchecks `pg_isready -U $${POSTGRES_USER}` (start_period 15s покрывает initdb — Pitfall D2), `rabbitmq-diagnostics -q check_port_connectivity` (start_period 15s — Pitfall D1), `curl -fsS http://localhost:{PORT}/health` (start_period 10s). depends_on с `condition: service_healthy` на app-сервисах (Pitfall D1). `hostname: rabbitmq` pinned (R10 — mnesia node name стабилен через recreate). Management UI bound `127.0.0.1:15672:15672` (D-05, D-08, T-05-01: закрывает Open Question — Management UI binding). **PG 5432 и AMQP 5672 НЕ публикуются** в host network (T-05-02, T-05-03). `stop_grace_period: 30s` на app-сервисах (Pitfall R11, T-05-05). .env.example в D-16-структуре (shared / postgres / rabbitmq / line-provider / bet-maker секции). **Live `docker compose up` smoke-test APPROVED оператором по 12-step protocol**: все 4 сервиса (healthy) за <=35s, оба /health 200 `{"status":"ok"}`, `docker volume ls | grep bsw_` shows postgres_data + rabbitmq_data, `docker compose port rabbitmq 15672` returns `127.0.0.1:15672`, `cat /proc/1/comm` в обоих app возвращает `python` (D-04 буквально подтверждён), `time docker compose down` exit 0 в <30s с JSON `*.shutdown` events видимыми в логах, volumes survive `down && up` без `-v`, `nc -z localhost 5432` exit non-zero, `nc -z localhost 5672` exit non-zero. Closes INFR-03/INFR-04/INFR-05. Phase 1 complete (7/7 plans).
 - **2026-05-15 (Plan 02-01)**: Phase 2 Wave 0 foundations — единый блокирующий plan для всех 6 downstream P2 планов. `asgi-lifespan>=2.1,<3` в `dependency-groups.dev` (uv.lock +asgi-lifespan 2.1.0 +sniffio 1.3.1 transitive). `[tool.coverage.run]` source=src/line_provider branch=true + `[tool.coverage.report]` fail_under=85 (phase-gate Plan 02-07; bet-maker coverage self-declares в P3/P4). `tests/line_provider/conftest.py` переписан: split на `app` (lifespan-aware FastAPI через `LifespanManager(application)`) + `client` (AsyncClient bound to app fixture) — выбран split вместо yield-tuple, потому что сохраняет существующий контракт `client: AsyncClient` без правок test-файлов и Plan 02-07 integration-тесты смогут просить `app: FastAPI` параллельно через стандартный pytest fixture injection. RESEARCH Pattern 7 / Pitfall 1 mitigated: без LifespanManager все P2 integration-тесты упали бы на `AttributeError: app.state.event_store` (ASGITransport не триггерит lifespan). `REQUIREMENTS.md` LP-02 синхронизирован: `event_id (str)` → `UUID4 (client-generated)` с цитатой D-05 — drift между REQUIREMENTS.md и CONTEXT.md устранён. `02-VALIDATION.md`: skeleton-таблица заменена на canonical 20-task verification map (2-01-01 .. 2-07-06); frontmatter status=approved + nyquist_compliant=true + wave_0_complete=true; все Wave 0 Requirements и Validation Sign-Off `[x]`. Преждевременная правка `bet-maker schemas/messages.py` снята из Wave 0 — bet-maker schemas/messages.py создаётся только в P3/P5, D-05 уже фиксирует UUID; drift невозможен. Existing P1 baseline (`uv run pytest tests/line_provider -q`) остался зелёный (2 passed) после fixture upgrade. Closes QA-04 / QA-05 в части тестового скелета. No deviations.
+- **2026-05-15 (Plan 02-02)**: Phase 2 Wave 1 — Pydantic v2 schema layer для line-provider. `src/line_provider/schemas/events.py`: EventState `(str, Enum)` с 3 членами (NEW/FINISHED_WIN/FINISHED_LOSE — `StrEnum` заменён на `(str, Enum)` из-за Python 3.10, Rule 1 auto-fix), reusable `Coefficient = Annotated[Decimal, Field(gt=0, max_digits=8, decimal_places=2), AfterValidator(_quantize)]` (AfterValidator выполняется ПОСЛЕ Field-gate — `'10.123'` отвергается как >2dp, `'10'` принимается и квантизуется до `'10.00'` — Pitfall 3 closed), `FutureDeadline = Annotated[AwareDatetime, AfterValidator(_deadline_in_future)]` (только на EventCreate per D-07), EventCreate/EventUpdate/Event(frozen)/EventRead все с `extra='forbid'`. `src/line_provider/schemas/messages.py`: EventTerminalState (2 members, subset of EventState), EventFinishedMessage с `frozen=True + extra='forbid' + schema_version: int = 1 (Field(ge=1)) + event_id: UUID` (D-13, D-05) — готов к консьюминг'у Phase 5 RabbitEventBus и P3 bet-maker consumer без правок. `src/line_provider/helpers/money.py`: `quantize_coefficient(Decimal) -> Decimal` (2dp, ROUND_HALF_UP) — single source of truth для нормализации, переиспользуется bet-amount в P3/P4. `tests/line_provider/test_schemas.py` — 22 unit tests в 6 классах: Quantize (pad/keep/round), EventCreate (happy + 8 rejection cases + quantize round-trip), EventUpdate (D-07 past-deadline acceptance, D-04 event_id rejection), Event frozen, EventRead cross-model conversion, EventFinishedMessage (happy/frozen/schema_version=0/extra-field rejection + EventTerminalState ↔ EventState value parity); 23 REQ-ID references в docstrings (LP-02/LP-04/LP-08/D-04/D-07/D-13/D-17). Full suite 26 passed (4 P1 baseline + 22 new); mypy strict 6 source files OK; ruff All checks passed. Closes LP-02 (UUID4 event_id, Decimal 2dp coefficient, AwareDatetime deadline, state enum) и LP-04 (HTTP-схемы EventCreate/EventUpdate/EventRead); частично LP-08 (валидаторы coefficient>0, ≤2dp, deadline>now на POST — full state-transition validation остаётся за Plan 02-03 state-machine helper).
 
 ### Open Todos
 
@@ -90,15 +92,15 @@ Plan: 2 of 7 (Plan 01 complete — Wave 0 foundations)
 
 ### Last Session
 
-- **Started:** 2026-05-15T08:08:03Z
-- **Ended:** 2026-05-15T08:11:00Z
-- **Activity:** Executed 02-01-PLAN.md (Phase 2 Wave 0 foundations) — единый блокирующий план для всех 6 downstream P2 планов. Task 1: `uv add --dev "asgi-lifespan>=2.1,<3"` (lockfile регенерирован) + добавлены `[tool.coverage.run]` source=src/line_provider branch=true и `[tool.coverage.report]` fail_under=85 в pyproject.toml. Task 2: REQUIREMENTS.md LP-02 синхронизирован (str → UUID4 client-generated, ссылка на D-05). Task 3: `tests/line_provider/conftest.py` переписан в две fixture (`app` lifespan-aware через `LifespanManager(application)` + `client` AsyncClient bound to app); существующие 2 P1-теста (`test_health_*`) остались зелёные без правок. Task 4: 02-VALIDATION.md skeleton заменён на canonical 20-task verification map; frontmatter status=approved + nyquist_compliant=true + wave_0_complete=true; преждевременная bet-maker правка убрана.
-- **Outcome:** 4 atomic commits (b1d3eef chore deps+coverage, 6108550 docs REQUIREMENTS LP-02, 2ce6089 test conftest LifespanManager, 8fd4940 docs VALIDATION map) + финальный docs commit (02-01-SUMMARY.md + STATE.md + ROADMAP.md + REQUIREMENTS.md traceability). Verification: pytest 2 passed, mypy strict 0 errors на 13 source files, ruff check All checks passed, `grep -q "asgi-lifespan" pyproject.toml uv.lock` OK, `grep -q "wave_0_complete: true"` OK. No deviations. Phase 2 Wave 0 закрыт; Plan 02-02 (Schemas) и Plan 02-03 (State machine) разблокированы.
+- **Started:** 2026-05-15T08:16:10Z
+- **Ended:** 2026-05-15T08:19:33Z
+- **Activity:** Executed 02-02-PLAN.md (Phase 2 Wave 1 — Schemas) — 3 atomic tasks, fully autonomous. Task 1: `src/line_provider/schemas/events.py` (EventState 3 members, Coefficient + FutureDeadline annotated types, EventCreate/EventUpdate/Event(frozen)/EventRead все с extra=forbid) + `src/line_provider/helpers/money.py` (quantize_coefficient ROUND_HALF_UP). Task 2: `src/line_provider/schemas/messages.py` (EventTerminalState 2 members, EventFinishedMessage frozen + extra=forbid + schema_version=1 + UUID event_id). Task 3: `tests/line_provider/test_schemas.py` (22 unit tests в 6 классах, 23 REQ-ID references в docstrings).
+- **Outcome:** 3 atomic commits (750b614 feat events+money, 64b0d1f feat messages, e301d50 test test_schemas). Verification: pytest 26 passed (4 P1 + 22 new), mypy strict 6 files OK, ruff All checks passed. 4 Rule 1 auto-fixes folded into task commits: (1) StrEnum → (str, Enum) для Python 3.10 совместимости; (2) ruff RUF002 docstring (Cyrillic/Latin homoglyph) — переписан на чистый English; (3) ruff E501 один docstring (101 chars) — укорочен; (4) ruff format reformatted три model_validate({...}) блока в multi-line. Все 4 — без semantic change. No architectural decisions / Rule 4 / checkpoints needed.
 
 ### Next Session
 
-- **Recommended command:** `/gsd-execute-phase` (Phase 2 Plan 02 — Schemas, Wave 1) или параллельный запуск Plan 02-02 + Plan 02-03 (state machine pure helper, оба Wave 1 без shared code).
-- **Goal:** Phase 2 Schemas (EventState enum + EventCreate/EventUpdate/Event/EventRead + EventFinishedMessage с frozen+extra=forbid+AwareDatetime+Coefficient annotated) и parallelно — pure state-machine helper (`is_transition_allowed` parametrized 9-case table).
+- **Recommended command:** `/gsd-execute-phase` (Phase 2 Plan 03 — State machine, Wave 2) или параллельный запуск Plan 02-03 + Plan 02-04 (state-machine helper и in-memory store, оба depends_on=[01,02], без cross-file conflicts).
+- **Goal:** Phase 2 State machine (pure `is_transition_allowed(current, new) -> bool` helper, parametrized 9-case table) + in-memory store (`InMemoryEventStore` под `asyncio.Lock`, snapshot-return semantics D-15/D-16).
 
 ### Open Questions for Next Phase
 
