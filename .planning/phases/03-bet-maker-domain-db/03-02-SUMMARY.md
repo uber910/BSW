@@ -174,6 +174,21 @@ None beyond the autouse deviation documented above.
 - seed_event helper в bet_maker/conftest.py готов к wire-up в Plan 03-06 (StubEventLookup)
 - test_health.py НЕ изменён — baseline тесты зелёные; изменение ожидает Plan 03-08
 
+## Self-Check: PASSED
+
+- tests/conftest.py: FOUND
+- tests/bet_maker/conftest.py: FOUND
+- tests/bet_maker/test_schemas.py: FOUND
+- tests/bet_maker/test_db_engine.py: FOUND
+- tests/bet_maker/test_alembic.py: FOUND
+- .planning/phases/03-bet-maker-domain-db/03-02-SUMMARY.md: FOUND
+- bc05fe6 (chore 03-02 testcontainers): FOUND in git log
+- 86140ef (feat 03-02 PG fixtures): FOUND in git log
+- 37f2c19 (feat 03-02 bet_maker conftest): FOUND in git log
+- 1a57b9f (feat 03-02 stubs): FOUND in git log
+- a38e6a0 (docs 03-02 VALIDATION): FOUND in git log
+- 4779668 (docs 03-02 SUMMARY/STATE): FOUND in git log
+
 ---
 *Phase: 03-bet-maker-domain-db*
 *Completed: 2026-05-15*
