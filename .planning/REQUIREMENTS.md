@@ -25,7 +25,7 @@
 - [ ] **LP-05**: `GET /events` — список активных событий (`deadline > now`)
 - [ ] **LP-06**: При смене статуса с NEW на FINISHED_WIN/FINISHED_LOSE — публикация сообщения `EventFinishedMessage` в RabbitMQ exchange `events` (topic) с routing key `event.finished.{win|lose}`
 - [ ] **LP-07**: Endpoint `GET /health` с проверкой подключения к RabbitMQ
-- [ ] **LP-08**: Валидация бизнес-инвариантов: coefficient > 0, deadline в будущем при создании, запрет обратных переходов FINISHED → NEW
+- [x] **LP-08**: Валидация бизнес-инвариантов: coefficient > 0, deadline в будущем при создании, запрет обратных переходов FINISHED → NEW
 
 ### bet-maker (BM)
 
@@ -129,7 +129,7 @@
 | LP-05 | Phase 2 | Pending |
 | LP-06 | Phase 5 | Pending |
 | LP-07 | Phase 2 | Pending |
-| LP-08 | Phase 2 | Pending |
+| LP-08 | Phase 2 | Complete |
 | BM-01 | Phase 3 | Pending |
 | BM-02 | Phase 3 | Pending |
 | BM-03 | Phase 3 | Pending |
