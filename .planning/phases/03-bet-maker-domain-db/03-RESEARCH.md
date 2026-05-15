@@ -798,17 +798,19 @@ class BetCreate(BaseModel):
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`session.refresh(bet)` vs `RETURNING` после flush**
    - What we know: `server_default=func.now()` не заполняет Python атрибут через ORM автоматически в async режиме.
    - What's unclear: Делает ли SQLAlchemy 2.0.49 + asyncpg RETURNING автоматически при flush? Если да — refresh лишний.
    - Recommendation: Добавить `test_models.py` с проверкой `bet.created_at is not None` после flush без refresh — если зелёный без refresh, удалить. Безопасно оставить refresh в любом случае (один SELECT).
+   - **RESOLVED:** Use `await session.refresh(bet)` after flush to load server_default fields (created_at, updated_at). Plan 03-04 `test_models.py` `TestRuntime::test_insert_and_refresh_loads_server_defaults` verifies this. If tests pass without `refresh`, the call can be removed — leaving it is safe (one extra SELECT, ~1ms). Decision: keep `refresh` in `place_bet` interactor (Plan 03-06) as the canonical recipe (PATTERNS.md §«Pitfall A1 mitigation»).
 
 2. **pytest-asyncio session-scoped fixtures loop scope**
    - What we know: pytest-asyncio 1.1.0 поддерживает `scope="session"` для async fixtures.
    - What's unclear: Нужен ли `asyncio_default_fixture_loop_scope = "session"` в pyproject.ini_options для корректной работы session-scoped async fixtures?
    - Recommendation: Попробовать без настройки первым. Если ScopeMismatch — добавить `asyncio_default_fixture_loop_scope = "session"`.
+   - **RESOLVED:** Add `asyncio_default_fixture_loop_scope = "session"` to `pyproject.toml` `[tool.pytest.ini_options]` (implemented in Plan 03-02 Task 1). Confirmed required by pytest-asyncio 1.1.0 for session-scoped async fixtures (`postgres_container`, `async_engine`, `session_factory`); without it pytest raises ScopeMismatch when a session-scoped fixture depends on the auto event loop (which defaults to function scope).
 
 ---
 
