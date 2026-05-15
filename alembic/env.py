@@ -8,6 +8,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from bet_maker.models import Base
 from bet_maker.settings.config import BetMakerSettings
 
 config = context.config
@@ -18,7 +19,7 @@ if config.config_file_name is not None:
 settings = BetMakerSettings()
 config.set_main_option("sqlalchemy.url", str(settings.postgres_dsn))
 
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
