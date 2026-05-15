@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator, Callable
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
@@ -22,24 +23,46 @@ def _auto_truncate(truncate_bets: None) -> None:
     """
 
 
-@pytest_asyncio.fixture
-async def app() -> AsyncIterator[FastAPI]:
-    """FastAPI bet_maker app with lifespan triggered.
+@pytest.fixture(autouse=True)
+def _clear_event_lookup(app: FastAPI) -> None:
+    """Clear StubEventLookup before each test to prevent cross-test state.
 
-    Yielded separately so tests can poke `app.state.event_lookup`
-    (StubEventLookup.seed) without going through HTTP. Mirror of
-    tests/line_provider/conftest.py shape established in P2 Plan 02-01.
+    Session-scoped app shares a single StubEventLookup instance; seeds from
+    previous tests must be removed to prevent false positives.
+    """
+    app.state.event_lookup._events.clear()
+
+
+@pytest_asyncio.fixture(scope="session")
+async def app(pg_dsn: str) -> AsyncIterator[FastAPI]:
+    """Session-scoped FastAPI bet_maker app with lifespan triggered.
+
+    Session-scoped to avoid asyncpg event-loop mismatch: asyncpg connections
+    are bound to the event loop they were created in; a function-scoped app
+    fixture creates a new engine per test, causing 'Future attached to a
+    different loop' on engine.dispose() in the next function-loop.
+
+    Binds testcontainers pg_dsn into the process env before lifespan starts
+    — lifespan reads BetMakerSettings() which picks up BET_MAKER_POSTGRES_DSN.
+    Yielded separately so tests can poke app.state.event_lookup (StubEventLookup).
     """
     from bet_maker.app import build_app  # noqa: PLC0415
 
-    application = build_app()
-    async with LifespanManager(application):
-        yield application
+    os.environ["BET_MAKER_POSTGRES_DSN"] = pg_dsn
+    try:
+        application = build_app()
+        async with LifespanManager(application):
+            yield application
+    finally:
+        os.environ.pop("BET_MAKER_POSTGRES_DSN", None)
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="session")
 async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
-    """Async HTTP client bound to lifespan-aware app."""
+    """Session-scoped async HTTP client bound to lifespan-aware app.
+
+    Session-scoped to match app scope — one client for all tests.
+    """
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
@@ -49,11 +72,9 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
 async def seed_event(app: FastAPI) -> Callable[..., UUID]:
     """Helper fixture for tests that need to seed StubEventLookup.
 
-    Returns a callable: `seed_event(event_id, deadline=None, state="NEW")`.
-    D-11: StubEventLookup.seed_active is the canonical helper, exposed via
-    app.state.event_lookup. Until Plan 03-06 lands the real StubEventLookup,
-    this fixture is a placeholder that raises AttributeError — Wave 0 stubs
-    in test_*.py are pytest.skip'd, so this is never invoked yet.
+    Returns a callable: seed_event(event_id=None, deadline=None, state="NEW").
+    D-11: StubEventLookup.seed_active / seed are the canonical helpers,
+    exposed via app.state.event_lookup.
     """
 
     def _seed(
@@ -69,10 +90,15 @@ async def seed_event(app: FastAPI) -> Callable[..., UUID]:
         if state == "NEW":
             lookup.seed_active(event_id, deadline=deadline)
         else:
+            from bet_maker.facades.event_lookup import EventSnapshot  # noqa: PLC0415
+            from bet_maker.schemas.events import EventState  # noqa: PLC0415
+
             lookup.seed(
-                event_id=event_id,
-                deadline=deadline,
-                state=state,
+                EventSnapshot(
+                    event_id=event_id,
+                    deadline=deadline,
+                    state=EventState(state),
+                )
             )
         return event_id
 
