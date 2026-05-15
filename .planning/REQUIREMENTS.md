@@ -31,10 +31,10 @@
 
 - [ ] **BM-01**: SQLAlchemy 2.0 async модели для ставок (id UUID, event_id UUID, amount Decimal 12.2, status enum (PENDING/WON/LOST), created_at, updated_at). Per D-01 (Phase 3 CONTEXT.md): coefficient НЕ хранится в Bet — это атрибут события, живёт в line-provider; ТЗ стр. 3 `POST /bet` body = `{идентификатор события, сумма ставки}` без coefficient.
 - [ ] **BM-02**: Unit of Work как async context manager поверх `async_sessionmaker.begin()`, репозитории флашат, UoW коммитит
-- [ ] **BM-03**: Слоистая архитектура: entrypoints / facades / interactors / selectors / helpers (множественное число; helpers — pure functions)
+- [x] **BM-03**: Слоистая архитектура: entrypoints / facades / interactors / selectors / helpers (множественное число; helpers — pure functions)
 - [ ] **BM-04**: `GET /events` — проксирует список активных событий из line-provider через httpx с retry (tenacity)
-- [ ] **BM-05**: `POST /bet` — приём ставки; в теле `{event_id, amount}` (amount > 0, ровно 2 знака после запятой); ответ — 201 с BetRead `{id, event_id, amount, status, created_at}`; status=PENDING при создании. Per D-01 (Phase 3 CONTEXT.md): coefficient snapshot НЕ хранится — coefficient остаётся в line-provider; ТЗ стр. 3 не требует coefficient в Bet payload.
-- [ ] **BM-06**: Валидация: проверка существования и активности события (deadline > now, state == NEW) перед сохранением ставки
+- [x] **BM-05**: `POST /bet` — приём ставки; в теле `{event_id, amount}` (amount > 0, ровно 2 знака после запятой); ответ — 201 с BetRead `{id, event_id, amount, status, created_at}`; status=PENDING при создании. Per D-01 (Phase 3 CONTEXT.md): coefficient snapshot НЕ хранится — coefficient остаётся в line-provider; ТЗ стр. 3 не требует coefficient в Bet payload.
+- [x] **BM-06**: Валидация: проверка существования и активности события (deadline > now, state == NEW) перед сохранением ставки
 - [ ] **BM-07**: `GET /bets` — история всех ставок с полями id, event_id, amount, status (PENDING / WON / LOST), created_at
 - [ ] **BM-08**: Endpoint `GET /health` с проверкой PostgreSQL (`SELECT 1`) и RabbitMQ
 - [ ] **BM-09**: FastStream RabbitRouter consumer на очереди `bet_maker.events.finished` с `AckPolicy.MANUAL`, prefetch=20, durable=true
@@ -133,10 +133,10 @@
 | LP-08 | Phase 2 | Complete |
 | BM-01 | Phase 3 | Complete |
 | BM-02 | Phase 3 | Pending |
-| BM-03 | Phase 3 | Pending |
+| BM-03 | Phase 3 | Complete |
 | BM-04 | Phase 4 | Pending |
 | BM-05 | Phase 3 | Complete |
-| BM-06 | Phase 3 | Pending |
+| BM-06 | Phase 3 | Complete |
 | BM-07 | Phase 3 | Pending |
 | BM-08 | Phase 3 | Pending |
 | BM-09 | Phase 5 | Pending |
