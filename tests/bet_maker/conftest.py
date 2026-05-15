@@ -4,10 +4,22 @@ from collections.abc import AsyncIterator, Callable
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
+import pytest
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+
+
+@pytest.fixture(autouse=True)
+def _auto_truncate(truncate_bets: None) -> None:
+    """Auto-use wrapper that activates truncate_bets for all bet_maker tests.
+
+    D-23: per-test isolation. truncate_bets is defined in root conftest and
+    performs TRUNCATE bets after each test. This fixture requests it with
+    autouse=True so every test in tests/bet_maker/ gets the cleanup without
+    explicit fixture declaration.
+    """
 
 
 @pytest_asyncio.fixture
