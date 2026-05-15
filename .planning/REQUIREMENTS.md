@@ -51,7 +51,7 @@
 - [x] **QA-04**: Unit-тесты на каждый слой (interactors/selectors/helpers/repositories) — pytest + pytest-asyncio (line-provider: schemas/state-machine/store/facades/interactors/selectors unit-тесты в плагинах 02-02..02-06; bet-maker — Phase 3 / Phase 5)
 - [x] **QA-05**: Integration-тесты на API через httpx AsyncClient (line-provider и bet-maker) (line-provider: 23-тестная HTTP-матрица через httpx.AsyncClient + ASGITransport + LifespanManager landed in plan 02-07; bet-maker — Phase 3)
 - [ ] **QA-06**: Consumer тесты через `TestRabbitBroker` (FastStream native)
-- [ ] **QA-07**: PG-тесты с реальной БД через testcontainers (НЕ SQLite, чтобы ловить `FOR UPDATE` баги)
+- [x] **QA-07**: PG-тесты с реальной БД через testcontainers (НЕ SQLite, чтобы ловить `FOR UPDATE` баги)
 - [ ] **QA-08**: Один e2e сценарий: создать событие → поставить ставку → завершить событие → проверить, что ставка стала WON/LOST через consumer + ещё одну через reconciler
 - [ ] **QA-09**: pytest-cov с минимальным порогом покрытия (≥80%)
 - [x] **QA-10**: GitHub Actions CI: lint + typecheck + unit + integration на каждый push/PR
@@ -150,7 +150,7 @@
 | QA-04 | Phase 2 | Complete |
 | QA-05 | Phase 2 | Complete |
 | QA-06 | Phase 5 | Pending |
-| QA-07 | Phase 3 | Pending |
+| QA-07 | Phase 3 | Complete |
 | QA-08 | Phase 6 | Pending |
 | QA-09 | Phase 7 | Pending |
 | QA-10 | Phase 1 | Complete |
