@@ -15,13 +15,13 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from line_provider.interactors.set_event_state import set_event_state
 
 from line_provider.helpers.state_machine import TransitionForbiddenError
 from line_provider.infrastructure.store.in_memory import (
     EventNotFoundError,
     InMemoryEventStore,
 )
+from line_provider.interactors.set_event_state import set_event_state
 from line_provider.schemas.events import Event, EventState
 from tests.line_provider._fakes import FakeEventBus
 

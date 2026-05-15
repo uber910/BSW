@@ -11,12 +11,12 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from line_provider.interactors.create_event import create_event
 
 from line_provider.infrastructure.store.in_memory import (
     EventAlreadyExistsError,
     InMemoryEventStore,
 )
+from line_provider.interactors.create_event import create_event
 from line_provider.schemas.events import EventCreate, EventState
 
 
