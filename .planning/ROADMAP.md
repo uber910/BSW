@@ -182,7 +182,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Skeleton + Infrastructure | 7/7 | Complete | 2026-05-14 |
 | 2. line-provider domain | 7/7 | Complete | 2026-05-15 |
-| 3. bet-maker domain (DB) | 4/9 | In Progress|  |
+| 3. bet-maker domain (DB) | 5/9 | In Progress|  |
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
 | 5. RabbitMQ integration | 0/? | Not started | - |
 | 6. Reconciliation job | 0/? | Not started | - |
