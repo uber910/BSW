@@ -28,4 +28,6 @@ class BetMakerSettings(BaseAppSettings):
     line_provider_base_url: HttpUrl = Field(
         default=HttpUrl("http://line-provider:8000"),
     )
+    line_provider_http_attempts: int = Field(default=3, ge=1, le=10)
+    line_provider_http_backoff_max_s: float = Field(default=2.0, gt=0)
     reconciliation_interval_s: float = Field(default=30.0, gt=0)
