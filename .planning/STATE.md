@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+status: ready_to_plan
 last_updated: "2026-05-17T14:10:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 32
   completed_plans: 32
-  percent: 100
+  percent: 57
 ---
 
 # Project State: BSW Betting System
@@ -28,11 +28,11 @@ Phase: 04 (bet-maker-http-integration-with-line-provider) — EXECUTING (all pla
 Plan: 9 of 9 complete
 
 - **Milestone:** v1
-- **Phase:** 4 (EXECUTING — 9/9 plans complete)
-- **Plan:** 04-09 complete (Wave 6 — POST /bet `LineProviderUnavailable -> 503` path: `src/bet_maker/entrypoints/api/bets.py` extended with `from bet_maker.facades.line_provider_client import LineProviderUnavailable` import and a new `except LineProviderUnavailable as exc: raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="event validation unavailable: line-provider unreachable") from exc` clause inserted BEFORE the existing `except EventNotBettable -> 422` clause (D-08 ladder order — sibling exceptions, fixed order for reading clarity); docstring updated with D-08 + Pitfall 7 (RESEARCH line 646: place_bet must NOT catch LineProviderUnavailable internally); static detail string contains no event_id / no internal reason (T-04-09-Info-disclosure mitigation), but `from exc` keeps `LineProviderUnavailable.reason` on the exception chain for logs; `tests/bet_maker/test_bet_routes.py::TestPostBet503` added between `TestPostBetEventNotBettable` and `TestGetBets` — 2 tests via `app.dependency_overrides[get_event_lookup] = lambda: _RaisingLookup()` (try/finally cleanup), `_RaisingLookup` implements EventLookup Protocol and raises `LineProviderUnavailable(reason="...")` on every `get_event(event_id)` call; `test_post_bet_503_when_line_provider_unavailable` asserts status==503 + exact static detail + `count_before == count_after` via GET /bets (T-04-09-PartialWrite mitigation — place_bet validation runs BEFORE `async with uow:` so PG is never touched on LP-down path); `test_post_bet_503_ladder_precedes_422` proves ordering by injecting raising lookup with bogus event_id — 503 fires before any 422-path would (T-04-09-LadderMisorder mitigation); module-top imports added: `FastAPI`, `EventSnapshot`, `LineProviderUnavailable`; ruff PLW0108 auto-fix: `# noqa: PLW0108` on both lambdas (preserves verbatim plan pattern + acceptance grep `dependency_overrides\[get_event_lookup\]` returning 2); 149 bet_maker passed +2 new, 244 total passed; mypy src clean 71 files; ruff clean; BM-04 fully closed)
+- **Phase:** 5
+- **Plan:** Not started
 - **Plan:** 04-08 complete (Wave 6 — `src/bet_maker/entrypoints/api/events.py` (NEW): `GET /events` route via `LineProviderHttpClientDep` -> `list_active_events(http_client)` -> `list[EventRead]`; on `LineProviderUnavailable` raises `HTTPException(503, "line-provider unreachable")` with `from exc` (D-10 / T-04-08-Info-disclosure: static detail string, internal reason kept on exception chain only); `src/bet_maker/app.py` extended to include `events.router` after `bets.router` (ordering: health -> bets -> events); `tests/bet_maker/test_events_routes.py` (NEW) with D-16 two-FastAPI-apps integration — session-scoped `lp_http_client` (ASGITransport over `line_provider_app`) + function-scoped `real_lp_wiring` overrides dep + event_lookup AFTER autouse stub-swap; 6 tests in 3 classes — TestGetEventsAgainstRealLp (active events / list shape / FINISHED_WIN drop), TestGetEvents503 (respx 503 overlay -> 503 + static detail), TestPostBetViaRealLp (happy path 201 / 404 -> 422); LP POST body drops `state` per `EventCreate(extra="forbid")` schema; 147 bet_maker passed +6 new, 242 total passed; mypy src clean 71 files; ruff clean)
 - **Plan:** 04-07 complete (Wave 5 — lifecycle wiring: singleton `httpx.AsyncClient(base_url=settings.line_provider_base_url, timeout=httpx.Timeout(5.0))` создан в `src/bet_maker/entrypoints/lifespan.py` после `wait_for_postgres` (D-02/D-19); `app.state.line_provider_http_client = http_client` + `app.state.event_lookup = HttpEventLookup(http_client=..., attempts=settings.line_provider_http_attempts, max_backoff=settings.line_provider_http_backoff_max_s)` заменяет StubEventLookup (D-14/D-21); shutdown reversed — nested `try: await http_client.aclose() finally: await engine.dispose()` гарантирует dispose даже если aclose бросит (D-20, Pitfall 6); `src/bet_maker/facades/deps.py` расширен `get_line_provider_http_client(request) -> httpx.AsyncClient` provider + `LineProviderHttpClientDep` Annotated alias через `cast(httpx.AsyncClient, request.app.state.line_provider_http_client)` (D-12, Anti-Pattern A2 — нет module-level singleton); `tests/bet_maker/conftest.py::_clear_event_lookup` переписан: вместо broken `app.state.event_lookup._events.clear()` (атрибут отсутствует на HttpEventLookup) теперь `app.state.event_lookup = StubEventLookup()` swap per-test — restores isolation без HttpEventLookup-specific internals (PATTERNS.md critical finding line 801); добавлена session-scoped fixture `line_provider_app` (LifespanManager(build_app())) для Plan 04-08 ASGI proxy integration tests (D-16); `tests/bet_maker/test_lifespan.py` переписан с 4 классами — TestLifespanStatePins (4 теста: engine/sessionmaker/settings + новый http_client), TestProductionLifespanWiring (новый — `test_event_lookup_is_http_in_production` строит fresh app через build_app() в обход autouse swap, проверяет isinstance HttpEventLookup), TestShutdownOrder (новый — `test_aclose_before_dispose` patch.object на httpx.AsyncClient.aclose + AsyncEngine.dispose, fake_аналоги appendят имена в `call_order: list[str]` перед делегацией оригиналу, ассерт `call_order.index("aclose") < call_order.index("dispose")` — изначально пытался `engine.dispose = fake_dispose` на instance, отвергнут AttributeError 'AsyncEngine' object attribute 'dispose' is read-only — переключён на class-level patch), TestLifespanRetryExhaustion (unchanged P3); 141 bet_maker passed (+2 new), 236 total passed; mypy src clean 70 files; ruff clean)
-- **Status:** Executing Phase 04
+- **Status:** Ready to plan
 - **Progress:** [██████████] 100% of planned phases (3/3 planned phases complete; 4 phases yet to be planned)
 
 ```
