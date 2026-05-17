@@ -162,7 +162,19 @@ Plans:
   - **F7**: `schema_version` field + `ConfigDict(extra="forbid")`; consumer rejects unsupported versions to DLQ
   - **F8**: routing key constants single-sourced; mandatory binding asserted in integration test
   - **A7**: consumer handler `clear_contextvars()` at top, binds `event_id/correlation_id/message_id`, clears in `finally`
-**Plans**: TBD
+**Plans:** 10 plans across 4 waves
+
+Plans:
+- [ ] 05-01-wave0-test-scaffolding-PLAN.md — pyproject pika dev-dep + conftest RMQ fixtures + 7 stub test files (Wave 0)
+- [ ] 05-02-schema-duplication-routing-PLAN.md — EventFinishedMessage duplicate + SettleResult DTO + messaging/routing.py constants + contract test (Wave 1)
+- [ ] 05-03-repository-orm-migration-PLAN.md — Bet ORM settled_at/settled_via + Alembic 0002 + BetRepository.get_pending_locked (Wave 1)
+- [ ] 05-04-settle-interactor-PLAN.md — settle_bets_for_event idempotent interactor + idempotency/concurrent settle tests (Wave 1)
+- [ ] 05-05-messaging-entrypoint-PLAN.md — RabbitRouter + on_event_finished handler + RabbitBrokerDep + 7-branch TestRabbitBroker (Wave 2)
+- [ ] 05-06-rabbit-event-bus-PLAN.md — RabbitEventBus + line-provider messaging.py + set_event_state rewire (Wave 2)
+- [ ] 05-07-lifespan-composition-PLAN.md — bet-maker + line-provider lifespan broker layer + topology declare + app.include_router (Wave 2)
+- [ ] 05-08-health-upgrade-PLAN.md — /health 503 on PG/RMQ/subscribers (Wave 2)
+- [ ] 05-09-e2e-rabbitmq-PLAN.md — real-RMQ + real-PG e2e (consumer settle + poison-to-DLQ) (Wave 3)
+- [ ] 05-10-requirements-doc-sync-PLAN.md — REQUIREMENTS.md BM-09/BM-11 sync with implementation (Wave 3)
 
 ### Phase 6: Reconciliation job
 **Goal**: A bet **never** stays PENDING after its event has finished, even if the AMQP message was lost. An asyncio background task polls line-provider for terminal-state events and settles via the same `settle_bets_for_event` interactor as the consumer.
