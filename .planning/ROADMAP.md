@@ -123,7 +123,18 @@ Plans:
 **Pitfalls this phase prevents**:
   - Stale `httpx.AsyncClient` connections / event-loop sharing in tests (fixture scope must match)
   - **Integration Gotcha**: `httpx.AsyncClient(base_url=str(settings.line_provider_base_url), timeout=httpx.Timeout(5.0))` — never default infinite timeout
-**Plans**: TBD
+**Plans:** 9 plans across 6 waves
+
+Plans:
+- [ ] 04-01-PLAN.md — Doc-sync (REQUIREMENTS BM-04 + ROADMAP Phase 4 Goal/SC#1) + respx dev-dep (Wave 1)
+- [ ] 04-02-PLAN.md — EventRead schema in bet_maker/schemas/events.py + TestEventRead (Wave 2)
+- [ ] 04-03-PLAN.md — BetMakerSettings two new fields (line_provider_http_attempts, line_provider_http_backoff_max_s) + test_settings.py (Wave 2)
+- [ ] 04-04-PLAN.md — facades/line_provider_client.py (LineProviderUnavailable + make_retry_decorator factory) + tests (Wave 3)
+- [ ] 04-05-PLAN.md — facades/http_event_lookup.py (HttpEventLookup implements EventLookup Protocol) + respx unit tests (Wave 4)
+- [ ] 04-06-PLAN.md — selectors/list_active_events.py + respx unit tests (Wave 4)
+- [ ] 04-07-PLAN.md — Lifecycle wiring: deps.py provider + lifespan.py singleton AsyncClient + conftest _clear_event_lookup rework + test_lifespan (Wave 5)
+- [ ] 04-08-PLAN.md — GET /events route + app.py wiring + integration test (two FastAPI apps via ASGITransport) (Wave 6)
+- [ ] 04-09-PLAN.md — POST /bet 503 path (LineProviderUnavailable → 503) + TestPostBet503 (Wave 6)
 
 ### Phase 5: RabbitMQ integration
 **Goal**: line-provider publishes `EventFinishedMessage` to RabbitMQ on state change; bet-maker consumes durably with manual ack, settles atomically via `FOR UPDATE SKIP LOCKED`, and routes poison messages to DLQ. Highest-risk phase (~half of all pitfalls).
