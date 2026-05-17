@@ -129,6 +129,81 @@ async def test_get_event_5xx_then_200_retry_succeeds(respx_mock: respx.MockRoute
     assert route.call_count == 3
 
 
+@pytest.mark.asyncio
+@respx.mock(base_url=LP_BASE_URL)
+async def test_get_event_malformed_json_raises_unavailable(
+    respx_mock: respx.MockRouter,
+) -> None:
+    """WR-01: 200 with non-JSON body -> LineProviderUnavailable (not 500).
+
+    Defense-in-depth: a malformed payload from LP is observationally
+    indistinguishable from LP being broken; HttpEventLookup must surface
+    it through the same channel (503 at the route boundary), not as an
+    unhandled 500.
+    """
+    event_id = uuid4()
+    respx_mock.get(f"/event/{event_id}").mock(return_value=Response(200, content=b"not-json"))
+
+    async with httpx.AsyncClient(base_url=LP_BASE_URL, timeout=httpx.Timeout(5.0)) as client:
+        lookup = HttpEventLookup(http_client=client, attempts=3, max_backoff=0.1)
+        with pytest.raises(LineProviderUnavailable) as exc_info:
+            await lookup.get_event(event_id)
+
+    assert exc_info.value.reason == "malformed payload from line-provider"
+
+
+@pytest.mark.asyncio
+@respx.mock(base_url=LP_BASE_URL)
+async def test_get_event_missing_key_raises_unavailable(
+    respx_mock: respx.MockRouter,
+) -> None:
+    """WR-01: 200 with JSON missing required field -> LineProviderUnavailable.
+
+    Schema drift on LP side must not leak as KeyError / 500.
+    """
+    event_id = uuid4()
+    respx_mock.get(f"/event/{event_id}").mock(
+        return_value=Response(200, json={"unexpected": "shape"})
+    )
+
+    async with httpx.AsyncClient(base_url=LP_BASE_URL, timeout=httpx.Timeout(5.0)) as client:
+        lookup = HttpEventLookup(http_client=client, attempts=3, max_backoff=0.1)
+        with pytest.raises(LineProviderUnavailable) as exc_info:
+            await lookup.get_event(event_id)
+
+    assert exc_info.value.reason == "malformed payload from line-provider"
+
+
+@pytest.mark.asyncio
+@respx.mock(base_url=LP_BASE_URL)
+async def test_get_event_invalid_uuid_raises_unavailable(
+    respx_mock: respx.MockRouter,
+) -> None:
+    """WR-01: 200 with non-UUID event_id field -> LineProviderUnavailable.
+
+    UUID parsing ValueError must not leak as 500.
+    """
+    event_id = uuid4()
+    respx_mock.get(f"/event/{event_id}").mock(
+        return_value=Response(
+            200,
+            json={
+                "event_id": "not-a-uuid",
+                "coefficient": "2.50",
+                "deadline": "2026-12-01T12:00:00+00:00",
+                "state": "NEW",
+            },
+        )
+    )
+
+    async with httpx.AsyncClient(base_url=LP_BASE_URL, timeout=httpx.Timeout(5.0)) as client:
+        lookup = HttpEventLookup(http_client=client, attempts=3, max_backoff=0.1)
+        with pytest.raises(LineProviderUnavailable) as exc_info:
+            await lookup.get_event(event_id)
+
+    assert exc_info.value.reason == "malformed payload from line-provider"
+
+
 class TestHttpEventLookup:
     """Marker class for plan acceptance criterion (artifact contains 'class TestHttpEventLookup').
 

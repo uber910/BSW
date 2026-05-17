@@ -117,6 +117,41 @@ async def test_5xx_exhausts_raises_unavailable(respx_mock: respx.MockRouter) -> 
     assert route.call_count == 3
 
 
+@pytest.mark.asyncio
+@respx.mock(base_url=LP_BASE_URL)
+async def test_malformed_json_raises_unavailable(respx_mock: respx.MockRouter) -> None:
+    """WR-01: 200 with non-JSON body -> LineProviderUnavailable.
+
+    A malformed payload on LP must not escape as 500 at the bet-maker
+    boundary — it surfaces through the same 503 channel as transport
+    errors and 5xx exhaustion.
+    """
+    respx_mock.get("/events").mock(return_value=Response(200, content=b"not-json"))
+
+    async with httpx.AsyncClient(base_url=LP_BASE_URL, timeout=httpx.Timeout(5.0)) as client:
+        with pytest.raises(LineProviderUnavailable) as exc_info:
+            await list_active_events(client, attempts=3, max_backoff=0.1)
+
+    assert exc_info.value.reason == "malformed payload from line-provider"
+
+
+@pytest.mark.asyncio
+@respx.mock(base_url=LP_BASE_URL)
+async def test_schema_drift_raises_unavailable(respx_mock: respx.MockRouter) -> None:
+    """WR-01: 200 with item missing required field -> LineProviderUnavailable.
+
+    EventRead has extra='forbid'; a stray field (or missing required field)
+    causes ValidationError which must be mapped to 503, not 500.
+    """
+    respx_mock.get("/events").mock(return_value=Response(200, json=[{"unexpected": "shape"}]))
+
+    async with httpx.AsyncClient(base_url=LP_BASE_URL, timeout=httpx.Timeout(5.0)) as client:
+        with pytest.raises(LineProviderUnavailable) as exc_info:
+            await list_active_events(client, attempts=3, max_backoff=0.1)
+
+    assert exc_info.value.reason == "malformed payload from line-provider"
+
+
 class TestListActiveEvents:
     """Marker class for must_haves artifact contract (`contains: 'class TestListActiveEvents'`).
 

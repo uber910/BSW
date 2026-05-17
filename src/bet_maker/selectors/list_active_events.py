@@ -11,7 +11,10 @@ D-11: uses the shared make_retry_decorator from facades/line_provider_client
 
 from __future__ import annotations
 
+from json import JSONDecodeError
+
 import httpx
+from pydantic import ValidationError
 
 from bet_maker.facades.line_provider_client import (
     LineProviderUnavailable,
@@ -46,3 +49,5 @@ async def list_active_events(
         return await _call()
     except (httpx.TransportError, httpx.HTTPStatusError) as exc:
         raise LineProviderUnavailable(reason=str(exc)) from exc
+    except (JSONDecodeError, KeyError, ValueError, ValidationError) as exc:
+        raise LineProviderUnavailable(reason="malformed payload from line-provider") from exc
