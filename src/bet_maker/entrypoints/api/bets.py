@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, status
 
 from bet_maker.facades.deps import EventLookupDep, SessionDep, UoWDep
+from bet_maker.facades.line_provider_client import LineProviderUnavailable
 from bet_maker.interactors.place_bet import EventNotBettable, place_bet
 from bet_maker.schemas.bets import BetCreate, BetRead
 from bet_maker.selectors.get_bet import get_bet_by_id
@@ -30,6 +31,12 @@ async def post_bet(
     when EventNotBettable raised by place_bet interactor.
     D-06: three exact reason strings ("event not found", "deadline passed",
     "event not active") surfaced in the detail message.
+    D-08: LineProviderUnavailable (upstream unreachable after retry) ->
+    503 with static detail. Ladder order MUST be LineProviderUnavailable
+    first, EventNotBettable second — sibling exceptions, but D-08 fixes
+    the order for explicit reading clarity. Pitfall 7 (RESEARCH line
+    646): place_bet must NOT catch LineProviderUnavailable internally;
+    it propagates here.
     """
     try:
         return await place_bet(
@@ -38,6 +45,11 @@ async def post_bet(
             amount=body.amount,
             event_lookup=event_lookup,
         )
+    except LineProviderUnavailable as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="event validation unavailable: line-provider unreachable",
+        ) from exc
     except EventNotBettable as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
