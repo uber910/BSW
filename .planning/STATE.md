@@ -8,13 +8,13 @@ progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 32
-  completed_plans: 30
-  percent: 94
+  completed_plans: 31
+  percent: 97
 ---
 
 # Project State: BSW Betting System
 
-**Last updated:** 2026-05-17 (after Phase 4 Plan 06 — `src/bet_maker/selectors/list_active_events.py` created: `async list_active_events(http_client, *, attempts=3, max_backoff=2.0) -> list[EventRead]` proxies LP `GET /events` through the shared `make_retry_decorator` from Plan 04-04 (D-11) and parses the JSON array via `EventRead.model_validate(item)` per item (D-13 frozen + extra="forbid" surfaces LP schema drift as ValidationError, Anti-Pattern 5 mitigation: returns DTOs only — never raw dicts); outer `try/except (httpx.TransportError, httpx.HTTPStatusError) -> LineProviderUnavailable(reason=str(exc))` collapses transport + retry-exhausted-5xx + unexpected-4xx into one downstream-actionable exception (D-05 / D-07); no 404 short-circuit needed because LP /events route has no 4xx response paths (Pitfall 5 inverted); `tests/bet_maker/test_list_active_events.py` created with 4 module-level respx scenarios per D-15 + 1 marker class `TestListActiveEvents` (empty list / 2-event list / 503+503+200 retry-success / 503-always exhausts to LineProviderUnavailable with route.call_count == attempts); 139 bet_maker tests passing — +5 new)
+**Last updated:** 2026-05-17 (after Phase 4 Plan 08 — bet-maker `GET /events` route added at `src/bet_maker/entrypoints/api/events.py`: `router = APIRouter(tags=["events"])` + `@router.get("/events", response_model=list[EventRead])` delegates to `list_active_events(http_client)` (Plan 04-06) and maps `LineProviderUnavailable` -> `HTTPException(503, detail="line-provider unreachable")` per D-10 (T-04-08-Info-disclosure mitigation: static string only, internal `reason` preserved on exception chain for logs); `src/bet_maker/app.py` extended — import line now `from bet_maker.entrypoints.api import bets, events, health` plus `app.include_router(events.router)` AFTER bets router (ordering: health -> bets -> events); `tests/bet_maker/test_events_routes.py` created with D-16 two-FastAPI-apps-in-one-event-loop integration pattern — session-scoped `lp_http_client` over `ASGITransport(app=line_provider_app)` matches session-scoped `app` + `line_provider_app` fixtures (Pitfall A2), function-scoped `real_lp_wiring` overrides `get_line_provider_http_client` dep AND swaps `app.state.event_lookup = HttpEventLookup(lp_http_client, attempts=3, max_backoff=0.1)` AFTER the autouse `_clear_event_lookup` stub-swap (fixture-order proof: `TestPostBetViaRealLp::test_happy_path_through_real_lp` succeeds with a real LP-resolved `event_id` — would fail with "event not found" if real_lp_wiring ran before autouse); 6 tests across 3 classes — TestGetEventsAgainstRealLp (POST event to LP -> bet-maker GET /events returns it / list shape on empty / PUT to FINISHED_WIN drops it), TestGetEvents503 (respx mock 503 overlay returns 503 + static detail), TestPostBetViaRealLp (happy path 201 / unknown UUID -> LP 404 -> 422 "event not found"); LP POST /event body drops `state` field per `EventCreate(extra="forbid")` schema (state defaults to NEW server-side); 147 bet_maker passed +6 new, 242 total passed; mypy src clean 71 files; ruff clean)
 
 ## Project Reference
 
@@ -25,10 +25,11 @@ progress:
 ## Current Position
 
 Phase: 04 (bet-maker-http-integration-with-line-provider) — EXECUTING
-Plan: 8 of 9
+Plan: 9 of 9
 
 - **Milestone:** v1
 - **Phase:** 4 (EXECUTING)
+- **Plan:** 04-08 complete (Wave 6 — `src/bet_maker/entrypoints/api/events.py` (NEW): `GET /events` route via `LineProviderHttpClientDep` -> `list_active_events(http_client)` -> `list[EventRead]`; on `LineProviderUnavailable` raises `HTTPException(503, "line-provider unreachable")` with `from exc` (D-10 / T-04-08-Info-disclosure: static detail string, internal reason kept on exception chain only); `src/bet_maker/app.py` extended to include `events.router` after `bets.router` (ordering: health -> bets -> events); `tests/bet_maker/test_events_routes.py` (NEW) with D-16 two-FastAPI-apps integration — session-scoped `lp_http_client` (ASGITransport over `line_provider_app`) + function-scoped `real_lp_wiring` overrides dep + event_lookup AFTER autouse stub-swap; 6 tests in 3 classes — TestGetEventsAgainstRealLp (active events / list shape / FINISHED_WIN drop), TestGetEvents503 (respx 503 overlay -> 503 + static detail), TestPostBetViaRealLp (happy path 201 / 404 -> 422); LP POST body drops `state` per `EventCreate(extra="forbid")` schema; 147 bet_maker passed +6 new, 242 total passed; mypy src clean 71 files; ruff clean)
 - **Plan:** 04-07 complete (Wave 5 — lifecycle wiring: singleton `httpx.AsyncClient(base_url=settings.line_provider_base_url, timeout=httpx.Timeout(5.0))` создан в `src/bet_maker/entrypoints/lifespan.py` после `wait_for_postgres` (D-02/D-19); `app.state.line_provider_http_client = http_client` + `app.state.event_lookup = HttpEventLookup(http_client=..., attempts=settings.line_provider_http_attempts, max_backoff=settings.line_provider_http_backoff_max_s)` заменяет StubEventLookup (D-14/D-21); shutdown reversed — nested `try: await http_client.aclose() finally: await engine.dispose()` гарантирует dispose даже если aclose бросит (D-20, Pitfall 6); `src/bet_maker/facades/deps.py` расширен `get_line_provider_http_client(request) -> httpx.AsyncClient` provider + `LineProviderHttpClientDep` Annotated alias через `cast(httpx.AsyncClient, request.app.state.line_provider_http_client)` (D-12, Anti-Pattern A2 — нет module-level singleton); `tests/bet_maker/conftest.py::_clear_event_lookup` переписан: вместо broken `app.state.event_lookup._events.clear()` (атрибут отсутствует на HttpEventLookup) теперь `app.state.event_lookup = StubEventLookup()` swap per-test — restores isolation без HttpEventLookup-specific internals (PATTERNS.md critical finding line 801); добавлена session-scoped fixture `line_provider_app` (LifespanManager(build_app())) для Plan 04-08 ASGI proxy integration tests (D-16); `tests/bet_maker/test_lifespan.py` переписан с 4 классами — TestLifespanStatePins (4 теста: engine/sessionmaker/settings + новый http_client), TestProductionLifespanWiring (новый — `test_event_lookup_is_http_in_production` строит fresh app через build_app() в обход autouse swap, проверяет isinstance HttpEventLookup), TestShutdownOrder (новый — `test_aclose_before_dispose` patch.object на httpx.AsyncClient.aclose + AsyncEngine.dispose, fake_аналоги appendят имена в `call_order: list[str]` перед делегацией оригиналу, ассерт `call_order.index("aclose") < call_order.index("dispose")` — изначально пытался `engine.dispose = fake_dispose` на instance, отвергнут AttributeError 'AsyncEngine' object attribute 'dispose' is read-only — переключён на class-level patch), TestLifespanRetryExhaustion (unchanged P3); 141 bet_maker passed (+2 new), 236 total passed; mypy src clean 70 files; ruff clean)
 - **Status:** Executing Phase 04
 - **Progress:** [██████████] 100% of planned phases (3/3 planned phases complete; 4 phases yet to be planned)
@@ -44,7 +45,7 @@ Plan: 8 of 9
 | Phases planned | 3/7 |
 | Phases complete | 3/7 |
 | Requirements mapped | 43/43 (100%) |
-| Plans complete | 30/32 (Phase 1 complete; Phase 2 complete; Phase 3 complete; Phase 4: 7/9) |
+| Plans complete | 31/32 (Phase 1 complete; Phase 2 complete; Phase 3 complete; Phase 4: 8/9) |
 | Plan 01-01 duration | ~4 min |
 | Plan 01-02 duration | ~4 min |
 | Plan 01-03 duration | ~2 min (2 tasks, 10 files) |
@@ -75,6 +76,7 @@ Plan: 8 of 9
 | Plan 04-05 duration | ~4 min (2 tasks TDD: facades/http_event_lookup.py with HttpEventLookup over httpx+tenacity per D-05/D-07/D-09/D-11/D-14 + tests/bet_maker/test_http_event_lookup.py with 5 respx scenarios + 1 Protocol marker; 2 new files; 134 bet_maker tests passing — +6 new) |
 | Plan 04-06 duration | ~3 min (2 tasks TDD: selectors/list_active_events.py — async LP GET /events proxy with shared retry-factory per D-05/D-07/D-10/D-11/D-13 + tests/bet_maker/test_list_active_events.py with 4 respx scenarios + 1 marker class; 2 new files; 139 bet_maker tests passing — +5 new) |
 | Plan 04-07 duration | ~6 min (4 tasks: deps.py get_line_provider_http_client + LineProviderHttpClientDep / lifespan.py singleton httpx.AsyncClient + HttpEventLookup + reverse-order shutdown / conftest.py _clear_event_lookup StubEventLookup swap + line_provider_app fixture / test_lifespan.py rewritten with 4 classes; 4 files modified; 141 bet_maker passed +2 new, 236 total passing) |
+| Plan 04-08 duration | ~5 min (3 tasks: entrypoints/api/events.py NEW with GET /events 200/503 + static detail / app.py wired events router after bets / tests/bet_maker/test_events_routes.py NEW with D-16 two-FastAPI-apps integration + 6 tests in 3 classes; 3 files modified — 2 new; 147 bet_maker passed +6 new, 242 total passing; LP POST body drops state per EventCreate extra=forbid) |
 
 ## Accumulated Context
 
