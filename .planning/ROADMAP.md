@@ -134,7 +134,7 @@ Plans:
 - [x] 04-06-PLAN.md — selectors/list_active_events.py + respx unit tests (Wave 4)
 - [x] 04-07-PLAN.md — Lifecycle wiring: deps.py provider + lifespan.py singleton AsyncClient + conftest _clear_event_lookup rework + test_lifespan (Wave 5)
 - [x] 04-08-PLAN.md — GET /events route + app.py wiring + integration test (two FastAPI apps via ASGITransport) (Wave 6)
-- [ ] 04-09-PLAN.md — POST /bet 503 path (LineProviderUnavailable → 503) + TestPostBet503 (Wave 6)
+- [x] 04-09-PLAN.md — POST /bet 503 path (LineProviderUnavailable → 503) + TestPostBet503 (Wave 6)
 
 ### Phase 5: RabbitMQ integration
 **Goal**: line-provider publishes `EventFinishedMessage` to RabbitMQ on state change; bet-maker consumes durably with manual ack, settles atomically via `FOR UPDATE SKIP LOCKED`, and routes poison messages to DLQ. Highest-risk phase (~half of all pitfalls).
