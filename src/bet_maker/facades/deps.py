@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Annotated, cast
 
+import httpx
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
@@ -56,9 +57,23 @@ def get_event_lookup(request: Request) -> EventLookup:
     return cast(EventLookup, request.app.state.event_lookup)
 
 
+def get_line_provider_http_client(request: Request) -> httpx.AsyncClient:
+    """D-12: read the singleton httpx.AsyncClient — pinned by lifespan.
+
+    Used by:
+    - LineProviderHttpClientDep alias below (for routes).
+    - HttpEventLookup constructor (read indirectly through app.state.event_lookup).
+
+    Anti-Pattern A2 mitigation: NO module-level httpx singleton; every
+    long-lived object goes through app.state + cast() provider.
+    """
+    return cast(httpx.AsyncClient, request.app.state.line_provider_http_client)
+
+
 SettingsDep = Annotated[BetMakerSettings, Depends(get_settings)]
 EngineDep = Annotated[AsyncEngine, Depends(get_engine)]
 SessionmakerDep = Annotated[async_sessionmaker[AsyncSession], Depends(get_sessionmaker)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 UoWDep = Annotated[AsyncUnitOfWork, Depends(get_uow)]
 EventLookupDep = Annotated[EventLookup, Depends(get_event_lookup)]
+LineProviderHttpClientDep = Annotated[httpx.AsyncClient, Depends(get_line_provider_http_client)]
