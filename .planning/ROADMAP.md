@@ -126,7 +126,7 @@ Plans:
 **Plans:** 9 plans across 6 waves
 
 Plans:
-- [ ] 04-01-PLAN.md — Doc-sync (REQUIREMENTS BM-04 + ROADMAP Phase 4 Goal/SC#1) + respx dev-dep (Wave 1)
+- [x] 04-01-PLAN.md — Doc-sync (REQUIREMENTS BM-04 + ROADMAP Phase 4 Goal/SC#1) + respx dev-dep (Wave 1)
 - [ ] 04-02-PLAN.md — EventRead schema in bet_maker/schemas/events.py + TestEventRead (Wave 2)
 - [ ] 04-03-PLAN.md — BetMakerSettings two new fields (line_provider_http_attempts, line_provider_http_backoff_max_s) + test_settings.py (Wave 2)
 - [ ] 04-04-PLAN.md — facades/line_provider_client.py (LineProviderUnavailable + make_retry_decorator factory) + tests (Wave 3)
