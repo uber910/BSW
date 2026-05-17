@@ -118,19 +118,27 @@ class TestGetEventsAgainstRealLp:
 
     async def test_returns_empty_list_when_lp_empty(
         self,
+        app: FastAPI,
         client: AsyncClient,
-        real_lp_wiring: None,
     ) -> None:
-        """D-10: empty LP → bet-maker GET /events returns []."""
-        # No events seeded in LP. LP's GET /events returns [].
-        # (Note: LP's in-memory store carries state across tests within
-        # session-scope. If prior tests posted events, this could fail.
-        # Pragmatic solution: assert it's a list — not strict on emptiness —
-        # OR check that no NEW + future-deadline events accumulated. For
-        # now: assert list type and that the call succeeds.)
-        response = await client.get("/events")
-        assert response.status_code == 200
-        assert isinstance(response.json(), list)
+        """D-10: empty LP → bet-maker GET /events returns exactly [].
+
+        WR-03: uses respx overlay on the bet-maker's lp_client (same pattern
+        as TestGetEvents503) so /events deterministically returns json=[]
+        independent of the session-scoped real LP state.
+        """
+        with respx.mock(base_url=LP_BASE_URL, assert_all_called=True) as mock_router:
+            mock_router.get("/events").mock(return_value=Response(200, json=[]))
+            mocked_client = AsyncClient(base_url=LP_BASE_URL, timeout=Timeout(5.0))
+            app.dependency_overrides[get_line_provider_http_client] = lambda: mocked_client
+
+            try:
+                response = await client.get("/events")
+                assert response.status_code == 200
+                assert response.json() == []
+            finally:
+                await mocked_client.aclose()
+                app.dependency_overrides.pop(get_line_provider_http_client, None)
 
     async def test_returns_empty_after_state_finished(
         self,
