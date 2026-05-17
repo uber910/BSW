@@ -118,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-13 after initialization*
+*Last updated: 2026-05-17 after Phase 04 (bet-maker HTTP integration with line-provider) — BM-04 validated; 244 tests passing; coverage src/bet_maker 95.35%.*
