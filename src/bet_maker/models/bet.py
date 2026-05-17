@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
+import sqlalchemy as sa
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import Numeric, func
 from sqlalchemy.dialects.postgresql import UUID as PgUUID  # noqa: N811
@@ -41,6 +42,12 @@ class Bet(Base):
 
     D-01: NO coefficient column -- coefficient is an event attribute, lives
     in line-provider. TZ page 3 POST /bet body = event_id + amount.
+
+    D-13 / D-14 (Phase 5):
+    - settled_at: Mapped[datetime | None] -- server-filled by PG func.now() in the
+      settle UPDATE statement; NULL while bet is PENDING (D-13/D-14).
+    - settled_via: Mapped[str | None] -- 'consumer' (Phase 5) or 'reconciler'
+      (Phase 6); NULL while PENDING.
     """
 
     __tablename__ = "bets"
@@ -71,4 +78,12 @@ class Bet(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+    settled_at: Mapped[datetime | None] = mapped_column(
+        sa.DateTime(timezone=True),
+        nullable=True,
+    )
+    settled_via: Mapped[str | None] = mapped_column(
+        sa.Text(),
+        nullable=True,
     )
