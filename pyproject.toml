@@ -30,6 +30,7 @@ dev = [
     "asgi-lifespan>=2.1,<3",
     "testcontainers>=4.9,<5",
     "respx>=0.22,<0.23",
+    "pika>=1.3,<2",
 ]
 
 [build-system]
