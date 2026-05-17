@@ -111,11 +111,11 @@ Plans:
 - [x] 03-09-PLAN.md — Phase-gate (coverage ≥80%, manual alembic rehearsal, docs sync) (Wave 6)
 
 ### Phase 4: bet-maker HTTP integration with line-provider
-**Goal**: bet-maker exposes `GET /events` by proxying line-provider via `httpx.AsyncClient` with retry + tiny TTL cache, and establishes the HTTP client that reconciliation will reuse in P6.
+**Goal**: bet-maker exposes `GET /events` by proxying line-provider via `httpx.AsyncClient` with retry (tenacity), and establishes the HTTP client that reconciliation will reuse in P6. Per D-01 (Phase 4 CONTEXT.md): TTL cache не реализуется — ТЗ кэш не требует.
 **Depends on**: Phase 2 (needs line-provider `GET /events/{id}` + `GET /events`), Phase 3 (uses same lifespan + Depends graph)
 **Requirements**: BM-04
 **Success Criteria** (what must be TRUE):
-  1. bet-maker's `GET /events` returns the same active-events payload that `line-provider` exposes, with acceptable lag (cached via TTL dict)
+  1. bet-maker's `GET /events` returns the same active-events payload that `line-provider` exposes, with acceptable lag (свежий результат каждого запроса; отставание = длительность одного HTTP-вызова к LP плюс retry-backoff). Per D-01 (Phase 4 CONTEXT.md): TTL cache не реализуется в P4.
   2. `tenacity` retries transient httpx failures (timeout, 5xx) with exponential backoff; permanent failures (404, 422) propagate
   3. The httpx client is a singleton constructed in lifespan and closed on shutdown — no per-request client construction
   4. Integration test drives both apps via `httpx.AsyncClient(transport=ASGITransport)` without docker, asserting end-to-end proxy behaviour
