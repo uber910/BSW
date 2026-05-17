@@ -101,7 +101,7 @@ class TestGetPendingLocked:
     ) -> None:
         """get_pending_locked returns only PENDING bets matching event_id."""
         event_a, event_b = uuid4(), uuid4()
-        async with session_factory.begin() as session:  # type: ignore[union-attr]
+        async with session_factory.begin() as session:
             session.add(Bet(event_id=event_a, amount=Decimal("10.00"), status=BetStatus.PENDING))
             session.add(Bet(event_id=event_a, amount=Decimal("20.00"), status=BetStatus.PENDING))
             session.add(Bet(event_id=event_a, amount=Decimal("30.00"), status=BetStatus.WON))
@@ -122,7 +122,7 @@ class TestGetPendingLocked:
             .where(Bet.event_id == uuid4(), Bet.status == BetStatus.PENDING)
             .with_for_update(skip_locked=True)
         )
-        compiled = stmt.compile(dialect=postgresql.dialect())
+        compiled = stmt.compile(dialect=postgresql.dialect())  # type: ignore[no-untyped-call]
         assert "FOR UPDATE SKIP LOCKED" in str(compiled).upper().replace("\n", " ")
 
     async def test_empty_when_only_settled_bets(
@@ -131,7 +131,7 @@ class TestGetPendingLocked:
     ) -> None:
         """get_pending_locked returns [] when all bets for event_id are settled."""
         event_id = uuid4()
-        async with session_factory.begin() as session:  # type: ignore[union-attr]
+        async with session_factory.begin() as session:
             session.add(Bet(event_id=event_id, amount=Decimal("10.00"), status=BetStatus.WON))
         async with session_factory() as session:
             repo = BetRepository(session)

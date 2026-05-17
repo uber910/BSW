@@ -15,6 +15,9 @@ information_schema.tables to verify side effects.
 
 from __future__ import annotations
 
+import asyncio
+import functools
+
 import pytest
 import sqlalchemy as sa
 from alembic import command
@@ -75,13 +78,23 @@ class TestMigration:
         self,
         async_engine: AsyncEngine,
         pg_dsn: str,
+        apply_migrations: None,
     ) -> None:
-        """D-13 migration must round-trip: upgrade -> downgrade -1 -> upgrade head;
-        after final upgrade, settled_at and settled_via columns are present in bets."""
+        """D-13 migration must round-trip: downgrade -1 -> upgrade head;
+        after final upgrade, settled_at and settled_via columns are present in bets.
+
+        Runs alembic commands in a thread executor to avoid the asyncio.run()
+        clash with pytest-asyncio's running event loop (alembic env.py calls
+        asyncio.run() for the async migration driver).
+        """
+        _ = apply_migrations
         alembic_cfg = Config("alembic.ini")
         alembic_cfg.set_main_option("sqlalchemy.url", pg_dsn)
-        command.downgrade(alembic_cfg, "-1")
-        command.upgrade(alembic_cfg, "head")
+
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, functools.partial(command.downgrade, alembic_cfg, "-1"))
+        await loop.run_in_executor(None, functools.partial(command.upgrade, alembic_cfg, "head"))
+
         async with async_engine.connect() as conn:
             rows = (
                 await conn.execute(
