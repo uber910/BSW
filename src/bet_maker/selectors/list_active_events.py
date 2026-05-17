@@ -47,7 +47,11 @@ async def list_active_events(
 
     try:
         return await _call()
-    except (httpx.TransportError, httpx.HTTPStatusError) as exc:
-        raise LineProviderUnavailable(reason=str(exc)) from exc
+    except httpx.HTTPStatusError as exc:
+        raise LineProviderUnavailable(
+            reason=f"HTTPStatusError: {exc.response.status_code}"
+        ) from exc
+    except httpx.TransportError as exc:
+        raise LineProviderUnavailable(reason=type(exc).__name__) from exc
     except (JSONDecodeError, KeyError, ValueError, ValidationError) as exc:
         raise LineProviderUnavailable(reason="malformed payload from line-provider") from exc

@@ -152,6 +152,34 @@ async def test_schema_drift_raises_unavailable(respx_mock: respx.MockRouter) -> 
     assert exc_info.value.reason == "malformed payload from line-provider"
 
 
+@pytest.mark.asyncio
+@respx.mock(base_url=LP_BASE_URL)
+async def test_5xx_reason_is_redacted(respx_mock: respx.MockRouter) -> None:
+    """WR-02: HTTPStatusError reason is a fixed-shape summary, not raw exc text."""
+    respx_mock.get("/events").mock(return_value=Response(503))
+
+    async with httpx.AsyncClient(base_url=LP_BASE_URL, timeout=httpx.Timeout(5.0)) as client:
+        with pytest.raises(LineProviderUnavailable) as exc_info:
+            await list_active_events(client, attempts=3, max_backoff=0.1)
+
+    assert exc_info.value.reason == "HTTPStatusError: 503"
+    assert LP_BASE_URL not in exc_info.value.reason
+
+
+@pytest.mark.asyncio
+@respx.mock(base_url=LP_BASE_URL)
+async def test_transport_error_reason_is_redacted(respx_mock: respx.MockRouter) -> None:
+    """WR-02: TransportError reason is only the class name, no URL leakage."""
+    respx_mock.get("/events").mock(side_effect=httpx.ConnectError("boom"))
+
+    async with httpx.AsyncClient(base_url=LP_BASE_URL, timeout=httpx.Timeout(5.0)) as client:
+        with pytest.raises(LineProviderUnavailable) as exc_info:
+            await list_active_events(client, attempts=3, max_backoff=0.1)
+
+    assert exc_info.value.reason == "ConnectError"
+    assert "boom" not in exc_info.value.reason
+
+
 class TestListActiveEvents:
     """Marker class for must_haves artifact contract (`contains: 'class TestListActiveEvents'`).
 

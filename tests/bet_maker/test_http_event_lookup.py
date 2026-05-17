@@ -204,6 +204,45 @@ async def test_get_event_invalid_uuid_raises_unavailable(
     assert exc_info.value.reason == "malformed payload from line-provider"
 
 
+@pytest.mark.asyncio
+@respx.mock(base_url=LP_BASE_URL)
+async def test_get_event_5xx_reason_is_redacted(respx_mock: respx.MockRouter) -> None:
+    """WR-02: HTTPStatusError reason is a fixed-shape summary, not raw exc text.
+
+    Guards against URL/credential leakage in operator logs: .reason must be
+    a redacted, bounded string ("HTTPStatusError: <status>"), not str(exc)
+    which embeds the full request URL.
+    """
+    event_id = uuid4()
+    respx_mock.get(f"/event/{event_id}").mock(return_value=Response(503))
+
+    async with httpx.AsyncClient(base_url=LP_BASE_URL, timeout=httpx.Timeout(5.0)) as client:
+        lookup = HttpEventLookup(http_client=client, attempts=3, max_backoff=0.1)
+        with pytest.raises(LineProviderUnavailable) as exc_info:
+            await lookup.get_event(event_id)
+
+    assert exc_info.value.reason == "HTTPStatusError: 503"
+    assert LP_BASE_URL not in exc_info.value.reason
+
+
+@pytest.mark.asyncio
+@respx.mock(base_url=LP_BASE_URL)
+async def test_get_event_transport_error_reason_is_redacted(
+    respx_mock: respx.MockRouter,
+) -> None:
+    """WR-02: TransportError reason is only the class name, no URL leakage."""
+    event_id = uuid4()
+    respx_mock.get(f"/event/{event_id}").mock(side_effect=httpx.ConnectError("boom"))
+
+    async with httpx.AsyncClient(base_url=LP_BASE_URL, timeout=httpx.Timeout(5.0)) as client:
+        lookup = HttpEventLookup(http_client=client, attempts=3, max_backoff=0.1)
+        with pytest.raises(LineProviderUnavailable) as exc_info:
+            await lookup.get_event(event_id)
+
+    assert exc_info.value.reason == "ConnectError"
+    assert "boom" not in exc_info.value.reason
+
+
 class TestHttpEventLookup:
     """Marker class for plan acceptance criterion (artifact contains 'class TestHttpEventLookup').
 
