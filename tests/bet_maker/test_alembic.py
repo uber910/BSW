@@ -70,3 +70,27 @@ class TestMigration:
         cfg = Config("alembic.ini")
         cfg.set_main_option("sqlalchemy.url", pg_dsn)
         command.upgrade(cfg, "head")
+
+    async def test_0002_upgrade_downgrade_upgrade_columns_present(
+        self,
+        async_engine: AsyncEngine,
+        pg_dsn: str,
+    ) -> None:
+        """D-13 migration must round-trip: upgrade -> downgrade -1 -> upgrade head;
+        after final upgrade, settled_at and settled_via columns are present in bets."""
+        alembic_cfg = Config("alembic.ini")
+        alembic_cfg.set_main_option("sqlalchemy.url", pg_dsn)
+        command.downgrade(alembic_cfg, "-1")
+        command.upgrade(alembic_cfg, "head")
+        async with async_engine.connect() as conn:
+            rows = (
+                await conn.execute(
+                    sa.text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_name = 'bets' "
+                        "AND column_name IN ('settled_at', 'settled_via')"
+                    )
+                )
+            ).all()
+        names = {r[0] for r in rows}
+        assert names == {"settled_at", "settled_via"}
