@@ -1,11 +1,13 @@
 ---
 phase: 4
 slug: bet-maker-http-integration-with-line-provider
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: approved
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-05-15
 ---
+
+> Note on wave_0_complete: Phase 4 plans deliberately co-locate test creation with production code in each plan (rather than a separate Wave 0 plan), because every test requires the production module to exist for import. All test files listed in the Wave 0 Requirements section are guaranteed to be created within the same plan as their corresponding production code (validated by `files_modified` in each plan's frontmatter).
 
 # Phase 4 — Validation Strategy
 

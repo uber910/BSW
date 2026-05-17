@@ -940,22 +940,22 @@ line_provider_http_backoff_max_s: float = Field(default=2.0, gt=0)
 
 **Note:** All other claims in this research are tagged `[VERIFIED: ...]` or `[CITED: ...]`.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `make_retry_decorator` accept retry-predicate as a kwarg, or hardcode `_is_retryable`?**
    - What we know: P4 needs exactly the predicate `_is_retryable(exc)`; P6 reconciler will use the same predicate (per D-04 it shares the factory).
    - What's unclear: whether a future reconciler in P6 wants 429-aware retry or any other predicate variant.
-   - Recommendation: hardcode `_is_retryable` in P4. P6 can extend the factory signature when concrete need arises. Don't over-parametrise now.
+   - RESOLVED: hardcode `_is_retryable` in P4. P6 can extend the factory signature when concrete need arises. Don't over-parametrise now.
 
 2. **Should `HttpEventLookup` and `list_active_events` share a single instance of the retry decorator, or each construct their own via the factory?**
    - What we know: Both call `make_retry_decorator(attempts, max_backoff)` with the same args (P4) or different args (P6 reconciler).
    - What's unclear: whether the factory returns a thread-safe / loop-safe decorator object that can be shared.
-   - Recommendation: Each caller invokes the factory at construction time and stores the decorator. tenacity's `retry(...)` returns a callable decorator object that wraps the function on first call; sharing is fine but conceptually muddier. Construct-per-instance keeps lifetimes clear.
+   - RESOLVED: Each caller invokes the factory at construction time and stores the decorator. tenacity's `retry(...)` returns a callable decorator object that wraps the function on first call; sharing is fine but conceptually muddier. Construct-per-instance keeps lifetimes clear.
 
 3. **Integration test (D-16): should the negative cases (404, past-deadline) be expressed via real LP state mutations or via respx overlay on the LP-bound client?**
    - What we know: CONTEXT.md "Claude's Discretion" leaves this open. Real LP is more authentic but harder to coordinate (creating a past-deadline event in LP requires bypassing LP's "deadline > now" validation on POST).
    - What's unclear: whether the planner prefers a hybrid (real LP for happy/state-finished cases, respx for 4xx fault injection).
-   - Recommendation: Real LP for happy-path + state-finished (use `PUT /event/{id}` to transition to FINISHED_WIN; LP will then filter from `GET /events`). For "past deadline" — DO NOT use respx; just use a real event and `monkeypatch.setattr("config.time.utc_now", lambda: ...)` on the LP side, OR test that path via `tests/bet_maker/test_place_bet.py` (already covered by StubEventLookup tests in P3).
+   - RESOLVED: Real LP for happy-path + state-finished (use `PUT /event/{id}` to transition to FINISHED_WIN; LP will then filter from `GET /events`). For "past deadline" — DO NOT use respx; just use a real event and `monkeypatch.setattr("config.time.utc_now", lambda: ...)` on the LP side, OR test that path via `tests/bet_maker/test_place_bet.py` (already covered by StubEventLookup tests in P3).
 
 ## Environment Availability
 
