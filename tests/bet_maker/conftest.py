@@ -25,12 +25,23 @@ def _auto_truncate(truncate_bets: None) -> None:
 
 @pytest.fixture(autouse=True)
 def _clear_event_lookup(app: FastAPI) -> None:
-    """Clear StubEventLookup before each test to prevent cross-test state.
+    """Swap event_lookup with a fresh StubEventLookup before each test.
 
-    Session-scoped app shares a single StubEventLookup instance; seeds from
-    previous tests must be removed to prevent false positives.
+    After Plan 04-07 (D-14), production lifespan wires HttpEventLookup
+    instead of StubEventLookup. To keep existing unit/integration tests
+    (test_bet_routes.py POST /bet, GET /bets) working, every test in
+    tests/bet_maker/ gets its own StubEventLookup pinned by autouse -
+    the seed_event fixture seeds it, post-test the next test gets a
+    fresh empty Stub. This restores per-test isolation without
+    depending on HttpEventLookup-specific internals.
+
+    Integration tests that need the real HttpEventLookup (Plan 04-08's
+    test_events_routes.py against line_provider_app) explicitly override
+    app.state.event_lookup AFTER this autouse fixture runs.
     """
-    app.state.event_lookup._events.clear()
+    from bet_maker.facades.event_lookup import StubEventLookup  # noqa: PLC0415
+
+    app.state.event_lookup = StubEventLookup()
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -103,3 +114,19 @@ async def seed_event(app: FastAPI) -> Callable[..., UUID]:
         return event_id
 
     return _seed
+
+
+@pytest_asyncio.fixture(scope="session")
+async def line_provider_app() -> AsyncIterator[FastAPI]:
+    """Session-scoped line_provider FastAPI app with lifespan triggered.
+
+    D-16 / Pitfall A2: same session-scope as bet_maker `app` fixture -
+    they MUST share the same event loop so httpx.ASGITransport can
+    proxy between them without 'Future attached to a different loop'.
+    No env-var poke needed (line-provider has no Postgres).
+    """
+    from line_provider.app import build_app  # noqa: PLC0415
+
+    application = build_app()
+    async with LifespanManager(application):
+        yield application
