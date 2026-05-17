@@ -23,7 +23,7 @@ from pydantic import ValidationError
 from bet_maker.helpers.money import quantize_amount
 from bet_maker.helpers.status import event_state_to_bet_status
 from bet_maker.schemas.bets import BetCreate, BetRead, BetStatus
-from bet_maker.schemas.events import EventState
+from bet_maker.schemas.events import EventRead, EventState
 from line_provider.schemas.events import EventState as LpEventState
 
 
@@ -138,6 +138,65 @@ class TestBetRead:
         assert isinstance(payload["amount"], str)
 
 
+class TestEventRead:
+    """BM-04 / D-13: EventRead is the bet-maker-side mirror of LP GET /events item shape."""
+
+    def test_event_read_parses_lp_payload(self) -> None:
+        """D-13: EventRead.model_validate accepts the canonical LP payload shape."""
+        payload = {
+            "event_id": "11111111-1111-1111-1111-111111111111",
+            "coefficient": "2.50",
+            "deadline": "2026-12-01T12:00:00+00:00",
+            "state": "NEW",
+        }
+        read = EventRead.model_validate(payload)
+        assert isinstance(read.event_id, UUID)
+        assert read.event_id == UUID("11111111-1111-1111-1111-111111111111")
+        assert read.coefficient == Decimal("2.50")
+        assert isinstance(read.coefficient, Decimal)
+        assert read.deadline.tzinfo is not None
+        assert read.state == EventState.NEW
+
+    def test_event_read_extra_forbid(self) -> None:
+        """D-13 / Pattern D: extra fields rejected to surface LP schema drift loud."""
+        payload = {
+            "event_id": str(uuid4()),
+            "coefficient": "1.50",
+            "deadline": "2026-12-01T12:00:00+00:00",
+            "state": "NEW",
+            "unknown": "x",
+        }
+        with pytest.raises(ValidationError):
+            EventRead.model_validate(payload)
+
+    def test_event_read_frozen(self) -> None:
+        """D-13: EventRead is frozen -- mutations rejected post-construction."""
+        read = EventRead.model_validate(
+            {
+                "event_id": str(uuid4()),
+                "coefficient": "2.00",
+                "deadline": "2026-12-01T12:00:00+00:00",
+                "state": "NEW",
+            }
+        )
+        with pytest.raises(ValidationError):
+            read.event_id = uuid4()  # type: ignore[misc]
+
+    def test_event_read_decimal_serializes_as_string(self) -> None:
+        """D-13 / Pitfall A4: coefficient serialises as JSON string '2.50' (not float)."""
+        read = EventRead.model_validate(
+            {
+                "event_id": str(uuid4()),
+                "coefficient": "2.50",
+                "deadline": "2026-12-01T12:00:00+00:00",
+                "state": "NEW",
+            }
+        )
+        payload = json.loads(read.model_dump_json())
+        assert payload["coefficient"] == "2.50"
+        assert isinstance(payload["coefficient"], str)
+
+
 class TestEnums:
     """D-12 / D-20: EventState (duplicated) and BetStatus enum invariants."""
 
@@ -185,3 +244,7 @@ class TestExtraForbid:
     def test_betread_extra_forbid(self) -> None:
         """T-03-3: BetRead.model_config extra='forbid'."""
         assert BetRead.model_config.get("extra") == "forbid"
+
+    def test_eventread_extra_forbid(self) -> None:
+        """T-03-3 / D-13: EventRead.model_config extra='forbid'."""
+        assert EventRead.model_config.get("extra") == "forbid"
