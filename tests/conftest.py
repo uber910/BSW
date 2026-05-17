@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from testcontainers.postgres import PostgresContainer  # type: ignore[import-untyped]
+from testcontainers.rabbitmq import RabbitMqContainer  # type: ignore[import-untyped]
 
 
 @pytest.fixture(scope="session")
@@ -98,3 +99,31 @@ async def truncate_bets(async_engine: AsyncEngine) -> AsyncIterator[None]:
     yield
     async with async_engine.begin() as conn:
         await conn.execute(sa.text("TRUNCATE bets RESTART IDENTITY CASCADE"))
+
+
+@pytest.fixture(scope="session")
+def rabbitmq_container() -> Iterator[RabbitMqContainer]:
+    """Session-scoped RabbitMQ 4.2 container for e2e + lifespan integration tests.
+
+    QA-06 / D-31: real RabbitMQ via testcontainers — TestRabbitBroker alone
+    misses topology bugs (F6). Image matches docker-compose.yml line-provider
+    and bet-maker production target.
+    Built-in readiness probe uses pika.BlockingConnection (pika is dev-dep).
+    """
+    with RabbitMqContainer("rabbitmq:4.2-management-alpine") as rmq:
+        yield rmq
+
+
+@pytest.fixture(scope="session")
+def amqp_url(rabbitmq_container: RabbitMqContainer) -> str:
+    """AMQP URL of the running testcontainers RabbitMQ.
+
+    Used by e2e tests and line_provider/bet_maker lifespan tests that
+    env-poke BET_MAKER_RABBITMQ_URL / LINE_PROVIDER_RABBITMQ_URL.
+    """
+    host = rabbitmq_container.get_container_host_ip()
+    port = rabbitmq_container.get_exposed_port(5672)
+    user = rabbitmq_container.username
+    password = rabbitmq_container.password
+    vhost = rabbitmq_container.vhost
+    return f"amqp://{user}:{password}@{host}:{port}/{vhost}"
