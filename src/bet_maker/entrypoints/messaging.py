@@ -19,6 +19,7 @@ Pitfalls guarded:
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 
 import structlog
 from faststream import AckPolicy
@@ -130,7 +131,7 @@ router = RabbitRouter(
     ack_policy=AckPolicy.MANUAL,
 )
 async def on_event_finished(
-    payload: EventFinishedMessage,
+    payload: dict[str, Any],
     msg: RabbitMessage,
 ) -> None:
     """Settle PENDING bets for a finished event (BM-09, BM-10, BM-11).
@@ -142,25 +143,33 @@ async def on_event_finished(
     - TRANSIENT exhausted (caught by default Exception)
       -> reject(requeue=False) -> DLQ (reconciler will retry -- Core Value)
     - nack(requeue=True) NEVER called (R7)
+
+    payload is dict[str, Any] rather than EventFinishedMessage so that
+    Pydantic ValidationError is raised inside this handler (inside the
+    try/except) rather than by FastStream before the handler is called.
+    With a typed parameter FastStream pre-validates and any ValidationError
+    would escape the handler's except block, leaving the message unacked
+    until consumer timeout (WR-01).
     """
     clear_contextvars()
     try:
+        message = EventFinishedMessage.model_validate(payload)
         bind_contextvars(
             message_id=msg.message_id,
             correlation_id=msg.correlation_id,
-            event_id=str(payload.event_id),
+            event_id=str(message.event_id),
         )
-        if payload.schema_version != _SCHEMA_VERSION_SUPPORTED:
+        if message.schema_version != _SCHEMA_VERSION_SUPPORTED:
             raise UnsupportedSchemaVersion(
-                f"schema_version={payload.schema_version} not supported (expected 1)"
+                f"schema_version={message.schema_version} not supported (expected 1)"
             )
 
         sessionmaker = _require_sessionmaker()
         async with AsyncUnitOfWork(sessionmaker) as uow:
             await _settle_with_retry(
                 uow,
-                event_id=payload.event_id,
-                terminal_state=payload.new_state,
+                event_id=message.event_id,
+                terminal_state=message.new_state,
                 settled_via="consumer",
             )
         await msg.ack()
