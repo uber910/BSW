@@ -1,5 +1,17 @@
 # BSW Betting System
 
+## Current Milestone: v1.1 Architecture cleanup
+
+**Goal:** Привести архитектуру обоих сервисов к единому, более идиоматичному виду после первой итерации — без изменений в UX/функциональности.
+
+**Target deliverables:**
+- `entrypoints/` плоско переезжает в `api/` (HTTP-роуты + FastStream consumer'ы — Rabbit это тоже API)
+- Слой Repository удалён; вся I/O-логика разделена на `selectors/` (чтение) и `interactors/` (запись)
+- UnitOfWork-паттерн приведён к виду как в `~/Interexy/Metrikus/metrikus-app/api_common/unit_of_work/` и передаётся как DI-зависимость во все interactor'ы
+- Дублирующийся код между `bet_maker` и `line_provider` (lifespan, request-id middleware, structlog wiring, БД-движок-фабрика, схемы сообщений) вынесен в shared-пакет
+
+**Key context:** v1.0 закрыт (7/7 фаз, 355 тестов, mypy strict clean). Batch №1 (6 низкорисковых правок) закрыт через `/gsd-quick`. Этот milestone — чисто архитектурный, поверх baseline'а v1.0; нельзя ломать функциональность и зелёный CI.
+
 ## What This Is
 
 Тестовое задание на позицию Middle Python developer: микросервисная система приёма ставок на спортивные события. Состоит из двух независимых асинхронных сервисов — `line-provider` (источник событий и их статусов) и `bet-maker` (приём ставок, история, начисление статусов). Цель — продемонстрировать инженерную зрелость: чистую слоистую архитектуру, асинхронность сквозь стек, надёжную интеграцию через очередь, полное покрытие тестами и type hints, production-уровень инфраструктуры.
@@ -118,4 +130,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 after Phase 05 (RabbitMQ integration) — LP-06, BM-09, BM-10, BM-11, QA-06 validated; manual-ack consumer with DLX, idempotent settle interactor (FOR UPDATE SKIP LOCKED), real-RMQ + real-PG E2E test proves SC#1 (≤1s flip) and SC#3 (poison→DLQ); 295 tests passing.*
+*Last updated: 2026-05-18 — milestone v1.0 closed (7/7 phases, 355 tests); milestone v1.1 "Architecture cleanup" opened for post-v1 refactor.*
