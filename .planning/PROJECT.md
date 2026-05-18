@@ -118,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-17 after Phase 04 (bet-maker HTTP integration with line-provider) — BM-04 validated; 244 tests passing; coverage src/bet_maker 95.35%.*
+*Last updated: 2026-05-18 after Phase 05 (RabbitMQ integration) — LP-06, BM-09, BM-10, BM-11, QA-06 validated; manual-ack consumer with DLX, idempotent settle interactor (FOR UPDATE SKIP LOCKED), real-RMQ + real-PG E2E test proves SC#1 (≤1s flip) and SC#3 (poison→DLQ); 295 tests passing.*
