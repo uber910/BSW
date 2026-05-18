@@ -6,7 +6,10 @@ from contextlib import asynccontextmanager
 import httpx
 import structlog
 from fastapi import FastAPI
+from faststream.rabbit.schemas import ExchangeType, RabbitExchange, RabbitQueue
 
+from bet_maker.entrypoints.messaging import router as rabbit_router
+from bet_maker.entrypoints.messaging import set_sessionmaker
 from bet_maker.facades.http_event_lookup import HttpEventLookup
 from bet_maker.infrastructure.db.engine import create_engine_and_sessionmaker
 from bet_maker.infrastructure.db.pings import wait_for_postgres
@@ -16,18 +19,25 @@ from config.logging import configure_structlog
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """bet_maker lifespan: configure logging, start DB engine, wait for PG,
-    create singleton httpx client, wire HttpEventLookup, then yield.
+    """bet_maker lifespan (Plan 05-07 / D-21).
 
-    D-13 / D-14: app.state.event_lookup = HttpEventLookup (replaces P3
-    StubEventLookup). Tests override per-test via the autouse
-    _clear_event_lookup fixture in tests/bet_maker/conftest.py.
-    D-19 startup order: structlog -> engine+sessionmaker -> wait_for_postgres
-    -> httpx.AsyncClient(Timeout(5.0)) -> app.state pins.
-    D-20 shutdown order: http_client.aclose() BEFORE engine.dispose()
-    (reverse of startup; Pitfall 6 mitigation).
-    D-27: wait_for_postgres -- tenacity 10 attempts, exponential backoff;
-    bad DSN crashes startup with clear log (Pitfall D2 mitigation).
+    Strict startup order (F3 — no asyncio.gather parallel steps):
+      1. configure_structlog
+      2. create engine + sessionmaker
+      3. wait_for_postgres (tenacity)
+      4. httpx.AsyncClient singleton
+      5. router.broker.connect()  -- Pitfall 2: required because custom lifespan
+      6. declare DLX exchange + DLQ queue + bind DLQ to DLX (Pitfall 4)
+      7. set_sessionmaker on messaging module (handler dependency)
+      8. app.state pins
+      9. yield
+
+    Shutdown reverse order with nested try/finally (D-20 Pitfall 6):
+      router.broker.close() -> http_client.aclose() -> engine.dispose()
+      Each step runs even if the prior one raises.
+
+    D-22: no intermediate "starting" state — uvicorn does not open the
+    listening socket until this startup completes.
     """
     settings = BetMakerSettings()
     configure_structlog(settings.log_level)
@@ -44,8 +54,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     http_client = httpx.AsyncClient(
         base_url=str(settings.line_provider_base_url),
-        timeout=httpx.Timeout(5.0),  # D-02: explicit total timeout, Pitfall 1
+        timeout=httpx.Timeout(5.0),
     )
+
+    await rabbit_router.broker.connect()
+
+    await rabbit_router.broker.declare_exchange(
+        RabbitExchange("bsw.events.dlx", type=ExchangeType.DIRECT, durable=True)
+    )
+    dlq = await rabbit_router.broker.declare_queue(
+        RabbitQueue("bet_maker.events.finished.dlq", durable=True)
+    )
+    await dlq.bind(
+        exchange="bsw.events.dlx",
+        routing_key="bet_maker.events.finished",
+    )
+
+    set_sessionmaker(sessionmaker)
 
     app.state.settings = settings
     app.state.engine = engine
@@ -61,10 +86,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         log.info("bet_maker.shutdown")
-        # D-20 reverse-order shutdown: close httpx pool BEFORE disposing
-        # the DB engine. try/finally ensures dispose runs even if aclose
-        # raises (Pitfall 6 mitigation).
         try:
-            await http_client.aclose()
+            await rabbit_router.broker.close()
         finally:
-            await engine.dispose()
+            try:
+                await http_client.aclose()
+            finally:
+                await engine.dispose()
