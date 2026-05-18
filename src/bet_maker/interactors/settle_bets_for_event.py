@@ -55,7 +55,10 @@ async def settle_bets_for_event(
     settled_via: Literal["consumer", "reconciler"],
 ) -> SettleResult:
     log = structlog.get_logger()
-    new_status = _TERMINAL_TO_STATUS[terminal_state]
+    try:
+        new_status = _TERMINAL_TO_STATUS[terminal_state]
+    except KeyError as exc:
+        raise ValueError(f"terminal_state={terminal_state!r} has no BetStatus mapping") from exc
     async with uow:
         bets = await uow.bets.get_pending_locked(event_id)
         settled_at = datetime.now(timezone.utc)
