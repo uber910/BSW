@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from typing import Annotated, cast
 
@@ -9,6 +10,7 @@ from faststream.rabbit import RabbitBroker
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from bet_maker.facades.event_lookup import EventLookup
+from bet_maker.facades.http_event_lookup import HttpEventLookup
 from bet_maker.facades.uow import AsyncUnitOfWork
 from bet_maker.settings.config import BetMakerSettings
 
@@ -98,3 +100,27 @@ UoWDep = Annotated[AsyncUnitOfWork, Depends(get_uow)]
 EventLookupDep = Annotated[EventLookup, Depends(get_event_lookup)]
 LineProviderHttpClientDep = Annotated[httpx.AsyncClient, Depends(get_line_provider_http_client)]
 RabbitBrokerDep = Annotated[RabbitBroker, Depends(get_rabbit_broker)]
+
+
+def get_reconciler_event_lookup(request: Request) -> HttpEventLookup:
+    """D-06 / Plan 06-08: HttpEventLookup configured with reconciler retry profile.
+
+    Distinct from `get_event_lookup` (route-layer profile, 3 attempts /
+    2s backoff); reconciler profile is 5 attempts / 10s max backoff.
+    Shares the singleton `line_provider_http_client` — no second pool.
+    """
+    return cast(HttpEventLookup, request.app.state.reconciler_event_lookup)
+
+
+def get_reconciliation_task(request: Request) -> asyncio.Task[None]:
+    """D-14 / Plan 06-08: the background reconciler task pinned by lifespan.
+
+    Used by /health to check `not task.done()` (D-13). Forward-string
+    ref because asyncio.Task is generic and Python 3.10 mypy strict
+    requires explicit parameterisation.
+    """
+    return cast("asyncio.Task[None]", request.app.state.reconciliation_task)
+
+
+ReconcilerEventLookupDep = Annotated[HttpEventLookup, Depends(get_reconciler_event_lookup)]
+ReconciliationTaskDep = Annotated["asyncio.Task[None]", Depends(get_reconciliation_task)]

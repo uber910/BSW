@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 import httpx
 import structlog
@@ -13,6 +14,7 @@ from bet_maker.entrypoints.messaging import set_sessionmaker
 from bet_maker.facades.http_event_lookup import HttpEventLookup
 from bet_maker.infrastructure.db.engine import create_engine_and_sessionmaker
 from bet_maker.infrastructure.db.pings import wait_for_postgres
+from bet_maker.jobs.reconciler import reconciliation_loop
 from bet_maker.settings.config import BetMakerSettings
 from config.logging import configure_structlog
 
@@ -81,11 +83,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         attempts=settings.line_provider_http_attempts,
         max_backoff=settings.line_provider_http_backoff_max_s,
     )
+    app.state.reconciler_event_lookup = HttpEventLookup(
+        http_client=http_client,
+        attempts=settings.line_provider_reconciler_attempts,
+        max_backoff=settings.line_provider_reconciler_backoff_max_s,
+    )
+
+    reconciliation_task: asyncio.Task[None] = asyncio.create_task(
+        reconciliation_loop(app, interval_s=settings.reconciliation_interval_s),
+        name="reconciliation",
+    )
+    app.state.reconciliation_task = reconciliation_task
 
     try:
         yield
     finally:
         log.info("bet_maker.shutdown")
+        reconciliation_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await reconciliation_task
         try:
             await rabbit_router.broker.close()
         finally:
