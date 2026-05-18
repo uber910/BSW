@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Architecture cleanup
-status: executing
-last_updated: "2026-05-18T19:08:09.525Z"
-last_activity: 2026-05-18 -- Phase 08 planning complete
+status: ready_to_plan
+last_updated: "2026-05-18T19:11:33.542Z"
+last_activity: 2026-05-18 -- Phase 08 execution started
 progress:
   total_phases: 10
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 68
   completed_plans: 65
-  percent: 96
+  percent: 80
 ---
 
 # Project State: BSW Betting System
@@ -23,14 +23,14 @@ progress:
 
 **Core Value:** Ставка никогда не остаётся в статусе PENDING после того, как её событие завершилось.
 
-**Current focus:** Phase 07 — polish-documentation
+**Current focus:** Phase 08 — flatten-api
 
 ## Current Position
 
-Phase: 8 — Flatten entrypoints/ → api/ (planning)
-Plan: —
-Status: Ready to execute
-Last activity: 2026-05-18 -- Phase 08 planning complete
+Phase: 09
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-05-18
 
 ## Performance Metrics
 
