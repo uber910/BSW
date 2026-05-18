@@ -713,22 +713,22 @@ Note: PITFALLS.md lists 18 bullets but item 5 ("Durable queue + persistent messa
 
 All assumptions are LOW risk and verified against authoritative sources (Context7, web search, repo grep). **No `[ASSUMED]` claims requiring user confirmation** — the assumption log is here for traceability, not as a blocker.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should AUDIT.md item 17 (`mypy strict + no type: ignore`) include a freeze list?**
    - What we know: `grep -rn '# type: ignore' src/` returns empty today.
    - What's unclear: Should the audit row require future commits to maintain this invariant? (Would need a CI grep step.)
-   - Recommendation: **No.** The existing `mypy strict` CI step is sufficient enforcement. Adding a separate "no-type-ignore" grep CI step is gold-plating.
+   - RESOLVED: **No.** The existing `mypy strict` CI step is sufficient enforcement. Adding a separate "no-type-ignore" grep CI step is gold-plating.
 
 2. **Should the Reviewer walkthrough include cleanup (`docker compose down`)?**
    - What we know: D-04 specifies 5 steps ending at `GET /bets`.
    - What's unclear: Whether a 6th cleanup step should be appended.
-   - Recommendation: **No** (D-04 locked at 5 steps); cleanup is universal Docker knowledge, README §Quick start already mentions `docker compose down`.
+   - RESOLVED: **No** (D-04 locked at 5 steps); cleanup is universal Docker knowledge, README §Quick start already mentions `docker compose down`.
 
 3. **Where does the Russian-language "no emojis" rule extend to OpenAPI `summary`/`description`?**
    - What we know: CLAUDE.md says "no emojis in docs and code." OpenAPI strings are technically code (string literals).
    - What's unclear: Whether OpenAPI free-form `description=` text should be Russian or English.
-   - Recommendation: **Russian** for free-form `description=` text on FastAPI app + routes — consistent with README + .planning/ docs. Tags / model names / field names stay English (Python identifiers). No emojis in any OpenAPI string per CLAUDE.md.
+   - RESOLVED: **Russian** for free-form `description=` text on FastAPI app + routes — consistent with README + .planning/ docs. Tags / model names / field names stay English (Python identifiers). No emojis in any OpenAPI string per CLAUDE.md.
 
 ## Environment Availability
 

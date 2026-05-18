@@ -221,7 +221,21 @@ Plans:
   - **Visibility gap**: every fix from P1–P6 only counts if a 15-minute reviewer can see it; README + curl examples + AsyncAPI + CI badge close this gap
   - **R6 (final)**: subscriber-count check in `/health` documented and re-verified
   - **R11 (final)**: capture `docker compose down` logs in README/CI to prove SIGTERM cleanly drains the consumer
-**Plans**: TBD
+**Plans:** 12 plans across 5 waves
+
+Plans:
+- [ ] 07-01-sync-task-PLAN.md — REQUIREMENTS/ROADMAP/README vs ТЗ PDF drift verification (Wave 0)
+- [ ] 07-02-error-detail-schemas-PLAN.md — ErrorDetail Pydantic schemas + parity tests on both services (Wave 1)
+- [ ] 07-03-openapi-app-metadata-PLAN.md — FastAPI description= on both app factories (Wave 1)
+- [ ] 07-04-openapi-route-polish-line-provider-PLAN.md — line-provider routes summary/responses/Body(openapi_examples) (Wave 2)
+- [ ] 07-05-openapi-route-polish-bet-maker-PLAN.md — bet-maker routes summary/responses/Body(openapi_examples) (Wave 2)
+- [ ] 07-06-ci-coverage-gate-PLAN.md — CI Pytest step --cov --cov-fail-under=85 (Wave 1)
+- [ ] 07-07-audit-static-tests-PLAN.md — tests/audit/test_static.py with 7 regex audit tests (Wave 1)
+- [ ] 07-08-asyncapi-smoke-tests-PLAN.md — /asyncapi smoke tests on both services (Wave 1)
+- [ ] 07-09-audit-md-PLAN.md — 07-AUDIT.md 19-row evidence table (Wave 3)
+- [ ] 07-10-readme-final-PLAN.md — README final pass (Architecture + Reliability + Reviewer walkthrough + 7/7 status) (Wave 4)
+- [ ] 07-11-mypy-strict-verification-PLAN.md — mypy strict + # type: ignore audit (Wave 3)
+- [ ] 07-12-phase-gate-PLAN.md — full quality gate + planning ledger update (Wave 5)
 
 ## Progress
 
