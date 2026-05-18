@@ -26,7 +26,7 @@ class BetStatus(str, Enum):
     PENDING = "PENDING"
     WON = "WON"
     LOST = "LOST"
-    CANCELLED = "cancelled"
+    CANCELLED = "CANCELLED"
 
 
 Amount = Annotated[

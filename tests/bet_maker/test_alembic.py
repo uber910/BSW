@@ -49,12 +49,6 @@ class TestMigration:
             assert result.scalar_one() == "bet_status"
 
     async def test_bet_status_enum_has_four_values(self, async_engine: AsyncEngine) -> None:
-        """D-09 / D-20 / Phase 6 D-03: bet_status enum has PENDING/WON/LOST/cancelled.
-
-        Phase 6 migration 0003 added 'cancelled' via ALTER TYPE betstatus
-        ADD VALUE IF NOT EXISTS 'cancelled'. PG preserves insertion order for enum
-        values; 'cancelled' follows the original three.
-        """
         async with async_engine.begin() as conn:
             result = await conn.execute(
                 sa.text(
@@ -65,7 +59,7 @@ class TestMigration:
                 )
             )
             labels = [row[0] for row in result.all()]
-            assert labels == ["PENDING", "WON", "LOST", "cancelled"]
+            assert labels == ["PENDING", "WON", "LOST", "CANCELLED"]
 
     def test_upgrade_head_third_run_idempotent(self, pg_dsn: str, apply_migrations: None) -> None:
         """SC-5: third invocation of `alembic upgrade head` is also no-op.
