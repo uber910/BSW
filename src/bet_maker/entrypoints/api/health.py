@@ -13,7 +13,20 @@ from bet_maker.infrastructure.db.pings import ping_postgres
 router = APIRouter(tags=["health"])
 
 
-@router.get("/health")
+@router.get(
+    "/health",
+    summary="Service health (PG + RMQ + consumer + reconciler)",
+    responses={
+        503: {
+            "description": (
+                "Degraded — one of: postgres / rabbitmq / rabbitmq_consumer / "
+                "reconciler is down. Payload: "
+                "{status: 'degraded', checks: {postgres, rabbitmq, "
+                "rabbitmq_consumer, reconciler}}."
+            ),
+        },
+    },
+)
 async def health(
     engine: EngineDep,
     broker: RabbitBrokerDep,

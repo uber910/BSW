@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from bet_maker.facades.deps import LineProviderHttpClientDep
 from bet_maker.facades.line_provider_client import LineProviderUnavailable
+from bet_maker.schemas.errors import ErrorDetail
 from bet_maker.schemas.events import EventRead
 from bet_maker.selectors.list_active_events import list_active_events
 
@@ -21,6 +22,13 @@ router = APIRouter(tags=["events"])
 @router.get(
     "/events",
     response_model=list[EventRead],
+    summary="List active events (proxied from line-provider)",
+    responses={
+        status.HTTP_503_SERVICE_UNAVAILABLE: {
+            "model": ErrorDetail,
+            "description": "line-provider unreachable after retries.",
+        },
+    },
 )
 async def get_events(http_client: LineProviderHttpClientDep) -> list[EventRead]:
     """GET /events — list active events from line-provider.
