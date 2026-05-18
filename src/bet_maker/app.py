@@ -11,6 +11,12 @@ from bet_maker.entrypoints.middleware import RequestContextMiddleware
 def build_app() -> FastAPI:
     app = FastAPI(
         title="bet-maker",
+        description=(
+            "Сервис приёма и истории ставок. Хранит ставки в PostgreSQL, "
+            "получает финальные статусы событий из RabbitMQ "
+            "(queue `bet_maker.events.finished`), reconciler как защита "
+            "от потерянных сообщений. AsyncAPI: /asyncapi."
+        ),
         version="0.1.0",
         lifespan=lifespan,
     )

@@ -11,6 +11,12 @@ from line_provider.entrypoints.middleware import RequestContextMiddleware
 def build_app() -> FastAPI:
     app = FastAPI(
         title="line-provider",
+        description=(
+            "Источник событий и их статусов. Хранит события в памяти, "
+            "публикует EventFinishedMessage в RabbitMQ exchange `bsw.events` "
+            "при переходе в FINISHED_WIN / FINISHED_LOSE. "
+            "AsyncAPI: /asyncapi."
+        ),
         version="0.1.0",
         lifespan=lifespan,
     )
