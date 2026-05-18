@@ -177,4 +177,4 @@ Note: QA-01 (`mypy --strict`) is **enforced from Phase 1** (CI gate established 
 
 ---
 *Requirements defined: 2026-05-13*
-*Last updated: 2026-05-15 after Phase 3 completion (Plan 03-09 — BM-01..03, BM-05..08, BM-13, QA-07 complete)*
+*Last updated: 2026-05-18 after Phase 6 completion (Plan 06-11 — BM-12, QA-08 complete)*

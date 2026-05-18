@@ -12,7 +12,7 @@
 - [x] **Phase 3: bet-maker domain (DB)** — PostgreSQL persistence, UoW, place/list bets via HTTP
 - [ ] **Phase 4: bet-maker HTTP integration with line-provider** — `GET /events` proxy with retry and TTL cache
 - [ ] **Phase 5: RabbitMQ integration** — Publisher in line-provider, durable consumer + DLQ in bet-maker, atomic settle
-- [ ] **Phase 6: Reconciliation job** — Background worker recovers stuck PENDING bets via HTTP poll (defence-in-depth)
+- [x] **Phase 6: Reconciliation job** — Background worker recovers stuck PENDING bets via HTTP poll (defence-in-depth)
 - [ ] **Phase 7: Polish + Documentation** — README, OpenAPI/AsyncAPI quality, e2e/coverage gate, "Looks Done But Isn't" audit
 
 ### Parallelization
@@ -191,7 +191,7 @@ Plans:
   - **R3 (re-verified end-to-end)**: integration test runs consumer + reconciler concurrently and asserts no double-update
   - **R9**: reconciler trusts monotonic terminal state from line-provider — no "wait N seconds" debounce; immediate settle on observed FINISHED state
   - **Integration Gotcha (reconciler vs HTTP order)**: reconciler queries `GET /events/{id}` only AFTER line-provider's in-memory commit (ordering enforced in P2/P5)
-**Plans:** 10/11 plans executed
+**Plans:** 11/11 plans executed (Phase 6 complete 2026-05-18)
 
 Plans:
 - [x] 06-01-doc-sync-PLAN.md — REQUIREMENTS BM-05/BM-12 + ROADMAP Phase 6 Goal/SC sync (CANCELLED branch) (Wave 0)
@@ -204,7 +204,7 @@ Plans:
 - [x] 06-08-lifespan-health-wiring-PLAN.md — lifespan reconciler_event_lookup + create_task + /health 4th check (Wave 3)
 - [x] 06-09-integration-tests-PLAN.md — respx drop-publish + reconciler/consumer concurrent race tests (Wave 4)
 - [x] 06-10-e2e-drop-publish-PLAN.md — real-RMQ + real-PG e2e drop-publish (SC#5 / QA-08) (Wave 5)
-- [ ] 06-11-phase-gate-PLAN.md — coverage ≥80%, REQUIREMENTS/ROADMAP sync verify, plan checkboxes (Wave 6)
+- [x] 06-11-phase-gate-PLAN.md — coverage ≥80%, REQUIREMENTS/ROADMAP sync verify, plan checkboxes (Wave 6)
 
 ### Phase 7: Polish + Documentation
 **Goal**: A reviewer can clone the repo, run `docker compose up`, hit the documented curl commands, and pass the "Looks Done But Isn't" 18-item checklist from PITFALLS.md.
@@ -232,7 +232,7 @@ Plans:
 | 3. bet-maker domain (DB) | 9/9 | Complete | 2026-05-15 |
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
 | 5. RabbitMQ integration | 0/? | Not started | - |
-| 6. Reconciliation job | 10/11 | In Progress|  |
+| 6. Reconciliation job | 11/11 | Complete | 2026-05-18 |
 | 7. Polish + Documentation | 0/? | Not started | - |
 
 ---
