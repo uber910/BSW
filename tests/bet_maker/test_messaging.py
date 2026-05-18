@@ -139,7 +139,7 @@ class TestPoison:
         with patch(
             "bet_maker.entrypoints.messaging._settle_with_retry",
             new=AsyncMock(side_effect=integ),
-        ):
+        ) as settle_mock:
             async with TestRabbitBroker(router.broker) as br:
                 await br.publish(
                     msg,
@@ -147,6 +147,7 @@ class TestPoison:
                     exchange=EXCHANGE,
                     routing_key="event.finished.win",
                 )
+        settle_mock.assert_called_once()
 
 
 @pytest.mark.asyncio(loop_scope="session")
