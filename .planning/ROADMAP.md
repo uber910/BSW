@@ -221,7 +221,7 @@ Plans:
   - **Visibility gap**: every fix from P1–P6 only counts if a 15-minute reviewer can see it; README + curl examples + AsyncAPI + CI badge close this gap
   - **R6 (final)**: subscriber-count check in `/health` documented and re-verified
   - **R11 (final)**: capture `docker compose down` logs in README/CI to prove SIGTERM cleanly drains the consumer
-**Plans:** 12/12 plans executed (Phase 7 complete 2026-05-18)
+**Plans:** 12/12 plans complete
 
 Plans:
 **Wave 1**
@@ -256,7 +256,7 @@ Plans:
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
 | 5. RabbitMQ integration | 0/? | Not started | - |
 | 6. Reconciliation job | 11/11 | Complete   | 2026-05-18 |
-| 7. Polish + Documentation | 12/12 | Complete | 2026-05-18 |
+| 7. Polish + Documentation | 12/12 | Complete   | 2026-05-18 |
 
 ---
 *Roadmap created: 2026-05-13 from REQUIREMENTS.md + ARCHITECTURE.md*
