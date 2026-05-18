@@ -191,7 +191,7 @@ Plans:
   - **R3 (re-verified end-to-end)**: integration test runs consumer + reconciler concurrently and asserts no double-update
   - **R9**: reconciler trusts monotonic terminal state from line-provider — no "wait N seconds" debounce; immediate settle on observed FINISHED state
   - **Integration Gotcha (reconciler vs HTTP order)**: reconciler queries `GET /events/{id}` only AFTER line-provider's in-memory commit (ordering enforced in P2/P5)
-**Plans:** 11/11 plans executed (Phase 6 complete 2026-05-18)
+**Plans:** 11/11 plans complete
 
 Plans:
 - [x] 06-01-doc-sync-PLAN.md — REQUIREMENTS BM-05/BM-12 + ROADMAP Phase 6 Goal/SC sync (CANCELLED branch) (Wave 0)
@@ -232,7 +232,7 @@ Plans:
 | 3. bet-maker domain (DB) | 9/9 | Complete | 2026-05-15 |
 | 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
 | 5. RabbitMQ integration | 0/? | Not started | - |
-| 6. Reconciliation job | 11/11 | Complete | 2026-05-18 |
+| 6. Reconciliation job | 11/11 | Complete   | 2026-05-18 |
 | 7. Polish + Documentation | 0/? | Not started | - |
 
 ---
