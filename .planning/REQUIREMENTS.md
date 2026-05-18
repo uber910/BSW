@@ -63,6 +63,18 @@
 - [x] **DOC-03**: Раздел «Development» — uv install, миграции, запуск тестов, линтеров (Plan 07-10)
 - [x] **DOC-04**: Раздел «Reliability» — описание гарантий доставки и защиты от «зависших» ставок (Plan 07-10)
 
+## v1.1 Requirements (Architecture cleanup)
+
+Архитектурный рефакторинг поверх v1.0 baseline. Чисто внутренние изменения — никаких функциональных правок, API контракты и поведение остаются прежними. Все тесты v1.0 (355) должны оставаться зелёными, mypy strict — чистым, coverage gate (≥85%) — не падать.
+
+### Refactor (REFACTOR)
+
+- [ ] **REFACTOR-01**: Cлой `entrypoints/` упразднён; HTTP-роутеры лежат в `src/<svc>/api/`, FastStream-роутер (RabbitMQ messaging) тоже в `src/<svc>/api/` (Rabbit = транспорт API). Каталог `entrypoints/` отсутствует в обоих сервисах.
+- [ ] **REFACTOR-02**: Слой `repositories/` удалён полностью. Чтения мигрируют в `selectors/` (тонкие SQL/in-memory обёртки, никаких commit/flush). Записи — в `interactors/`, которые работают только через UoW. `BetRepository` и его файл больше не существуют; `tests/audit/test_static.py::test_repositories_use_for_update_skip_locked` либо удалён, либо заменён на эквивалентный аудит на interactor-слое.
+- [ ] **REFACTOR-03**: `AsyncUnitOfWork` приведён к структуре `~/Interexy/Metrikus/metrikus-app/api_common/unit_of_work/`: абстрактный класс + конкретная Postgres-реализация, `async with uow:` управляет транзакцией, инжектится в interactor как `uow: AsyncUnitOfWork` (FastAPI DI). Никаких прямых сессий в interactor'ах — только через `uow.session`.
+- [ ] **REFACTOR-04**: Дублирующийся cross-service код вынесен в shared-пакет (`src/shared/` или расширение `src/config/`): structlog wiring, request-id middleware, FastAPI app-factory boilerplate, lifespan-помощники, БД-движок-фабрика — туда, где это применимо к обоим сервисам. Цель — устранить near-duplicate файлы; точные кандидаты на вынос фиксируются в discuss-phase.
+- [ ] **REFACTOR-05**: Тестовый suite остаётся зелёным после всех правок (355+ тестов), mypy strict чистый, ruff чистый, coverage ≥85%. Никаких новых `# type: ignore` или `# noqa` сверх baseline.
+
 ## v2 Requirements
 
 Не входят в рамки тестового задания, но обсуждались в research.
