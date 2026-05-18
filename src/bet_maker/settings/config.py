@@ -30,4 +30,6 @@ class BetMakerSettings(BaseAppSettings):
     )
     line_provider_http_attempts: int = Field(default=3, ge=1, le=10)
     line_provider_http_backoff_max_s: float = Field(default=2.0, gt=0)
+    line_provider_reconciler_attempts: int = Field(default=5, ge=1, le=10)
+    line_provider_reconciler_backoff_max_s: float = Field(default=10.0, gt=0)
     reconciliation_interval_s: float = Field(default=30.0, gt=0)
