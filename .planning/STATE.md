@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Architecture cleanup
 status: executing
-last_updated: "2026-05-18T21:19:57.186Z"
+last_updated: "2026-05-18T21:33:49.384Z"
 last_activity: 2026-05-18
 progress:
   total_phases: 10
   completed_phases: 8
   total_plans: 71
-  completed_plans: 69
-  percent: 97
+  completed_plans: 70
+  percent: 99
 ---
 
 # Project State: BSW Betting System
@@ -28,7 +28,7 @@ progress:
 ## Current Position
 
 Phase: 09 (uow-repository-removal) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-18
 
@@ -75,6 +75,7 @@ Last activity: 2026-05-18
 | Phase 06-reconciliation-job P08 | 10m | 2 tasks | 5 files |
 | Plan 06-09 duration | ~5 min (2 tasks, 2 files — 5 integration tests: SC#4 consumer-race x2 + SC#1 drop-publish x3) |
 | Phase 09 P01 | 10m | - tasks | - files |
+| Phase 09 P02 | ~7m39s | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,7 @@ Last activity: 2026-05-18
 - [Phase 02]: 2026-05-15 (Plan 02-05): Phase 2 Wave 3 first half — facades layer (EventBus Protocol + NoopEventBus + StoreDep/EventBusDep) and interactors layer (create_event + set_event_state with strict commit->publish ordering). EventBus Protocol structurally typed so NoopEventBus today / FakeEventBus in tests / RabbitEventBus in P5 all satisfy without inheritance. set_event_state: lock-free store.get_by_id -> is_transition_allowed (raises TransitionForbiddenError BEFORE mutation) -> store.update returns (new_event, previous_state) atomically under asyncio.Lock -> publish-gate previous_state == EventState.NEW AND new_state in _TERMINAL_TO_ROUTING. previous_state is the post-mutation atomic observation — closes Pitfall 5 TOCTOU (concurrent NEW->FINISHED_WIN + NEW->FINISHED_LOSE on same id publishes exactly once). FakeEventBus.fail=True records THEN raises, proving D-12 store.update commits BEFORE event_bus.publish (Anti-Pattern 2 mitigation). occurred_at=new_event.deadline (atomic under lock, stable in tests). 7 atomic commits across 3 task-pairs: 51b97fb/e6c77b9 facades, 4452263/b950b7f create_event, a6efc85/467ee5b set_event_state, plus 81f807e style import re-sort. Full suite 64 passed (49 baseline + 15 new), mypy strict 39 files clean, ruff All checks passed. Three auto-fixes folded (mypy func-returns-value, ruff SIM105 contextlib.suppress, ruff I001 RED-then-GREEN drift). LP-01/LP-03/LP-05/LP-08 still partial — full closure in Plan 02-07 routes.
 - [Phase ?]: Phase 9 Plan 01 (D-05): selectors accept AsyncSession directly — no UoW knowledge — unifying contract with existing get_bet / list_bets.
 - [Phase ?]: Phase 9 Plan 01 (D-08): R3 static audit (with_for_update(skip_locked=True)) retargeted from repositories/bets.py to selectors/get_pending_locked.py in the same commit as the new selector — Pitfall #5 (audit-reads-nonexistent-path window) avoided.
+- [Phase ?]: Plan 09-02: tasks 1+2+3 committed jointly because pre-commit mypy --strict forbids the planned mid-state where production code still imports the deleted bet_maker.facades.uow module
 
 ### Open Todos
 

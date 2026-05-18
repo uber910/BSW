@@ -294,7 +294,7 @@ Plans:
 
 Plans:
 - [x] 09-01-PLAN.md — Create selectors/get_pending_locked + get_pending_event_ids + retarget audit (Wave 1)
-- [ ] 09-02-PLAN.md — Introduce uow/ package (Abstract+Postgres), rewire interactors/messaging/reconciler + all consumer tests, delete facades/uow.py (Wave 2)
+- [x] 09-02-PLAN.md — Introduce uow/ package (Abstract+Postgres), rewire interactors/messaging/reconciler + all consumer tests, delete facades/uow.py (Wave 2)
 - [ ] 09-03-PLAN.md — Delete src/bet_maker/repositories/ + tests/bet_maker/test_repositories.py + phase gate (Wave 3)
 
 ### Phase 10: Shared-code consolidation
