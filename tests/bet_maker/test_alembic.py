@@ -69,7 +69,7 @@ class TestMigration:
         were broken, this call would raise `type "bet_status" already exists`.
         """
         _ = apply_migrations
-        cfg = Config("alembic.ini")
+        cfg = Config("src/bet_maker/alembic.ini")
         cfg.set_main_option("sqlalchemy.url", pg_dsn)
         command.upgrade(cfg, "head")
 
@@ -87,7 +87,7 @@ class TestMigration:
         asyncio.run() for the async migration driver).
         """
         _ = apply_migrations
-        alembic_cfg = Config("alembic.ini")
+        alembic_cfg = Config("src/bet_maker/alembic.ini")
         alembic_cfg.set_main_option("sqlalchemy.url", pg_dsn)
 
         loop = asyncio.get_running_loop()

@@ -38,7 +38,5 @@ WORKDIR /app
 
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=app:app src ./src
-COPY --chown=app:app alembic.ini ./alembic.ini
-COPY --chown=app:app alembic ./alembic
 
 USER app

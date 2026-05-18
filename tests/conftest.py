@@ -51,7 +51,7 @@ def apply_migrations(pg_dsn: str) -> None:
     DSN baked into env.py (alembic.ini has no sqlalchemy.url line, so the
     override is the single source of truth for test DSN).
     """
-    alembic_cfg = Config("alembic.ini")
+    alembic_cfg = Config("src/bet_maker/alembic.ini")
     alembic_cfg.set_main_option("sqlalchemy.url", pg_dsn)
     command.upgrade(alembic_cfg, "head")
     command.upgrade(alembic_cfg, "head")  # idempotency assertion

@@ -190,7 +190,7 @@ uv run pre-commit install
 Миграции для bet-maker:
 
 ```bash
-uv run alembic upgrade head
+uv run alembic -c src/bet_maker/alembic.ini upgrade head
 ```
 
 ## Next-step extensions

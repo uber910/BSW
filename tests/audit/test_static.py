@@ -66,19 +66,20 @@ def test_async_sessionmaker_expire_on_commit_false() -> None:
     ), "async_sessionmaker must declare expire_on_commit=False — see ARCHITECTURE.md A1."
 
 
-def test_dockerfile_exec_form_cmd() -> None:
-    """R11 / D-04: Dockerfile CMD must be in exec form (JSON array).
+def test_compose_command_exec_form() -> None:
+    """docker-compose service 'command:' entries must be JSON arrays (exec-form).
 
-    Exec-form CMD passes SIGTERM directly to the process; shell-form
-    CMD (without brackets) wraps in /bin/sh which traps SIGTERM and
-    forces docker to SIGKILL after stop_grace_period.
+    Exec-form passes SIGTERM directly to the process; shell-form wraps
+    in /bin/sh which traps SIGTERM and forces docker to SIGKILL after
+    stop_grace_period. The Dockerfile has no CMD; the runtime command
+    lives in docker-compose.yml for each service.
     """
-    src = (REPO_ROOT / "Dockerfile").read_text()
-    cmd_lines = [line for line in src.splitlines() if line.lstrip().startswith("CMD")]
-    assert cmd_lines, "Dockerfile has no CMD line"
-    for line in cmd_lines:
-        assert re.match(r"\s*CMD\s*\[", line), (
-            f'non-exec-form CMD found: {line!r} — use CMD ["python", "..."] not CMD python ...'
+    src = (REPO_ROOT / "docker-compose.yml").read_text()
+    command_lines = [line for line in src.splitlines() if line.lstrip().startswith("command:")]
+    assert command_lines, "docker-compose.yml has no command: entry"
+    for line in command_lines:
+        assert re.search(r"command:\s*\[", line), (
+            f'non-exec-form command found: {line!r} — use command: ["python", "..."]'
         )
 
 
