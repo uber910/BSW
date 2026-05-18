@@ -66,7 +66,12 @@ class Bet(Base):
         nullable=False,
     )
     status: Mapped[BetStatus] = mapped_column(
-        SqlEnum(BetStatus, name="bet_status", create_type=True),
+        SqlEnum(
+            BetStatus,
+            name="bet_status",
+            create_type=True,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
         default=BetStatus.PENDING,
     )

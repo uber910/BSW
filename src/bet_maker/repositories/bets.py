@@ -61,3 +61,20 @@ class BetRepository:
             .with_for_update(skip_locked=True)
         )
         return list(result.scalars().all())
+
+    async def get_pending_event_ids(self) -> list[UUID]:
+        """D-01 / Plan 06-05: distinct event_ids with at least one PENDING bet.
+
+        SELECT DISTINCT event_id FROM bets WHERE status = 'PENDING'
+
+        Used by the reconciler tick (Plan 06-07 _run_tick) to discover
+        which events still need a state poll from line-provider. Read-only
+        — no FOR UPDATE, no commit, no flush. Anti-Pattern 1 preserved.
+
+        Pitfall 4 (RESEARCH.md): `.scalars().all()` returns the raw UUID
+        column values; plain `.all()` would return SQLAlchemy `Row` objects.
+        """
+        result = await self._session.execute(
+            select(Bet.event_id).where(Bet.status == BetStatus.PENDING).distinct()
+        )
+        return list(result.scalars().all())
