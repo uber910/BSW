@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -11,7 +12,6 @@ from bet_maker.helpers.money import quantize_amount
 from bet_maker.models.bet import Bet
 from bet_maker.schemas.bets import BetRead
 from bet_maker.schemas.events import EventState
-from config.time import utc_now
 
 log = structlog.get_logger()
 
@@ -55,7 +55,7 @@ async def place_bet(
     if snapshot is None:
         log.info("place_bet.rejected", event_id=str(event_id), reason="event not found")
         raise EventNotBettable("event not found")
-    if snapshot.deadline <= utc_now():
+    if snapshot.deadline <= datetime.now(timezone.utc):
         log.info(
             "place_bet.rejected",
             event_id=str(event_id),

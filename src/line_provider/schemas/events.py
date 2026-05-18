@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
 from typing import Annotated
@@ -8,7 +8,6 @@ from uuid import UUID
 
 from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field
 
-from config.time import utc_now
 from line_provider.helpers.money import quantize_coefficient
 
 
@@ -23,7 +22,7 @@ def _quantize(value: Decimal) -> Decimal:
 
 
 def _deadline_in_future(value: datetime) -> datetime:
-    if value <= utc_now():
+    if value <= datetime.now(timezone.utc):
         raise ValueError("deadline must be in the future")
     return value
 

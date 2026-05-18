@@ -1,10 +1,4 @@
-"""Integration tests for line_provider HTTP routes.
-
-LP-01..LP-08: full HTTP matrix over the 4 event routes.
-QA-05: integration via httpx.AsyncClient + ASGITransport + LifespanManager.
-D-01/D-06: PUT routed at /event/{event_id} (no /state suffix; W-1 revision).
-D-19: deterministic timing via monkey-patched utc_now where router-side filtering is involved.
-"""
+"""Integration tests for line_provider HTTP routes."""
 
 from __future__ import annotations
 
@@ -12,8 +6,8 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
 
-import pytest
 from fastapi import FastAPI
+from freezegun import freeze_time
 from httpx import AsyncClient
 
 from line_provider.infrastructure.store.in_memory import InMemoryEventStore
@@ -231,16 +225,8 @@ class TestGet:
 
 
 class TestList:
-    async def test_get_events_returns_active(
-        self, client: AsyncClient, app: FastAPI, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """LP-05/D-19: GET /events returns only NEW + future (utc_now monkey-patched)."""
+    async def test_get_events_returns_active(self, client: AsyncClient, app: FastAPI) -> None:
         fixed_now = datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
-        monkeypatch.setattr(
-            "line_provider.selectors.list_active_events.utc_now",
-            lambda: fixed_now,
-        )
-
         store: InMemoryEventStore = app.state.event_store
         active_id = uuid4()
         finished_id = uuid4()
@@ -272,7 +258,8 @@ class TestList:
             )
         )
 
-        response = await client.get("/events")
+        with freeze_time(fixed_now):
+            response = await client.get("/events")
         assert response.status_code == 200
         ids = {item["event_id"] for item in response.json()}
         assert ids == {str(active_id)}

@@ -17,8 +17,8 @@ Atomicity:
 Server-side timestamp:
 - settled_at value in UPDATE statement is PG func.now() — same clock as
   created_at/updated_at. Python-side SettleResult.settled_at is a freshly
-  taken utc_now() snapshot for logging/return purposes; the canonical
-  timestamp lives in PG.
+  taken datetime.now(timezone.utc) snapshot for logging/return purposes;
+  the canonical timestamp lives in PG.
 
 Invariants:
 - No message dispatch from this function. Line-provider owns the

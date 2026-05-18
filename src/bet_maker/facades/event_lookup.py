@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Protocol
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
 from bet_maker.schemas.events import EventState
-from config.time import utc_now
 
 
 class EventSnapshot(BaseModel):
@@ -63,12 +62,12 @@ class StubEventLookup:
     ) -> None:
         """Register an active (state=NEW, deadline in future) event.
 
-        Default deadline = utc_now() + 1 hour. Custom deadline allowed for
+        Default deadline = now + 1 hour. Custom deadline allowed for
         boundary tests (e.g., deadline exactly now -> must be rejected by
         interactor with `deadline <= now()` check).
         """
         if deadline is None:
-            deadline = utc_now() + timedelta(hours=1)
+            deadline = datetime.now(timezone.utc) + timedelta(hours=1)
         self._events[event_id] = EventSnapshot(
             event_id=event_id,
             deadline=deadline,

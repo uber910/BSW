@@ -121,7 +121,7 @@ class TestRejections:
     async def test_deadline_passed_raises(
         self, session_factory: async_sessionmaker[AsyncSession]
     ) -> None:
-        """D-14: deadline <= utc_now() -> 'deadline passed'."""
+        """deadline <= now -> 'deadline passed'."""
         event_id = uuid4()
         lookup = StubEventLookup()
         past = datetime.now(timezone.utc) - timedelta(hours=1)
