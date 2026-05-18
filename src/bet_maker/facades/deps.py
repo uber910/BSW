@@ -77,7 +77,7 @@ def get_rabbit_broker(request: Request) -> RabbitBroker:
     """Read the RabbitBroker singleton from FastStream router.
 
     There is exactly ONE RabbitRouter (declared in
-    bet_maker.entrypoints.messaging) -- its `broker` attribute is the
+    bet_maker.api.messaging) -- its `broker` attribute is the
     sole broker instance. Lifespan does `await router.broker.connect()`
     on startup, so by the time /health or any DI consumer reads this,
     the broker is connected.
@@ -87,7 +87,7 @@ def get_rabbit_broker(request: Request) -> RabbitBroker:
     schemas/repositories -- none of which need deps.py. Late import keeps
     deps.py independent of the FastStream wiring module.
     """
-    from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
+    from bet_maker.api.messaging import router  # noqa: PLC0415
 
     return router.broker
 

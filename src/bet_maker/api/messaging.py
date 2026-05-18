@@ -93,7 +93,7 @@ _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 def set_sessionmaker(sm: async_sessionmaker[AsyncSession]) -> None:
     """Pin the sessionmaker created by lifespan so the handler can build
     a fresh UoW per message (never share sessions across tasks).
-    Called by `src/bet_maker/entrypoints/lifespan.py` after engine init.
+    Called by `src/bet_maker/lifespan.py` after engine init.
     """
     global _sessionmaker  # noqa: PLW0603
     _sessionmaker = sm

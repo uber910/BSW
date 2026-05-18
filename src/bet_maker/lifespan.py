@@ -9,8 +9,8 @@ import structlog
 from fastapi import FastAPI
 from faststream.rabbit.schemas import ExchangeType, RabbitExchange, RabbitQueue
 
-from bet_maker.entrypoints.messaging import router as rabbit_router
-from bet_maker.entrypoints.messaging import set_sessionmaker
+from bet_maker.api.messaging import router as rabbit_router
+from bet_maker.api.messaging import set_sessionmaker
 from bet_maker.facades.http_event_lookup import HttpEventLookup
 from bet_maker.infrastructure.db.engine import create_engine_and_sessionmaker
 from bet_maker.infrastructure.db.pings import wait_for_postgres
