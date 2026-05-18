@@ -142,7 +142,7 @@
 | BM-09 | Phase 5 | Pending |
 | BM-10 | Phase 5 | Pending |
 | BM-11 | Phase 5 | Pending |
-| BM-12 | Phase 6 | Pending |
+| BM-12 | Phase 6 | Complete |
 | BM-13 | Phase 3 | Complete (Plan 03-09) |
 | QA-01 | Phase 7 | Pending |
 | QA-02 | Phase 1 | Complete |
