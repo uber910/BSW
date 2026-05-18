@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-18T11:24:58.537Z"
+last_updated: "2026-05-18T11:30:51.246Z"
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 53
-  completed_plans: 44
-  percent: 83
+  completed_plans: 45
+  percent: 85
 ---
 
 # Project State: BSW Betting System
@@ -33,7 +33,7 @@ Plan: 2 of 11
 - **Plan:** 04-08 complete (Wave 6 — `src/bet_maker/entrypoints/api/events.py` (NEW): `GET /events` route via `LineProviderHttpClientDep` -> `list_active_events(http_client)` -> `list[EventRead]`; on `LineProviderUnavailable` raises `HTTPException(503, "line-provider unreachable")` with `from exc` (D-10 / T-04-08-Info-disclosure: static detail string, internal reason kept on exception chain only); `src/bet_maker/app.py` extended to include `events.router` after `bets.router` (ordering: health -> bets -> events); `tests/bet_maker/test_events_routes.py` (NEW) with D-16 two-FastAPI-apps integration — session-scoped `lp_http_client` (ASGITransport over `line_provider_app`) + function-scoped `real_lp_wiring` overrides dep + event_lookup AFTER autouse stub-swap; 6 tests in 3 classes — TestGetEventsAgainstRealLp (active events / list shape / FINISHED_WIN drop), TestGetEvents503 (respx 503 overlay -> 503 + static detail), TestPostBetViaRealLp (happy path 201 / 404 -> 422); LP POST body drops `state` per `EventCreate(extra="forbid")` schema; 147 bet_maker passed +6 new, 242 total passed; mypy src clean 71 files; ruff clean)
 - **Plan:** 04-07 complete (Wave 5 — lifecycle wiring: singleton `httpx.AsyncClient(base_url=settings.line_provider_base_url, timeout=httpx.Timeout(5.0))` создан в `src/bet_maker/entrypoints/lifespan.py` после `wait_for_postgres` (D-02/D-19); `app.state.line_provider_http_client = http_client` + `app.state.event_lookup = HttpEventLookup(http_client=..., attempts=settings.line_provider_http_attempts, max_backoff=settings.line_provider_http_backoff_max_s)` заменяет StubEventLookup (D-14/D-21); shutdown reversed — nested `try: await http_client.aclose() finally: await engine.dispose()` гарантирует dispose даже если aclose бросит (D-20, Pitfall 6); `src/bet_maker/facades/deps.py` расширен `get_line_provider_http_client(request) -> httpx.AsyncClient` provider + `LineProviderHttpClientDep` Annotated alias через `cast(httpx.AsyncClient, request.app.state.line_provider_http_client)` (D-12, Anti-Pattern A2 — нет module-level singleton); `tests/bet_maker/conftest.py::_clear_event_lookup` переписан: вместо broken `app.state.event_lookup._events.clear()` (атрибут отсутствует на HttpEventLookup) теперь `app.state.event_lookup = StubEventLookup()` swap per-test — restores isolation без HttpEventLookup-specific internals (PATTERNS.md critical finding line 801); добавлена session-scoped fixture `line_provider_app` (LifespanManager(build_app())) для Plan 04-08 ASGI proxy integration tests (D-16); `tests/bet_maker/test_lifespan.py` переписан с 4 классами — TestLifespanStatePins (4 теста: engine/sessionmaker/settings + новый http_client), TestProductionLifespanWiring (новый — `test_event_lookup_is_http_in_production` строит fresh app через build_app() в обход autouse swap, проверяет isinstance HttpEventLookup), TestShutdownOrder (новый — `test_aclose_before_dispose` patch.object на httpx.AsyncClient.aclose + AsyncEngine.dispose, fake_аналоги appendят имена в `call_order: list[str]` перед делегацией оригиналу, ассерт `call_order.index("aclose") < call_order.index("dispose")` — изначально пытался `engine.dispose = fake_dispose` на instance, отвергнут AttributeError 'AsyncEngine' object attribute 'dispose' is read-only — переключён на class-level patch), TestLifespanRetryExhaustion (unchanged P3); 141 bet_maker passed (+2 new), 236 total passed; mypy src clean 70 files; ruff clean)
 - **Status:** Executing Phase 06
-- **Progress:** [████████░░] 83%
+- **Progress:** [█████████░] 85%
 
 ```
 [███░░░░] 3/7 phases (43%)
