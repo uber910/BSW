@@ -71,7 +71,7 @@ class TestE2ERabbitMQ:
                 )
                 assert rp.status_code in (200, 204), rp.text
 
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 deadline_poll = loop.time() + 5.0
                 final_status: str | None = None
                 while loop.time() < deadline_poll:
@@ -128,13 +128,17 @@ class TestE2ERabbitMQ:
             persist=True,
         )
 
-        await asyncio.sleep(2.0)
-
         from bet_maker.entrypoints.messaging import router as bm_router  # noqa: PLC0415
 
         dlq = await bm_router.broker.declare_queue(
             RabbitQueue("bet_maker.events.finished.dlq", durable=True, declare=False)
         )
-        got = await dlq.get(fail=False, timeout=2.0)
+        deadline_dlq = asyncio.get_running_loop().time() + 5.0
+        got = None
+        while asyncio.get_running_loop().time() < deadline_dlq:
+            got = await dlq.get(fail=False, timeout=0.2)
+            if got is not None:
+                break
+            await asyncio.sleep(0.1)
         assert got is not None, "DLQ has 0 messages — poison routing failed"
         await got.ack()
