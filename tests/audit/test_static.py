@@ -43,8 +43,8 @@ def test_pending_locked_selector_uses_for_update_skip_locked() -> None:
 
     The row lock plus ``skip_locked=True`` is what makes consumer and
     reconciler concurrent settle idempotent against the same event_id.
-    Phase 9 moved this query from BetRepository.get_pending_locked to
-    selectors/get_pending_locked.py; audit retargeted to the new seam.
+    Phase 9 moved this query into ``selectors/get_pending_locked.py`` —
+    audit retargeted to the new seam.
     """
     src = (SRC / "bet_maker" / "selectors" / "get_pending_locked.py").read_text()
     assert "with_for_update(skip_locked=True)" in src, (
