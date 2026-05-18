@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, HTTPException, Request, status
 
-from line_provider.facades.deps import EventBusDep, StoreDep
+from line_provider.facades.deps import EventBusDependency, StoreDependency
 from line_provider.helpers.state_machine import TransitionForbiddenError
 from line_provider.infrastructure.store.in_memory import (
     EventAlreadyExistsError,
@@ -34,7 +34,7 @@ router = APIRouter(tags=["events"])
     },
 )
 async def post_event(
-    store: StoreDep,
+    store: StoreDependency,
     body: Annotated[
         EventCreate,
         Body(
@@ -81,8 +81,8 @@ async def post_event(
 async def put_event(
     event_id: UUID,
     request: Request,
-    store: StoreDep,
-    event_bus: EventBusDep,
+    store: StoreDependency,
+    event_bus: EventBusDependency,
     body: Annotated[
         EventUpdate,
         Body(
@@ -139,7 +139,7 @@ async def put_event(
         },
     },
 )
-async def get_event(event_id: UUID, store: StoreDep) -> EventRead:
+async def get_event(event_id: UUID, store: StoreDependency) -> EventRead:
     event = await get_event_by_id(store, event_id=event_id)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -151,6 +151,6 @@ async def get_event(event_id: UUID, store: StoreDep) -> EventRead:
     response_model=list[EventRead],
     summary="List active events (deadline in future, state == NEW)",
 )
-async def list_events(store: StoreDep) -> list[EventRead]:
+async def list_events(store: StoreDependency) -> list[EventRead]:
     events = await list_active_events(store)
     return [EventRead.model_validate(e.model_dump()) for e in events]

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, HTTPException, status
 
-from bet_maker.facades.deps import EventLookupDep, SessionDep, UoWDep
+from bet_maker.facades.deps import EventLookupDependency, SessionDependency, UoWDependency
 from bet_maker.facades.line_provider_client import LineProviderUnavailable
 from bet_maker.interactors.place_bet import EventNotBettable, place_bet
 from bet_maker.schemas.bets import BetCreate, BetRead
@@ -38,8 +38,8 @@ router = APIRouter(tags=["bets"])
     },
 )
 async def post_bet(
-    uow: UoWDep,
-    event_lookup: EventLookupDep,
+    uow: UoWDependency,
+    event_lookup: EventLookupDependency,
     body: Annotated[
         BetCreate,
         Body(
@@ -99,7 +99,7 @@ async def post_bet(
     response_model=list[BetRead],
     summary="List all bets (newest first)",
 )
-async def get_bets(session: SessionDep) -> list[BetRead]:
+async def get_bets(session: SessionDependency) -> list[BetRead]:
     """GET /bets — list all bets, newest first.
 
     Returns list[BetRead] ordered by created_at DESC. Pure read —
@@ -119,7 +119,7 @@ async def get_bets(session: SessionDep) -> list[BetRead]:
         },
     },
 )
-async def get_bet(bet_id: UUID, session: SessionDep) -> BetRead:
+async def get_bet(bet_id: UUID, session: SessionDependency) -> BetRead:
     """GET /bet/{bet_id} — fetch single bet by id.
 
     Returns 200 + BetRead on hit; 404 with detail='bet {id} not found'

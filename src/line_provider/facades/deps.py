@@ -16,5 +16,5 @@ def get_event_bus(request: Request) -> EventBus:
     return cast(EventBus, request.app.state.event_bus)
 
 
-StoreDep = Annotated[InMemoryEventStore, Depends(get_store)]
-EventBusDep = Annotated[EventBus, Depends(get_event_bus)]
+StoreDependency = Annotated[InMemoryEventStore, Depends(get_store)]
+EventBusDependency = Annotated[EventBus, Depends(get_event_bus)]

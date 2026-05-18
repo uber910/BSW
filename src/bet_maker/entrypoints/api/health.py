@@ -4,9 +4,9 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from bet_maker.facades.deps import (
-    EngineDep,
-    RabbitBrokerDep,
-    ReconciliationTaskDep,
+    EngineDependency,
+    RabbitBrokerDependency,
+    ReconciliationTaskDependency,
 )
 from bet_maker.infrastructure.db.pings import ping_postgres
 
@@ -28,9 +28,9 @@ router = APIRouter(tags=["health"])
     },
 )
 async def health(
-    engine: EngineDep,
-    broker: RabbitBrokerDep,
-    reconciler_task: ReconciliationTaskDep,
+    engine: EngineDependency,
+    broker: RabbitBrokerDependency,
+    reconciler_task: ReconciliationTaskDependency,
 ) -> JSONResponse:
     """GET /health — PG + RMQ + subscriber + reconciler check.
 

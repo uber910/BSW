@@ -64,7 +64,7 @@ def get_line_provider_http_client(request: Request) -> httpx.AsyncClient:
     """Read the singleton httpx.AsyncClient — pinned by lifespan.
 
     Used by:
-    - LineProviderHttpClientDep alias below (for routes).
+    - LineProviderHttpClientDependency alias below (for routes).
     - HttpEventLookup constructor (read indirectly through app.state.event_lookup).
 
     NO module-level httpx singleton; every long-lived object goes through
@@ -92,14 +92,16 @@ def get_rabbit_broker(request: Request) -> RabbitBroker:
     return router.broker
 
 
-SettingsDep = Annotated[BetMakerSettings, Depends(get_settings)]
-EngineDep = Annotated[AsyncEngine, Depends(get_engine)]
-SessionmakerDep = Annotated[async_sessionmaker[AsyncSession], Depends(get_sessionmaker)]
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
-UoWDep = Annotated[AsyncUnitOfWork, Depends(get_uow)]
-EventLookupDep = Annotated[EventLookup, Depends(get_event_lookup)]
-LineProviderHttpClientDep = Annotated[httpx.AsyncClient, Depends(get_line_provider_http_client)]
-RabbitBrokerDep = Annotated[RabbitBroker, Depends(get_rabbit_broker)]
+SettingsDependency = Annotated[BetMakerSettings, Depends(get_settings)]
+EngineDependency = Annotated[AsyncEngine, Depends(get_engine)]
+SessionmakerDependency = Annotated[async_sessionmaker[AsyncSession], Depends(get_sessionmaker)]
+SessionDependency = Annotated[AsyncSession, Depends(get_session)]
+UoWDependency = Annotated[AsyncUnitOfWork, Depends(get_uow)]
+EventLookupDependency = Annotated[EventLookup, Depends(get_event_lookup)]
+LineProviderHttpClientDependency = Annotated[
+    httpx.AsyncClient, Depends(get_line_provider_http_client)
+]
+RabbitBrokerDependency = Annotated[RabbitBroker, Depends(get_rabbit_broker)]
 
 
 def get_reconciler_event_lookup(request: Request) -> HttpEventLookup:
@@ -122,5 +124,5 @@ def get_reconciliation_task(request: Request) -> asyncio.Task[None]:
     return cast("asyncio.Task[None]", request.app.state.reconciliation_task)
 
 
-ReconcilerEventLookupDep = Annotated[HttpEventLookup, Depends(get_reconciler_event_lookup)]
-ReconciliationTaskDep = Annotated["asyncio.Task[None]", Depends(get_reconciliation_task)]
+ReconcilerEventLookupDependency = Annotated[HttpEventLookup, Depends(get_reconciler_event_lookup)]
+ReconciliationTaskDependency = Annotated["asyncio.Task[None]", Depends(get_reconciliation_task)]

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, status
 
-from bet_maker.facades.deps import LineProviderHttpClientDep
+from bet_maker.facades.deps import LineProviderHttpClientDependency
 from bet_maker.facades.line_provider_client import LineProviderUnavailable
 from bet_maker.schemas.errors import ErrorDetail
 from bet_maker.schemas.events import EventRead
@@ -29,7 +29,7 @@ router = APIRouter(tags=["events"])
         },
     },
 )
-async def get_events(http_client: LineProviderHttpClientDep) -> list[EventRead]:
+async def get_events(http_client: LineProviderHttpClientDependency) -> list[EventRead]:
     """GET /events — list active events from line-provider.
 
     Returns 200 + list[EventRead] on success; 503 + static detail on
