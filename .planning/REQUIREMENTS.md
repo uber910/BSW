@@ -40,7 +40,7 @@
 - [ ] **BM-09**: FastStream RabbitRouter consumer на очереди `bet_maker.events.finished` с `AckPolicy.MANUAL`, `prefetch_count=10` (через `Channel(prefetch_count=10)` на `RabbitRouter`), durable=true
 - [ ] **BM-10**: Interactor `settle_bets_for_event(event_id, outcome)`: вызывается консьюмером И reconciler'ом; идемпотентный; использует `SELECT FOR UPDATE SKIP LOCKED` чтобы не было гонок
 - [ ] **BM-11**: DLX `bsw.events.dlx` + DLQ `bet_maker.events.finished.dlq`; bounded in-handler retries для transient ошибок через `tenacity` (3 попытки, exponential backoff `multiplier=0.2, min=0.2, max=2` вокруг `settle_bets_for_event`); poison-сообщения (ValidationError / UnsupportedSchemaVersion / IntegrityError) сразу `reject(requeue=False) → DLQ`; nack(requeue=True) НЕ используется (R7). Per D-08/D-09 (Phase 5 CONTEXT.md).
-- [ ] **BM-12**: Reconciliation job — asyncio background task в lifespan, период через pydantic-settings (default 30s); выбирает PENDING-ставки через `BetRepository.get_pending_event_ids()`, тянет статус каждого события из line-provider через отдельный `HttpEventLookup` (reconciler-params, 5 attempts / max_backoff 10s — P4 D-04), доводит до `WON` / `LOST` (terminal_state) или `CANCELLED` (404 от LP — событие удалено). Per D-02/D-03/D-04 (Phase 6 CONTEXT.md).
+- [x] **BM-12**: Reconciliation job — asyncio background task в lifespan, период через pydantic-settings (default 30s); выбирает PENDING-ставки через `BetRepository.get_pending_event_ids()`, тянет статус каждого события из line-provider через отдельный `HttpEventLookup` (reconciler-params, 5 attempts / max_backoff 10s — P4 D-04), доводит до `WON` / `LOST` (terminal_state) или `CANCELLED` (404 от LP — событие удалено). Per D-02/D-03/D-04 (Phase 6 CONTEXT.md).
 - [x] **BM-13**: `GET /bet/{bet_id}` — получение ставки по id; 200 + BetRead `{id, event_id, amount, status, created_at}` или 404 `{"detail":"bet {id} not found"}`. Per D-02 (Phase 3 CONTEXT.md): эндпоинт присутствует на диаграмме ТЗ стр. 3 (отсутствует в текстовом описании); реализуется в P3.
 
 ### Quality (QA)
@@ -52,7 +52,7 @@
 - [x] **QA-05**: Integration-тесты на API через httpx AsyncClient (line-provider и bet-maker) (line-provider: 23-тестная HTTP-матрица через httpx.AsyncClient + ASGITransport + LifespanManager landed in plan 02-07; bet-maker — Phase 3)
 - [ ] **QA-06**: Consumer тесты через `TestRabbitBroker` (FastStream native)
 - [x] **QA-07**: PG-тесты с реальной БД через testcontainers (НЕ SQLite, чтобы ловить `FOR UPDATE` баги)
-- [ ] **QA-08**: Один e2e сценарий: создать событие → поставить ставку → завершить событие → проверить, что ставка стала WON/LOST через consumer + ещё одну через reconciler
+- [x] **QA-08**: Один e2e сценарий: создать событие → поставить ставку → завершить событие → проверить, что ставка стала WON/LOST через consumer + ещё одну через reconciler
 - [ ] **QA-09**: pytest-cov с минимальным порогом покрытия (≥80%)
 - [x] **QA-10**: GitHub Actions CI: lint + typecheck + unit + integration на каждый push/PR
 
@@ -151,7 +151,7 @@
 | QA-05 | Phase 2 | Complete |
 | QA-06 | Phase 5 | Pending |
 | QA-07 | Phase 3 | Complete (Plan 03-09) |
-| QA-08 | Phase 6 | Pending |
+| QA-08 | Phase 6 | Complete |
 | QA-09 | Phase 7 | Pending |
 | QA-10 | Phase 1 | Complete |
 | DOC-01 | Phase 7 | Pending |
