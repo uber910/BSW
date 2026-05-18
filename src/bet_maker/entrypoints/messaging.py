@@ -1,19 +1,19 @@
-"""bet-maker AMQP consumer entrypoint (D-25).
+"""bet-maker AMQP consumer entrypoint.
 
 Single FastStream RabbitRouter with one subscriber binding queue
 `bet_maker.events.finished` to topic exchange `bsw.events` via wildcard
-`event.finished.*` (D-06). Manual ack policy (R1/F1), prefetch=10 (F2),
-DLX wiring via RabbitQueue.arguments (D-04 / D-25).
+`event.finished.*`. Manual ack policy, prefetch=10, DLX wiring via
+RabbitQueue.arguments.
 
-Pitfalls guarded:
-- R1/F1 -- `ack_policy=AckPolicy.MANUAL` (never default REJECT_ON_ERROR).
-- R2/F4 -- `await msg.ack()` is the LAST statement after `async with uow:` exits cleanly.
-- R7 -- `msg.nack(requeue=True)` is NEVER called; transient retried in-handler via tenacity,
+Invariants:
+- `ack_policy=AckPolicy.MANUAL` (never default REJECT_ON_ERROR).
+- `await msg.ack()` is the LAST statement after `async with uow:` exits cleanly.
+- `msg.nack(requeue=True)` is NEVER called; transient retried in-handler via tenacity,
   then reject(requeue=False) on exhaustion.
-- F2 -- `Channel(prefetch_count=10)`.
-- F5 / Anti-Pattern 5 -- one `RabbitRouter` per service; this module is the sole owner.
-- F7 -- schema_version != 1 -> UnsupportedSchemaVersion -> POISON -> DLQ.
-- A7 -- clear_contextvars at entry, bind in try, clear in finally.
+- `Channel(prefetch_count=10)`.
+- One `RabbitRouter` per service; this module is the sole owner.
+- schema_version != 1 -> UnsupportedSchemaVersion -> POISON -> DLQ.
+- clear_contextvars at entry, bind in try, clear in finally.
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ log = structlog.get_logger()
 
 
 class UnsupportedSchemaVersion(ValueError):  # noqa: N818
-    """D-09: payload.schema_version != 1 -> POISON -> DLQ.
+    """payload.schema_version != 1 -> POISON -> DLQ.
 
     Distinct from pydantic.ValidationError because schema_version validation
     is a logical check after parse, not a parse failure. Caught in same
@@ -58,7 +58,7 @@ class UnsupportedSchemaVersion(ValueError):  # noqa: N818
 
 
 def _is_transient(exc: BaseException) -> bool:
-    """D-09 TRANSIENT classification (DB-side errors)."""
+    """TRANSIENT classification (DB-side errors)."""
     if isinstance(exc, OperationalError):
         return True
     if isinstance(exc, DBAPIError) and getattr(exc, "connection_invalidated", False):
@@ -92,7 +92,7 @@ _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
 def set_sessionmaker(sm: async_sessionmaker[AsyncSession]) -> None:
     """Pin the sessionmaker created by lifespan so the handler can build
-    a fresh UoW per message (A2: never share sessions across tasks).
+    a fresh UoW per message (never share sessions across tasks).
     Called by `src/bet_maker/entrypoints/lifespan.py` after engine init.
     """
     global _sessionmaker  # noqa: PLW0603
@@ -134,22 +134,22 @@ async def on_event_finished(
     payload: dict[str, Any],
     msg: RabbitMessage,
 ) -> None:
-    """Settle PENDING bets for a finished event (BM-09, BM-10, BM-11).
+    """Settle PENDING bets for a finished event.
 
-    Manual-ack ladder (D-09 / D-10 / D-11):
+    Manual-ack ladder:
     - happy -> ack AFTER uow commit
     - POISON (ValidationError / UnsupportedSchemaVersion / IntegrityError)
       -> reject(requeue=False) -> DLQ
     - TRANSIENT exhausted (caught by default Exception)
-      -> reject(requeue=False) -> DLQ (reconciler will retry -- Core Value)
-    - nack(requeue=True) NEVER called (R7)
+      -> reject(requeue=False) -> DLQ (reconciler will retry)
+    - nack(requeue=True) NEVER called
 
     payload is dict[str, Any] rather than EventFinishedMessage so that
     Pydantic ValidationError is raised inside this handler (inside the
     try/except) rather than by FastStream before the handler is called.
     With a typed parameter FastStream pre-validates and any ValidationError
     would escape the handler's except block, leaving the message unacked
-    until consumer timeout (WR-01).
+    until consumer timeout.
     """
     clear_contextvars()
     try:

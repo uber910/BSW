@@ -1,8 +1,8 @@
-"""AMQP routing-key constants — line-provider publisher side (D-05).
+"""AMQP routing-key constants — line-provider publisher side.
 
-F8: single source of truth for routing keys; CI integration test
-asserts the binding bsw.events --event.finished.*--> bet_maker.events.finished
-exists at runtime. R5: rename, never edit — keep stability across deploys.
+Single source of truth for routing keys; CI integration test asserts
+the binding bsw.events --event.finished.*--> bet_maker.events.finished
+exists at runtime. Rename, never edit — keep stability across deploys.
 """
 
 from __future__ import annotations

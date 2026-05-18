@@ -1,19 +1,18 @@
 """HTTP implementation of EventLookup Protocol — production EventLookup.
 
-D-11 / D-14: replaces StubEventLookup in production lifespan. Same Protocol,
+Replaces StubEventLookup in production lifespan. Same Protocol,
 different backend (httpx -> line-provider). StubEventLookup is retained for
-unit tests of place_bet interactor (P3 D-23 truncate-fixture pattern).
+unit tests of place_bet interactor.
 
-D-05 / D-07 / D-09: response mapping --
+Response mapping:
     200            -> EventSnapshot
     404            -> None (interactor maps to 422 "event not found")
     4xx other      -> HTTPStatusError -> LineProviderUnavailable (route -> 503)
     5xx (retried)  -> after retry exhaustion -> LineProviderUnavailable
     TransportError -> after retry exhaustion -> LineProviderUnavailable
 
-Pitfall 5 (RESEARCH line 627): the 404 short-circuit MUST come BEFORE
-the raise_for_status call -- otherwise tenacity would never see 5xx as
-its own exception class.
+The 404 short-circuit MUST come BEFORE the raise_for_status call --
+otherwise tenacity would never see 5xx as its own exception class.
 """
 
 from __future__ import annotations
@@ -32,10 +31,10 @@ from bet_maker.facades.line_provider_client import (
 
 
 class HttpEventLookup:
-    """D-11 / D-14: production EventLookup over LP GET /event/{id}.
+    """Production EventLookup over LP GET /event/{id}.
 
-    Constructor binds a shared retry-factory (D-03 params from BetMakerSettings).
-    The underlying httpx.AsyncClient is a singleton owned by lifespan (D-12).
+    Constructor binds a shared retry-factory (params from BetMakerSettings).
+    The underlying httpx.AsyncClient is a singleton owned by lifespan.
     """
 
     def __init__(
@@ -49,7 +48,7 @@ class HttpEventLookup:
         self._retry = make_retry_decorator(attempts, max_backoff)
 
     async def get_event(self, event_id: UUID) -> EventSnapshot | None:
-        """D-09: 404 -> None; 5xx after retry -> LineProviderUnavailable.
+        """404 -> None; 5xx after retry -> LineProviderUnavailable.
 
         EventLookup Protocol method -- same signature as StubEventLookup.get_event.
         """

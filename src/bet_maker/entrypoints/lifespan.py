@@ -21,24 +21,24 @@ from config.logging import configure_structlog
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """bet_maker lifespan (Plan 05-07 / D-21).
+    """bet_maker lifespan.
 
-    Strict startup order (F3 — no asyncio.gather parallel steps):
+    Strict startup order (no asyncio.gather parallel steps):
       1. configure_structlog
       2. create engine + sessionmaker
       3. wait_for_postgres (tenacity)
       4. httpx.AsyncClient singleton
-      5. router.broker.connect()  -- Pitfall 2: required because custom lifespan
-      6. declare DLX exchange + DLQ queue + bind DLQ to DLX (Pitfall 4)
+      5. router.broker.connect()  -- required because custom lifespan
+      6. declare DLX exchange + DLQ queue + bind DLQ to DLX
       7. set_sessionmaker on messaging module (handler dependency)
       8. app.state pins
       9. yield
 
-    Shutdown reverse order with nested try/finally (D-20 Pitfall 6):
+    Shutdown reverse order with nested try/finally:
       router.broker.close() -> http_client.aclose() -> engine.dispose()
       Each step runs even if the prior one raises.
 
-    D-22: no intermediate "starting" state — uvicorn does not open the
+    No intermediate "starting" state — uvicorn does not open the
     listening socket until this startup completes.
     """
     settings = BetMakerSettings()

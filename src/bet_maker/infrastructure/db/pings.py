@@ -26,12 +26,12 @@ _stdlib_log = logging.getLogger(__name__)
 async def wait_for_postgres(engine: AsyncEngine) -> None:
     """Block until PG accepts SELECT 1, or give up after 10 attempts.
 
-    D-27: tenacity @retry automatically uses AsyncRetrying for coroutines.
+    tenacity @retry automatically uses AsyncRetrying for coroutines.
     Cumulative wait ~1+2+4+8+10+10+10+10+10+10 = ~75s worst case before
-    reraise. Lifespan (Plan 03-08) calls this — if all 10 attempts fail,
-    startup crashes with a clear OperationalError and structlog log.
+    reraise. Lifespan calls this — if all 10 attempts fail, startup
+    crashes with a clear OperationalError and structlog log.
 
-    Pitfall D2 mitigation: surfaces bad DSN at startup, not at first request.
+    Surfaces bad DSN at startup, not at first request.
     """
     async with engine.connect() as conn:
         await conn.scalar(text("SELECT 1"))
@@ -40,9 +40,9 @@ async def wait_for_postgres(engine: AsyncEngine) -> None:
 async def ping_postgres(engine: AsyncEngine) -> bool:
     """Single SELECT 1 ping for /health — no retry, returns True/False.
 
-    D-26: per-request check (no caching at test-task scale). ~5ms overhead
+    Per-request check (no caching at test-task scale). ~5ms overhead
     is fine; live 503 is critical for docker-compose healthcheck.
-    D-29: SQLAlchemyError caught -> return False -> route emits 503.
+    SQLAlchemyError caught -> return False -> route emits 503.
     Bare Exception is NOT caught — non-SQLAlchemy errors should propagate
     and cause 500 (info disclosure risk to swallow them silently).
     """

@@ -12,16 +12,14 @@ from bet_maker.schemas.bets import BetStatus
 class BetRepository:
     """Repository for Bet entity. UoW owns transactions — no commit here.
 
-    D-18 / Anti-Pattern 1 (ARCHITECTURE.md): repositories MUST NOT commit
-    or rollback. Only `.add()` (queue an INSERT) and `.get_by_id()`
-    (issue a SELECT). The enclosing UoW calls commit on clean exit and
-    rollback on exception.
+    Repositories MUST NOT commit or rollback. Only `.add()` (queue an
+    INSERT) and `.get_by_id()` (issue a SELECT). The enclosing UoW calls
+    commit on clean exit and rollback on exception.
 
-    `add()` does NOT flush — the caller (interactor place_bet) controls
+    `add()` does NOT flush — the caller (place_bet interactor) controls
     flush timing because it needs `session.refresh(bet)` immediately
-    after to load server_default created_at/updated_at (RESEARCH §Pitfall 1).
-    Plan 03-07 interactor calls `uow.bets.add(bet); await uow.session.flush()`
-    explicitly.
+    after to load server_default created_at/updated_at. The interactor
+    calls `uow.bets.add(bet); await uow.session.flush()` explicitly.
     """
 
     def __init__(self, session: AsyncSession) -> None:
@@ -37,23 +35,25 @@ class BetRepository:
         return result.scalar_one_or_none()
 
     async def get_pending_locked(self, event_id: UUID) -> list[Bet]:
-        """Lock and return all PENDING bets for an event_id (R3 / D-12).
+        """Lock and return all PENDING bets for an event_id.
 
         SELECT * FROM bets
         WHERE event_id = :event_id AND status = 'PENDING'
         FOR UPDATE SKIP LOCKED
 
-        This is the idempotency mechanism for both Plan 05 consumer and Phase 6
-        reconciler. Two concurrent callers against the same event_id: SKIP LOCKED
-        ensures exactly one acquires the rows; the other observes 0 rows and
-        takes the settle.noop path (D-16). Status filter ensures redelivery
-        after a prior successful settle is also a 0-row no-op.
+        This is the idempotency mechanism for both the consumer and the
+        reconciler. Two concurrent callers against the same event_id:
+        SKIP LOCKED ensures exactly one acquires the rows; the other
+        observes 0 rows and takes the settle.noop path. Status filter
+        ensures redelivery after a prior successful settle is also a
+        0-row no-op.
 
-        Row locks are released when the enclosing UoW commits (async with uow exits).
-        D-18: PG default READ COMMITTED isolation is sufficient -- the row lock plus
-        status filter provide all needed serialisability without raising isolation.
+        Row locks are released when the enclosing UoW commits (async
+        with uow exits). PG default READ COMMITTED isolation is
+        sufficient -- the row lock plus status filter provide all needed
+        serialisability without raising isolation.
 
-        Anti-Pattern 1 preserved: method only SELECTs; no flush, no commit.
+        Method only SELECTs; no flush, no commit.
         """
         result = await self._session.execute(
             select(Bet)
@@ -63,16 +63,16 @@ class BetRepository:
         return list(result.scalars().all())
 
     async def get_pending_event_ids(self) -> list[UUID]:
-        """D-01 / Plan 06-05: distinct event_ids with at least one PENDING bet.
+        """Distinct event_ids with at least one PENDING bet.
 
         SELECT DISTINCT event_id FROM bets WHERE status = 'PENDING'
 
-        Used by the reconciler tick (Plan 06-07 _run_tick) to discover
-        which events still need a state poll from line-provider. Read-only
-        — no FOR UPDATE, no commit, no flush. Anti-Pattern 1 preserved.
+        Used by the reconciler tick (_run_tick) to discover which events
+        still need a state poll from line-provider. Read-only — no
+        FOR UPDATE, no commit, no flush.
 
-        Pitfall 4 (RESEARCH.md): `.scalars().all()` returns the raw UUID
-        column values; plain `.all()` would return SQLAlchemy `Row` objects.
+        `.scalars().all()` returns the raw UUID column values; plain
+        `.all()` would return SQLAlchemy `Row` objects.
         """
         result = await self._session.execute(
             select(Bet.event_id).where(Bet.status == BetStatus.PENDING).distinct()

@@ -36,19 +36,18 @@ class NoopEventBus:
 
 
 class RabbitEventBus:
-    """D-23: publishes EventFinishedMessage to the bsw.events topic exchange.
+    """Publishes EventFinishedMessage to the bsw.events topic exchange.
 
     Implements the EventBus Protocol structurally — no inheritance.
-    Constructed in lifespan (Plan 07) with the FastStream RabbitBroker
-    from line_provider.entrypoints.messaging.router.broker.
+    Constructed in lifespan with the FastStream RabbitBroker from
+    line_provider.entrypoints.messaging.router.broker.
 
-    Pitfall 6 (RESEARCH.md): correlation_id is propagated from
-    EventFinishedMessage.correlation_id (set by the interactor from
-    the HTTP request's request_id middleware binding) to
-    broker.publish(correlation_id=...) so the AMQP property carries
-    the same id end-to-end. Without this, FastStream would generate
-    a random UUID for msg.correlation_id and structlog binding in
-    the consumer would lose request traceability.
+    correlation_id is propagated from EventFinishedMessage.correlation_id
+    (set by the interactor from the HTTP request's request_id middleware
+    binding) to broker.publish(correlation_id=...) so the AMQP property
+    carries the same id end-to-end. Without this, FastStream would
+    generate a random UUID for msg.correlation_id and structlog binding
+    in the consumer would lose request traceability.
 
     persist=True ensures the message survives a broker restart
     (combined with durable=True on the queue declared by bet-maker).

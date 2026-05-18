@@ -1,29 +1,29 @@
-"""settle_bets_for_event — idempotent settle interactor for Phase 5/6 (D-17).
+"""settle_bets_for_event — idempotent settle interactor.
 
 Called by:
-- Plan 05 RabbitMQ consumer handler (settled_via='consumer')
-- Phase 6 reconciliation job (settled_via='reconciler')
+- The RabbitMQ consumer handler (settled_via='consumer')
+- The reconciliation job (settled_via='reconciler')
 
-Idempotency (R3 / D-12 / D-15):
+Idempotency:
 - BetRepository.get_pending_locked() filters by status=PENDING + locks via
   FOR UPDATE SKIP LOCKED. Second caller on same event_id: 0 rows -> 0-row
   UPDATE -> structlog 'settle.noop' info -> SettleResult(settled_count=0).
 - No 'consumed_events' table — status filter is the single source of truth.
 
-Atomicity (R2 / F4):
+Atomicity:
 - Whole operation inside `async with uow:`; UoW commits on clean exit,
   rolls back on exception. Caller acks ONLY after this returns successfully.
 
-Server-side timestamp (D-14):
+Server-side timestamp:
 - settled_at value in UPDATE statement is PG func.now() — same clock as
   created_at/updated_at. Python-side SettleResult.settled_at is a freshly
   taken utc_now() snapshot for logging/return purposes; the canonical
   timestamp lives in PG.
 
-Pitfalls guarded:
-- R9/R12 / Anti-Pattern 2: no message dispatch from this function.
-  Line-provider owns the outbound path; this interactor is settle-only.
-- A1: bet_ids captured BEFORE the UPDATE; no lazy-load after UoW commit.
+Invariants:
+- No message dispatch from this function. Line-provider owns the
+  outbound path; this interactor is settle-only.
+- bet_ids captured BEFORE the UPDATE; no lazy-load after UoW commit.
 """
 
 from __future__ import annotations

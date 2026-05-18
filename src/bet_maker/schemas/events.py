@@ -1,7 +1,6 @@
-"""EventState (and EventRead, per D-13) duplicated from line_provider.schemas.events
--- intentional service-boundary isolation per D-12 (mirror of P2 D-13
-EventFinishedMessage intentional duplication). Value-parity test in
-test_schemas.py prevents drift.
+"""EventState (and EventRead) duplicated from line_provider.schemas.events
+-- intentional service-boundary isolation (mirror of EventFinishedMessage
+intentional duplication). Value-parity test in test_schemas.py prevents drift.
 """
 
 from __future__ import annotations
@@ -23,12 +22,12 @@ class EventState(str, Enum):
 class EventRead(BaseModel):
     """LP GET /events payload item, observed at bet-maker boundary.
 
-    D-13: intentionally duplicated from line_provider.schemas.events.EventRead
-    (service-boundary discipline, mirror of EventState duplication per
-    P3 D-12). bet-maker uses plain Decimal (not LP's `Coefficient`
-    Annotated alias) -- we only deserialise, never construct/normalise.
+    Intentionally duplicated from line_provider.schemas.events.EventRead
+    (service-boundary discipline, mirror of EventState duplication).
+    bet-maker uses plain Decimal (not LP's `Coefficient` Annotated alias)
+    -- we only deserialise, never construct/normalise.
     frozen=True because the bet-maker side only reads these -- they
-    should never be mutated mid-pipeline (Pattern D in PATTERNS.md).
+    should never be mutated mid-pipeline.
     extra='forbid' guards against LP schema drift -- adding a new field
     in line-provider would fail loud in bet-maker tests rather than
     silently dropping data.

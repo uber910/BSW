@@ -1,8 +1,8 @@
-"""SettleResult — return DTO of settle_bets_for_event interactor (D-17).
+"""SettleResult — return DTO of settle_bets_for_event interactor.
 
-Phase 5 / D-17 / D-13: shape returned by settle_bets_for_event so callers
-(consumer handler in Plan 05, reconciler in Phase 6) get a typed snapshot
-of which bets were settled and via which path.
+Shape returned by settle_bets_for_event so callers (consumer handler,
+reconciler) get a typed snapshot of which bets were settled and via
+which path.
 """
 
 from __future__ import annotations
@@ -20,11 +20,11 @@ class SettleResult(BaseModel):
     """Immutable result of one settle_bets_for_event invocation.
 
     settled_count: number of rows flipped from PENDING to WON/LOST in this call.
-                   0 = idempotent no-op (D-15/D-16).
+                   0 = idempotent no-op.
     settled_bet_ids: list of bet ids that were settled in this call.
-    settled_via: 'consumer' (Phase 5) or 'reconciler' (Phase 6).
+    settled_via: 'consumer' or 'reconciler'.
     settled_at: Python-side timestamp filled by caller (PG fills the column
-                server-side via func.now() in the UPDATE statement — D-14).
+                server-side via func.now() in the UPDATE statement).
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -38,7 +38,7 @@ class SettleResult(BaseModel):
 
 
 class CancelResult(BaseModel):
-    """Immutable result of one cancel_bets_for_event invocation (D-04).
+    """Immutable result of one cancel_bets_for_event invocation.
 
     Mirror of SettleResult but for the 404-branch of the reconciler:
     bets are flipped to CANCELLED when line-provider returns 404 for
@@ -50,10 +50,10 @@ class CancelResult(BaseModel):
                      filter + FOR UPDATE SKIP LOCKED mechanism as
                      settle, see SettleResult docstring).
     cancelled_bet_ids: list of bet ids that were cancelled.
-    cancelled_via: 'reconciler' only — Phase 6 introduces no other
-                   call site. Literal kept narrow to make future
-                   extension (manual admin cancel, deadline fallback)
-                   an intentional widening.
+    cancelled_via: 'reconciler' only — no other call site exists.
+                   Literal kept narrow to make future extension
+                   (manual admin cancel, deadline fallback) an
+                   intentional widening.
     cancelled_at: Python-side timestamp filled by the interactor.
                   PG-side settled_at column filled server-side via
                   func.now() in the UPDATE statement (same column as

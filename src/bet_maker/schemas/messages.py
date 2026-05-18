@@ -1,6 +1,6 @@
 """EventFinishedMessage — byte-for-byte duplicate of line_provider/schemas/messages.py.
 
-D-28: schema duplication enforcement; no cross-service imports.
+Schema duplication enforcement; no cross-service imports.
 CI contract test tests/contract/test_event_finished_message_schema.py enforces equality.
 """
 

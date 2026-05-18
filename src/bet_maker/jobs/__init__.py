@@ -1,4 +1,4 @@
-"""Long-running asyncio background jobs (Phase 6 onwards).
+"""Long-running asyncio background jobs.
 
 Distinct from `entrypoints/` (HTTP routes + AMQP subscribers): a job
 is started by lifespan, lives for the duration of the process, and

@@ -16,7 +16,7 @@ from bet_maker.settings.config import BetMakerSettings
 
 
 def get_settings(request: Request) -> BetMakerSettings:
-    """Read settings — pinned to app.state by lifespan (Plan 03-08)."""
+    """Read settings — pinned to app.state by lifespan."""
     return cast(BetMakerSettings, request.app.state.settings)
 
 
@@ -33,7 +33,7 @@ def get_sessionmaker(request: Request) -> async_sessionmaker[AsyncSession]:
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
     """Yield a one-shot AsyncSession for read-only selectors (no UoW).
 
-    D-25: GET /bets and GET /bet/{id} are pure reads — selectors take a
+    GET /bets and GET /bet/{id} are pure reads — selectors take a
     session directly. Session is auto-closed when the request exits.
     """
     sessionmaker = get_sessionmaker(request)
@@ -42,7 +42,7 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
 
 
 def get_uow(request: Request) -> AsyncUnitOfWork:
-    """Construct a fresh UoW for the current request (Pitfall A2 mitigation).
+    """Construct a fresh UoW for the current request.
 
     Each request gets its own UoW -> its own AsyncSession -> its own
     transaction. Sessions are NEVER shared across requests.
@@ -54,21 +54,21 @@ def get_uow(request: Request) -> AsyncUnitOfWork:
 def get_event_lookup(request: Request) -> EventLookup:
     """Read the EventLookup — pinned to app.state by lifespan.
 
-    D-13: P3 StubEventLookup; Plan 04 swaps to HttpEventLookup without touching
-    this provider — same Protocol satisfied structurally.
+    The HttpEventLookup implementation satisfies the EventLookup Protocol
+    structurally — no inheritance needed.
     """
     return cast(EventLookup, request.app.state.event_lookup)
 
 
 def get_line_provider_http_client(request: Request) -> httpx.AsyncClient:
-    """D-12: read the singleton httpx.AsyncClient — pinned by lifespan.
+    """Read the singleton httpx.AsyncClient — pinned by lifespan.
 
     Used by:
     - LineProviderHttpClientDep alias below (for routes).
     - HttpEventLookup constructor (read indirectly through app.state.event_lookup).
 
-    Anti-Pattern A2 mitigation: NO module-level httpx singleton; every
-    long-lived object goes through app.state + cast() provider.
+    NO module-level httpx singleton; every long-lived object goes through
+    app.state + cast() provider.
     """
     return cast(httpx.AsyncClient, request.app.state.line_provider_http_client)
 
@@ -76,7 +76,7 @@ def get_line_provider_http_client(request: Request) -> httpx.AsyncClient:
 def get_rabbit_broker(request: Request) -> RabbitBroker:
     """Read the RabbitBroker singleton from FastStream router.
 
-    F5 / Anti-Pattern 5: there is exactly ONE RabbitRouter (declared in
+    There is exactly ONE RabbitRouter (declared in
     bet_maker.entrypoints.messaging) -- its `broker` attribute is the
     sole broker instance. Lifespan does `await router.broker.connect()`
     on startup, so by the time /health or any DI consumer reads this,
@@ -103,7 +103,7 @@ RabbitBrokerDep = Annotated[RabbitBroker, Depends(get_rabbit_broker)]
 
 
 def get_reconciler_event_lookup(request: Request) -> HttpEventLookup:
-    """D-06 / Plan 06-08: HttpEventLookup configured with reconciler retry profile.
+    """HttpEventLookup configured with reconciler retry profile.
 
     Distinct from `get_event_lookup` (route-layer profile, 3 attempts /
     2s backoff); reconciler profile is 5 attempts / 10s max backoff.
@@ -113,9 +113,9 @@ def get_reconciler_event_lookup(request: Request) -> HttpEventLookup:
 
 
 def get_reconciliation_task(request: Request) -> asyncio.Task[None]:
-    """D-14 / Plan 06-08: the background reconciler task pinned by lifespan.
+    """The background reconciler task pinned by lifespan.
 
-    Used by /health to check `not task.done()` (D-13). Forward-string
+    Used by /health to check `not task.done()`. Forward-string
     ref because asyncio.Task is generic and Python 3.10 mypy strict
     requires explicit parameterisation.
     """

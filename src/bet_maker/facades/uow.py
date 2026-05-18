@@ -11,12 +11,12 @@ from bet_maker.repositories.bets import BetRepository
 class AsyncUnitOfWork:
     """Async UoW over `async_sessionmaker.begin()`.
 
-    D-17 (RESEARCH §Pattern 2): __aenter__ enters `sessionmaker.begin()`
-    context — SQLAlchemy auto-commits on clean __aexit__ and auto-rollback
-    on exception. No manual `session.commit()` / `session.rollback()` calls
-    anywhere in bet_maker code — UoW owns the transaction.
+    __aenter__ enters `sessionmaker.begin()` context — SQLAlchemy
+    auto-commits on clean __aexit__ and auto-rollback on exception. No
+    manual `session.commit()` / `session.rollback()` calls anywhere in
+    bet_maker code — UoW owns the transaction.
 
-    Usage (Plan 03-07 interactor):
+    Usage (interactor):
         async with AsyncUnitOfWork(sessionmaker) as uow:
             uow.bets.add(bet)
             await uow.session.flush()
@@ -26,8 +26,8 @@ class AsyncUnitOfWork:
     _cm is typed as Any because `async_sessionmaker.begin()` returns
     `_AsyncSessionContextManager[AsyncSession]` — a private SQLAlchemy type
     that is not exported from the public API surface. Using Any is the
-    documented idiom for wrapping private async context managers in strict mypy
-    mode (RESEARCH §Pattern 2 note).
+    documented idiom for wrapping private async context managers in strict
+    mypy mode.
     """
 
     bets: BetRepository

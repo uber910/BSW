@@ -17,10 +17,10 @@ class BetStatus(str, Enum):
     PENDING -- bet placed, event not yet finished.
     WON -- event finished with the outcome the user bet on.
     LOST -- event finished with the opposite outcome.
-    CANCELLED -- recovery: bet flipped by reconciler when line-provider returns 404 (D-03 Phase 6).
+    CANCELLED -- recovery: bet flipped by reconciler when line-provider returns 404.
 
-    Settled by the RabbitMQ consumer (P5) or reconciliation job (P6).
-    Python 3.10: `(str, Enum)` instead of `StrEnum` (3.11+); P2 D-20 locked.
+    Settled by the RabbitMQ consumer or reconciliation job.
+    Python 3.10: `(str, Enum)` instead of `StrEnum` (3.11+).
     """
 
     PENDING = "PENDING"
@@ -36,14 +36,14 @@ Amount = Annotated[
 ]
 """Validated bet amount.
 
-D-04: gt=0, max_digits=12 (caps at 999,999,999,999.99 -- Pitfall A4 mitigation
-for oversized payloads), decimal_places=2. AfterValidator normalises `"10"` ->
-`Decimal("10.00")` so BetRead serialises consistently (D-19).
+gt=0, max_digits=12 (caps at 999,999,999,999.99 — protects against
+oversized payloads), decimal_places=2. AfterValidator normalises `"10"`
+-> `Decimal("10.00")` so BetRead serialises consistently.
 """
 
 
 class BetCreate(BaseModel):
-    """POST /bet body. D-04: event_id + amount only; no coefficient (D-01)."""
+    """POST /bet body — event_id + amount only; no coefficient."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -54,10 +54,10 @@ class BetCreate(BaseModel):
 class BetRead(BaseModel):
     """Response shape for POST /bet 201, GET /bets items, GET /bet/{id} 200.
 
-    D-05: superset of TZ-minimum (TZ requires only id + status; we include
-    event_id + amount + created_at for curl-demo UX in README).
+    Superset of the minimum (id + status); we include event_id + amount
+    + created_at for curl-demo UX in README.
     from_attributes=True enables model_validate(orm_bet, from_attributes=True)
-    inside the session (A1 / Anti-Pattern 5 mitigation: never return raw ORM).
+    inside the session (never return raw ORM).
     """
 
     model_config = ConfigDict(extra="forbid", from_attributes=True)

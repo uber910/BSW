@@ -32,15 +32,15 @@ async def health(
     broker: RabbitBrokerDep,
     reconciler_task: ReconciliationTaskDep,
 ) -> JSONResponse:
-    """GET /health — PG + RMQ + subscriber + reconciler check (D-13 / SC#3).
+    """GET /health — PG + RMQ + subscriber + reconciler check.
 
     Returns 200 only when all four are healthy:
       - ping_postgres(engine) returns True
       - broker.ping(timeout=1.0) returns True
       - len(broker.subscribers) > 0
-      - not reconciler_task.done()  (Phase 6 / D-13 — `not task.done()`
-        is sufficient liveness; task.exception() would raise InvalidStateError
-        while the task is still running, per RESEARCH Pitfall 6)
+      - not reconciler_task.done()  (`not task.done()` is sufficient
+        liveness; task.exception() would raise InvalidStateError while
+        the task is still running)
 
     Returns 503 with per-check status string when any check fails.
     """

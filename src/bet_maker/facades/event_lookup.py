@@ -13,11 +13,11 @@ from config.time import utc_now
 class EventSnapshot(BaseModel):
     """Frozen snapshot of an event as observed by line-provider.
 
-    D-11: Returned by EventLookup.get_event. Interactor place_bet (D-14)
-    validates: snapshot is not None, deadline > now, state == NEW.
+    Returned by EventLookup.get_event. Interactor place_bet validates:
+    snapshot is not None, deadline > now, state == NEW.
     frozen=True ensures the snapshot can't be mutated between validation
     steps. extra='forbid' guards against drift if line-provider adds new
-    fields (Plan 04 HttpEventLookup must explicitly handle them).
+    fields (HttpEventLookup must explicitly handle them).
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -30,8 +30,8 @@ class EventSnapshot(BaseModel):
 class EventLookup(Protocol):
     """Service-boundary facade for resolving an event_id to a snapshot.
 
-    D-11 / D-13: P3 implementation = StubEventLookup (in-process dict).
-    Plan 04 implementation = HttpEventLookup (httpx -> line-provider GET /event/{id}).
+    Implementations: StubEventLookup (in-process dict) for tests, and
+    HttpEventLookup (httpx -> line-provider GET /event/{id}) for production.
     Both satisfy the same Protocol structurally — no inheritance needed.
     """
 
@@ -39,10 +39,10 @@ class EventLookup(Protocol):
 
 
 class StubEventLookup:
-    """In-process dict-backed EventLookup for P3 tests + dev environments.
+    """In-process dict-backed EventLookup for tests + dev environments.
 
-    D-11: Tests use `app.state.event_lookup.seed_active(event_id)` to
-    register a bettable event before POSTing to /bet. seed_active is the
+    Tests use `app.state.event_lookup.seed_active(event_id)` to register
+    a bettable event before POSTing to /bet. seed_active is the
     common-case convenience method (state=NEW + deadline=now+1h); seed()
     accepts a full EventSnapshot for edge cases (past deadline / finished
     state).
@@ -65,7 +65,7 @@ class StubEventLookup:
 
         Default deadline = utc_now() + 1 hour. Custom deadline allowed for
         boundary tests (e.g., deadline exactly now -> must be rejected by
-        interactor with `deadline <= now()` check, D-14).
+        interactor with `deadline <= now()` check).
         """
         if deadline is None:
             deadline = utc_now() + timedelta(hours=1)

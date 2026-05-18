@@ -16,13 +16,13 @@ from line_provider.settings.config import LineProviderSettings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """line-provider lifespan (Plan 05-07 / D-24).
+    """line-provider lifespan.
 
     Startup:
       1. configure_structlog
-      2. router.broker.connect() (Pitfall 2 — custom lifespan)
+      2. router.broker.connect() (required with custom lifespan)
       3. declare bsw.events exchange (topic, durable) — bet-maker subscriber binds to this
-      4. app.state.event_store = InMemoryEventStore() (Phase 2)
+      4. app.state.event_store = InMemoryEventStore()
       5. app.state.event_bus = RabbitEventBus(router.broker)
       6. yield
 

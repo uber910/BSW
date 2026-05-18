@@ -10,8 +10,8 @@ class ErrorDetail(BaseModel):
     exact JSON shape under 4xx/5xx branches. Mirrors FastAPI's default
     ``{"detail": "..."}`` payload from ``HTTPException(detail=...)``.
 
-    D-09 / P5 D-28 duplication policy: this schema is duplicated byte-for-byte
-    in ``src/bet_maker/schemas/errors.py``. No cross-service imports.
+    Duplication policy: this schema is duplicated byte-for-byte in
+    ``src/bet_maker/schemas/errors.py``. No cross-service imports.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")

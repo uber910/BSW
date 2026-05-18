@@ -1,4 +1,4 @@
-"""Reconciliation background task (Phase 6 / BM-12).
+"""Reconciliation background task.
 
 Composition module — no new business rules; it merely dispatches
 PENDING bets to existing interactors based on what line-provider
@@ -11,26 +11,24 @@ reports for each event_id:
 | None (404 from LP)                   | cancel_bets_for_event(... CANCELLED, via=reconciler) |
 | EventSnapshot(state=NEW)             | skip (LP has not transitioned yet — try again)  |
 
-Defence-in-depth: even if every consumer dispatch in Phase 5 fails
-silently, this loop sweeps every PENDING bet within
-`RECONCILIATION_INTERVAL_S` seconds. Idempotent by construction
-because the underlying interactors are idempotent (FOR UPDATE SKIP
-LOCKED + status filter, Phase 5 / Plan 06-06).
+Defence-in-depth: even if every consumer dispatch fails silently, this
+loop sweeps every PENDING bet within `RECONCILIATION_INTERVAL_S`
+seconds. Idempotent by construction because the underlying interactors
+are idempotent (FOR UPDATE SKIP LOCKED + status filter).
 
-Error model (CONTEXT.md D-10 / D-11 / D-12, RESEARCH §Pattern 3):
+Error model:
 - The outer while-True body has TWO except blocks:
     1. asyncio.CancelledError -> log and re-raise (clean shutdown).
-    2. Exception                 -> log.exception and continue (R8 invariant).
+    2. Exception                 -> log.exception and continue.
   BaseException other than CancelledError is NEVER caught.
 - Per-event try/except inside _run_tick isolates failures so one bad
   event_id does not abort the whole tick.
 
-Sleep ordering (D-17): `await asyncio.sleep(interval_s)` is the FIRST
-awaited operation in each iteration — no cold-start noise, predictable
-cadence.
+Sleep ordering: `await asyncio.sleep(interval_s)` is the FIRST awaited
+operation in each iteration — no cold-start noise, predictable cadence.
 
-Task name (D-18): `asyncio.create_task(..., name="reconciliation")`
-set by lifespan; grep-able in logs and asyncio debug output.
+Task name: `asyncio.create_task(..., name="reconciliation")` set by
+lifespan; grep-able in logs and asyncio debug output.
 """
 
 from __future__ import annotations
@@ -54,11 +52,11 @@ _log = structlog.get_logger().bind(task="reconciliation")
 
 
 async def reconciliation_loop(app: FastAPI, *, interval_s: float) -> None:
-    """Outer infinite loop. Sleep first (D-17), then tick. R8-compliant.
+    """Outer infinite loop. Sleep first, then tick.
 
-    Two-tier try/except (D-10 / RESEARCH Pattern 3): CancelledError is
-    caught explicitly BEFORE Exception so a future refactor that adds a
-    `try` deeper in the call stack cannot accidentally swallow it.
+    Two-tier try/except: CancelledError is caught explicitly BEFORE
+    Exception so a future refactor that adds a `try` deeper in the call
+    stack cannot accidentally swallow it.
     """
     while True:
         try:
@@ -75,10 +73,10 @@ async def reconciliation_loop(app: FastAPI, *, interval_s: float) -> None:
 async def _run_tick(app: FastAPI) -> None:
     """One tick of the loop. Read work-list, then process each event_id.
 
-    Read-only UoW for the work-list (D-11): short transaction, minimal
-    lock contention with the consumer (Phase 5). Per-event UoW happens
-    inside _reconcile_event so a long-running event lookup does not
-    hold an open DB transaction.
+    Read-only UoW for the work-list: short transaction, minimal lock
+    contention with the consumer. Per-event UoW happens inside
+    _reconcile_event so a long-running event lookup does not hold an
+    open DB transaction.
     """
     sessionmaker = cast("async_sessionmaker[AsyncSession]", app.state.sessionmaker)
     lookup = cast(HttpEventLookup, app.state.reconciler_event_lookup)
@@ -102,7 +100,7 @@ async def _reconcile_event(
     lookup: HttpEventLookup,
     event_id: UUID,
 ) -> None:
-    """Decision tree for one event_id (CONTEXT.md D-02).
+    """Decision tree for one event_id.
 
     FINISHED_WIN | FINISHED_LOSE -> settle
     None (LP 404)                -> cancel

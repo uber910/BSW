@@ -64,17 +64,16 @@ async def post_bet(
 ) -> BetRead:
     """POST /bet — place a bet on a bettable event.
 
-    BM-05: 201 + BetRead on success.
-    BM-06: 422 with detail='event {id} is not bettable: {reason}'
-    when EventNotBettable raised by place_bet interactor.
-    D-06: three exact reason strings ("event not found", "deadline passed",
-    "event not active") surfaced in the detail message.
-    D-08: LineProviderUnavailable (upstream unreachable after retry) ->
-    503 with static detail. Ladder order MUST be LineProviderUnavailable
-    first, EventNotBettable second — sibling exceptions, but D-08 fixes
-    the order for explicit reading clarity. Pitfall 7 (RESEARCH line
-    646): place_bet must NOT catch LineProviderUnavailable internally;
-    it propagates here.
+    Returns 201 + BetRead on success; 422 with
+    detail='event {id} is not bettable: {reason}' when EventNotBettable
+    is raised by the place_bet interactor. Three exact reason strings
+    are surfaced in the detail message ("event not found",
+    "deadline passed", "event not active").
+    LineProviderUnavailable (upstream unreachable after retry) -> 503
+    with static detail. Ladder order MUST be LineProviderUnavailable
+    first, EventNotBettable second — sibling exceptions, but the order
+    is fixed for explicit reading clarity. place_bet must NOT catch
+    LineProviderUnavailable internally; it propagates here.
     """
     try:
         return await place_bet(
@@ -103,8 +102,8 @@ async def post_bet(
 async def get_bets(session: SessionDep) -> list[BetRead]:
     """GET /bets — list all bets, newest first.
 
-    BM-07: returns list[BetRead] ordered by created_at DESC.
-    D-25: pure read — session injected directly (no UoW).
+    Returns list[BetRead] ordered by created_at DESC. Pure read —
+    session injected directly (no UoW).
     """
     return await list_bets(session)
 
@@ -123,8 +122,8 @@ async def get_bets(session: SessionDep) -> list[BetRead]:
 async def get_bet(bet_id: UUID, session: SessionDep) -> BetRead:
     """GET /bet/{bet_id} — fetch single bet by id.
 
-    BM-13: 200 + BetRead on hit; 404 with detail='bet {id} not found' on miss.
-    D-25: pure read — session injected directly (no UoW).
+    Returns 200 + BetRead on hit; 404 with detail='bet {id} not found'
+    on miss. Pure read — session injected directly (no UoW).
     """
     bet = await get_bet_by_id(session, bet_id)
     if bet is None:

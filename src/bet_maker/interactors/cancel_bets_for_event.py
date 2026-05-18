@@ -1,33 +1,32 @@
-"""cancel_bets_for_event — idempotent cancel interactor for Phase 6 (D-04).
+"""cancel_bets_for_event — idempotent cancel interactor.
 
 Called by:
-- Phase 6 reconciliation job, 404-branch (cancelled_via='reconciler').
+- The reconciliation job, 404-branch (cancelled_via='reconciler').
 
 Trigger:
 - Reconciler observes that line-provider returned 404 for event_id —
   event deleted / LP recreated. Bet cannot be settled because the
-  event no longer exists; CANCELLED is the recovery sink (D-02 / D-04).
+  event no longer exists; CANCELLED is the recovery sink.
 
 Idempotency (mirrors settle_bets_for_event):
 - BetRepository.get_pending_locked() filters status='PENDING' and locks
   via FOR UPDATE SKIP LOCKED. Second caller on same event_id: 0 rows ->
   0-row UPDATE -> structlog 'cancel.noop' info -> CancelResult(count=0).
 
-Concurrent with settle (R3):
+Concurrent with settle:
 - cancel vs settle on the same event_id: SKIP LOCKED + status filter
   guarantee exactly one of the two interactors gets all rows; the
   other observes 0 rows. Verified by test_concurrent_with_settle_no_double_update.
 
-Server-side timestamp (D-14 reuse):
+Server-side timestamp:
 - settled_at column filled with func.now() in the UPDATE — same column
   and clock as settle_bets_for_event. settled_via='reconciler' is the
   attribution.
 
-Pitfalls guarded:
-- A1 / Anti-Pattern 1: bet_ids captured BEFORE the UPDATE; no lazy-load
-  after UoW commit.
+Invariants:
+- bet_ids captured BEFORE the UPDATE; no lazy-load after UoW commit.
 - The interactor never calls uow.session.commit() — UoW owns the
-  transaction (D-17 settle pattern).
+  transaction.
 """
 
 from __future__ import annotations
