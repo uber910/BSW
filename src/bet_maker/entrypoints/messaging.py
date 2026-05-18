@@ -22,8 +22,7 @@ import asyncio
 
 import structlog
 from faststream import AckPolicy
-from faststream.rabbit.annotations import RabbitMessage
-from faststream.rabbit.fastapi import RabbitRouter
+from faststream.rabbit.fastapi import RabbitMessage, RabbitRouter
 from faststream.rabbit.schemas import Channel, ExchangeType, RabbitExchange, RabbitQueue
 from pydantic import ValidationError
 from sqlalchemy.exc import DBAPIError, IntegrityError, OperationalError
