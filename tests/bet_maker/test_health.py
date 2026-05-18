@@ -9,7 +9,7 @@ BM-08: 503 when PG engine pool is disposed (D-29 SQLAlchemyError -> False).
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 import pytest
 from fastapi import FastAPI
@@ -78,10 +78,15 @@ class TestHealth:
     async def test_health_returns_503_when_no_subscribers(
         self, app: FastAPI, client: AsyncClient
     ) -> None:
-        """D-20 / SC#5 / R6: 503 when len(broker.subscribers) == 0."""
+        """D-20 / SC#5 / R6: 503 when len(broker.subscribers) == 0.
+
+        broker.subscribers is a @property on Registrator base class, so
+        patch.object must target the class (not instance) via PropertyMock.
+        """
         from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
 
-        with patch.object(router.broker, "subscribers", new=[]):
+        broker_type = type(router.broker)
+        with patch.object(broker_type, "subscribers", new_callable=PropertyMock, return_value=[]):
             response = await client.get("/health")
         assert response.status_code == 503
         body = response.json()
