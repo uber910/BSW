@@ -177,21 +177,34 @@ Plans:
 - [x] 05-10-requirements-doc-sync-PLAN.md — REQUIREMENTS.md BM-09/BM-11 sync with implementation (Wave 3)
 
 ### Phase 6: Reconciliation job
-**Goal**: A bet **never** stays PENDING after its event has finished, even if the AMQP message was lost. An asyncio background task polls line-provider for terminal-state events and settles via the same `settle_bets_for_event` interactor as the consumer.
+**Goal**: A bet **never** stays PENDING after its event has finished, even if the AMQP message was lost. An asyncio background task polls line-provider for terminal-state events and settles via the same `settle_bets_for_event` interactor as the consumer, or marks the bets `CANCELLED` via a new `cancel_bets_for_event` interactor when line-provider returns 404 (event deleted / LP recreated).
 **Depends on**: Phase 4 (httpx client to line-provider), Phase 5 (settle interactor + UoW)
 **Requirements**: BM-12, QA-08
 **Success Criteria** (what must be TRUE):
-  1. If a state-change message is dropped between line-provider and bet-maker (verified by skipping the publish in a test), the reconciliation worker settles affected PENDING bets within `RECONCILIATION_INTERVAL_S` (default 30s, configurable via pydantic-settings)
+  1. If a state-change message is dropped between line-provider and bet-maker (verified by skipping the publish in a test), the reconciliation worker settles affected PENDING bets within `RECONCILIATION_INTERVAL_S` (default 30s, configurable via pydantic-settings) to `WON` / `LOST` when LP reports `FINISHED_WIN` / `FINISHED_LOSE`, or to `CANCELLED` when LP returns 404 for the event_id
   2. The worker survives transient errors: a single failed tick (httpx timeout, PG blip) logs an exception and continues; the loop never exits silently
   3. `/health` returns 503 if the reconciliation task is `done()` or has an exception — observable failure, not invisible
   4. Reconciler + consumer running concurrently against the same `event_id` produce exactly one settled status per affected bet (verified by integration test with `FOR UPDATE SKIP LOCKED`)
-  5. End-to-end test scenario: create event → place bet → finish event → assert bet is WON via consumer; second scenario: create event → place bet → drop publish → finish event → assert bet is WON via reconciler within one interval
+  5. End-to-end test scenarios: (a) create event → place bet → finish event → assert bet is WON via consumer; (b) create event → place bet → drop publish → finish event → assert bet is WON via reconciler within one interval; (c) create event → place bet → delete event from line-provider → assert bet becomes CANCELLED via reconciler within one interval
 **Pitfalls this phase prevents**:
   - **R8**: loop body wrapped in `try/except Exception:` (not `BaseException`); task named `"reconciliation"`; `/health` asserts `task.done() is False`
   - **R3 (re-verified end-to-end)**: integration test runs consumer + reconciler concurrently and asserts no double-update
   - **R9**: reconciler trusts monotonic terminal state from line-provider — no "wait N seconds" debounce; immediate settle on observed FINISHED state
   - **Integration Gotcha (reconciler vs HTTP order)**: reconciler queries `GET /events/{id}` only AFTER line-provider's in-memory commit (ordering enforced in P2/P5)
-**Plans**: TBD
+**Plans:** 11 plans across 7 waves (0..6)
+
+Plans:
+- [ ] 06-01-doc-sync-PLAN.md — REQUIREMENTS BM-05/BM-12 + ROADMAP Phase 6 Goal/SC sync (CANCELLED branch) (Wave 0)
+- [ ] 06-02-test-scaffolding-PLAN.md — 11 stub test files + conftest extensions (reconciler fixtures) (Wave 0)
+- [ ] 06-03-cancelled-status-migration-PLAN.md — BetStatus.CANCELLED enum + Alembic 0003 autocommit_block ALTER TYPE (Wave 1)
+- [ ] 06-04-reconciler-settings-PLAN.md — BetMakerSettings.line_provider_reconciler_attempts + _backoff_max_s (Wave 1)
+- [ ] 06-05-get-pending-event-ids-PLAN.md — BetRepository.get_pending_event_ids() DISTINCT PENDING query (Wave 1)
+- [ ] 06-06-cancel-interactor-PLAN.md — cancel_bets_for_event interactor + CancelResult DTO + unit tests (Wave 2)
+- [ ] 06-07-reconciler-job-PLAN.md — jobs/reconciler.py loop + _run_tick + unit tests (Wave 2)
+- [ ] 06-08-lifespan-health-wiring-PLAN.md — lifespan reconciler_event_lookup + create_task + /health 4th check (Wave 3)
+- [ ] 06-09-integration-tests-PLAN.md — respx drop-publish + reconciler/consumer concurrent race tests (Wave 4)
+- [ ] 06-10-e2e-drop-publish-PLAN.md — real-RMQ + real-PG e2e drop-publish (SC#5 / QA-08) (Wave 5)
+- [ ] 06-11-phase-gate-PLAN.md — coverage ≥80%, REQUIREMENTS/ROADMAP sync verify, plan checkboxes (Wave 6)
 
 ### Phase 7: Polish + Documentation
 **Goal**: A reviewer can clone the repo, run `docker compose up`, hit the documented curl commands, and pass the "Looks Done But Isn't" 18-item checklist from PITFALLS.md.
