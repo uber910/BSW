@@ -110,7 +110,7 @@ class TestE2ERabbitMQ:
             RabbitQueue,
         )
 
-        from line_provider.entrypoints.messaging import router as lp_router  # noqa: PLC0415
+        from line_provider.api.messaging import router as lp_router  # noqa: PLC0415
 
         poison_body = {
             "schema_version": 99,

@@ -19,10 +19,10 @@ class TestLineProviderLifespan:
     async def test_event_bus_is_rabbit_in_production(self, amqp_url: str) -> None:
         os.environ["LINE_PROVIDER_RABBITMQ_URL"] = amqp_url
         try:
-            from line_provider.app import build_app  # noqa: PLC0415
-            from line_provider.entrypoints.messaging import (  # noqa: PLC0415
+            from line_provider.api.messaging import (  # noqa: PLC0415
                 router as lp_router,
             )
+            from line_provider.app import build_app  # noqa: PLC0415
             from line_provider.facades.event_bus import RabbitEventBus  # noqa: PLC0415
 
             lp_router.broker._connection_kwargs["url"] = amqp_url
@@ -36,10 +36,10 @@ class TestLineProviderLifespan:
     async def test_broker_connected_after_startup(self, amqp_url: str) -> None:
         os.environ["LINE_PROVIDER_RABBITMQ_URL"] = amqp_url
         try:
-            from line_provider.app import build_app  # noqa: PLC0415
-            from line_provider.entrypoints.messaging import (  # noqa: PLC0415
+            from line_provider.api.messaging import (  # noqa: PLC0415
                 router as lp_router,
             )
+            from line_provider.app import build_app  # noqa: PLC0415
 
             lp_router.broker._connection_kwargs["url"] = amqp_url
             application = build_app()
@@ -54,10 +54,10 @@ class TestLineProviderLifespan:
         try:
             from faststream.rabbit.schemas import ExchangeType, RabbitExchange  # noqa: PLC0415
 
-            from line_provider.app import build_app  # noqa: PLC0415
-            from line_provider.entrypoints.messaging import (  # noqa: PLC0415
+            from line_provider.api.messaging import (  # noqa: PLC0415
                 router as lp_router,
             )
+            from line_provider.app import build_app  # noqa: PLC0415
 
             lp_router.broker._connection_kwargs["url"] = amqp_url
             application = build_app()
@@ -72,10 +72,10 @@ class TestLineProviderLifespan:
     async def test_shutdown_calls_broker_close(self, amqp_url: str) -> None:
         os.environ["LINE_PROVIDER_RABBITMQ_URL"] = amqp_url
         try:
-            from line_provider.app import build_app  # noqa: PLC0415
-            from line_provider.entrypoints.messaging import (  # noqa: PLC0415
+            from line_provider.api.messaging import (  # noqa: PLC0415
                 router as lp_router,
             )
+            from line_provider.app import build_app  # noqa: PLC0415
 
             lp_router.broker._connection_kwargs["url"] = amqp_url
             orig_close = lp_router.broker.close

@@ -126,16 +126,18 @@ def test_durable_queue_and_exchange() -> None:
 
 
 def test_no_entrypoints_dir() -> None:
-    """REFACTOR-01: the entrypoints directory under src/bet_maker must not exist.
+    """REFACTOR-01: src/<svc>/entrypoints/ must not exist for either service.
 
-    Phase 8 plan 08-01 flattened bet_maker's HTTP routers + FastStream
-    RabbitRouter into src/bet_maker/api/ and relocated lifespan.py +
-    middleware.py to the service-package root. The legacy directory was
-    deleted; this audit fails if a future commit recreates it.
+    Phase 8 flattened HTTP routers + FastStream RabbitRouter into
+    src/<svc>/api/ and relocated lifespan.py + middleware.py to the
+    service-package root. The legacy entrypoints/ directory was
+    deleted for both services; this audit fails if a future commit
+    recreates either one.
 
-    NOTE: line_provider entrypoints is NOT asserted here yet — plan
-    08-02 moves that directory and at that point expands this test to
-    also cover line_provider.
+    Plan 08-01 added the bet_maker assertion. Plan 08-02 added the
+    line_provider assertion.
     """
     bm = SRC / "bet_maker" / "entrypoints"
+    lp = SRC / "line_provider" / "entrypoints"
     assert not bm.exists(), f"{bm} re-introduced — Phase 8 flattened entrypoints/ → api/."
+    assert not lp.exists(), f"{lp} re-introduced — Phase 8 flattened entrypoints/ → api/."

@@ -146,8 +146,8 @@ async def line_provider_app(amqp_url: str) -> AsyncIterator[FastAPI]:
     Plan 05-07: broker layer added to line-provider lifespan requires
     AMQP URL; patches broker._connection_kwargs since router is module-level.
     """
+    from line_provider.api.messaging import router as lp_rabbit_router  # noqa: PLC0415
     from line_provider.app import build_app  # noqa: PLC0415
-    from line_provider.entrypoints.messaging import router as lp_rabbit_router  # noqa: PLC0415
 
     os.environ["LINE_PROVIDER_RABBITMQ_URL"] = amqp_url
     lp_rabbit_router.broker._connection_kwargs["url"] = amqp_url

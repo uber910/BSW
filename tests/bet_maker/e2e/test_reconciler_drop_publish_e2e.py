@@ -8,7 +8,7 @@ Three scenarios from CONTEXT.md D-23 / ROADMAP Phase 6 SC#5:
 Verified paths (implementer-adjusted from planner template):
   - RabbitEventBus: line_provider.facades.event_bus.RabbitEventBus (confirmed by grep)
   - event_store internal dict: _data (InMemoryEventStore uses self._data, not self._events)
-  - app.state.event_store: confirmed in line_provider/entrypoints/lifespan.py
+  - app.state.event_store: confirmed in line_provider/lifespan.py
   - reconciler uses app.state.reconciler_event_lookup (separate from app.state.event_lookup):
     both must be swapped to lp_client so the reconciler can reach the in-process LP app.
 """
