@@ -21,12 +21,17 @@ class TestHealth:
     """Health endpoint tests — session loop for session-scoped app/client fixtures."""
 
     async def test_health_returns_status_ok(self, client: AsyncClient) -> None:
-        """QA-10: /health returns 200 with {status: ok, checks: {postgres: ok}} (D-28)."""
+        """QA-10: /health returns 200 with all three checks ok (D-28/D-20).
+
+        Shape: {status: ok, checks: {postgres, rabbitmq, rabbitmq_consumer}}.
+        """
         response = await client.get("/health")
         assert response.status_code == 200
         body = response.json()
         assert body["status"] == "ok"
         assert body["checks"]["postgres"] == "ok"
+        assert body["checks"]["rabbitmq"] == "ok"
+        assert body["checks"]["rabbitmq_consumer"] == "ok"
 
     async def test_health_echoes_request_id_header(self, client: AsyncClient) -> None:
         """INFR-08 (HTTP-level E2E): RequestContextMiddleware echoes X-Request-ID.
@@ -54,3 +59,43 @@ class TestHealth:
         body = response.json()
         assert body["status"] == "degraded"
         assert body["checks"]["postgres"] == "down"
+
+    async def test_health_returns_503_when_rmq_down(
+        self, app: FastAPI, client: AsyncClient
+    ) -> None:
+        """D-20 / SC#5: 503 when broker.ping fails (RMQ unreachable)."""
+        from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
+
+        with patch.object(router.broker, "ping", new=AsyncMock(return_value=False)):
+            response = await client.get("/health")
+        assert response.status_code == 503
+        body = response.json()
+        assert body["status"] == "degraded"
+        assert body["checks"]["postgres"] == "ok"
+        assert body["checks"]["rabbitmq"] == "down"
+        assert body["checks"]["rabbitmq_consumer"] == "ok"
+
+    async def test_health_returns_503_when_no_subscribers(
+        self, app: FastAPI, client: AsyncClient
+    ) -> None:
+        """D-20 / SC#5 / R6: 503 when len(broker.subscribers) == 0."""
+        from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
+
+        with patch.object(router.broker, "subscribers", new=[]):
+            response = await client.get("/health")
+        assert response.status_code == 503
+        body = response.json()
+        assert body["status"] == "degraded"
+        assert body["checks"]["rabbitmq_consumer"] == "no subscribers"
+
+    async def test_health_returns_200_includes_rabbitmq_checks(
+        self, app: FastAPI, client: AsyncClient
+    ) -> None:
+        """D-20: happy path returns 200 with all three checks 'ok'."""
+        response = await client.get("/health")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == "ok"
+        assert body["checks"]["postgres"] == "ok"
+        assert body["checks"]["rabbitmq"] == "ok"
+        assert body["checks"]["rabbitmq_consumer"] == "ok"
