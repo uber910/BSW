@@ -136,6 +136,12 @@ Plan: 12 of 12 — Phase 7 complete; milestone v1 complete
 
 (Populated at phase transitions.)
 
+## Quick Tasks Completed
+
+| Date | Slug | Description | Commits |
+|---|---|---|---|
+| 2026-05-18 | `batch1-cleanup` | Low-risk cleanup batch №1 after milestone v1: BetStatus enum case, GSD-comment strip, utc_now removal, Dep→Dependency rename, Dockerfile simplification, alembic move into src/bet_maker/. Architectural items (Repository removal, shared-code, Metrikus UoW, entrypoints→api) deferred to batch №2 via /gsd-plan-phase. | a8e468f, e03c788, adbc560, 1625698, b639a08, ef2bbf9 |
+
 ## Session Continuity
 
 ### Last Session
