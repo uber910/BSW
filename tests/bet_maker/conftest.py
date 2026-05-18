@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Generator
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
@@ -21,6 +21,20 @@ def _auto_truncate(truncate_bets: None) -> None:
     autouse=True so every test in tests/bet_maker/ gets the cleanup without
     explicit fixture declaration.
     """
+
+
+@pytest.fixture(autouse=True)
+def _restore_reconciler_event_lookup(app: FastAPI) -> Generator[None, None, None]:
+    """Restore app.state.reconciler_event_lookup after each test.
+
+    Tests in test_reconciler_tick.py mutate app.state.reconciler_event_lookup
+    to inject _FakeLookup, but do not restore it. This autouse fixture captures
+    the original value before each test and restores it afterwards, preventing
+    cross-test contamination on the session-scoped app instance.
+    """
+    original = app.state.reconciler_event_lookup
+    yield
+    app.state.reconciler_event_lookup = original
 
 
 @pytest.fixture(autouse=True)
