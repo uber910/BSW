@@ -199,7 +199,7 @@ Plans:
 - [x] 06-03-cancelled-status-migration-PLAN.md — BetStatus.CANCELLED enum + Alembic 0003 autocommit_block ALTER TYPE (Wave 1)
 - [x] 06-04-reconciler-settings-PLAN.md — BetMakerSettings.line_provider_reconciler_attempts + _backoff_max_s (Wave 1)
 - [x] 06-05-get-pending-event-ids-PLAN.md — BetRepository.get_pending_event_ids() DISTINCT PENDING query (Wave 1)
-- [ ] 06-06-cancel-interactor-PLAN.md — cancel_bets_for_event interactor + CancelResult DTO + unit tests (Wave 2)
+- [x] 06-06-cancel-interactor-PLAN.md — cancel_bets_for_event interactor + CancelResult DTO + unit tests (Wave 2)
 - [ ] 06-07-reconciler-job-PLAN.md — jobs/reconciler.py loop + _run_tick + unit tests (Wave 2)
 - [ ] 06-08-lifespan-health-wiring-PLAN.md — lifespan reconciler_event_lookup + create_task + /health 4th check (Wave 3)
 - [ ] 06-09-integration-tests-PLAN.md — respx drop-publish + reconciler/consumer concurrent race tests (Wave 4)
