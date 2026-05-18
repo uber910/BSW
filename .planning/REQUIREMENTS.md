@@ -171,7 +171,7 @@
 - Phase 4 (HTTP integration): 1 requirement (BM-04)
 - Phase 5 (RabbitMQ integration): 5 requirements (LP-06, BM-09..11, QA-06)
 - Phase 6 (Reconciliation): 2 requirements (BM-12, QA-08)
-- Phase 7 (Polish + Documentation): 5 requirements (DOC-01..04, QA-01, QA-09)
+- Phase 7 (Polish + Documentation): 6 requirements (DOC-01..04, QA-01, QA-09)
 
 Note: QA-01 (`mypy --strict`) is **enforced from Phase 1** (CI gate established with QA-10) but **owned** by Phase 7 because final-pass verification of zero strict-mode errors across both packages is the polish-phase deliverable.
 
