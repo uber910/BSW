@@ -17,7 +17,7 @@
 
 **v1.1 — Architecture cleanup** (post-v1 refactor, no functional change)
 
-- [ ] **Phase 8: Flatten entrypoints/ → api/** — Move HTTP routes + FastStream consumer under `src/<svc>/api/`; delete `entrypoints/`
+- [x] **Phase 8: Flatten entrypoints/ → api/** — Move HTTP routes + FastStream consumer under `src/<svc>/api/`; delete `entrypoints/`
 - [ ] **Phase 9: UoW redesign + Repository removal** — Metrikus-style abstract+postgres UoW; selectors absorb reads; interactors use UoW directly; `BetRepository` deleted
 - [ ] **Phase 10: Shared-code consolidation** — Lift duplicated cross-service code (structlog wiring, request-id middleware, lifespan helpers, app-factory, engine factory) into a shared package
 
@@ -267,7 +267,12 @@ Plans:
   - **Stale import paths**: `git grep -E 'from (bet_maker|line_provider)\.entrypoints'` must return 0 hits after the move.
   - **Hidden Alembic / Dockerfile / docker-compose path leaks**: `command: ["python","-m","<svc>"]` already abstracts the entry; verify Dockerfile + alembic env.py + CI workflow do not hardcode `entrypoints/`.
   - **RabbitRouter wiring drift**: `app.include_router(messaging_router)` lives in `app.py` exactly as before — only the import path changes; AsyncAPI docs at `/asyncapi` still resolve.
-**Plans:** TBD
+**Plans:** 3/3 plans executed (Phase 8 complete 2026-05-18)
+
+Plans:
+- [x] 08-01-PLAN.md — bet_maker entrypoints/ → api/ + lifespan + middleware relocate + tests/audit sync + tests/bet_maker/test_e2e_rabbitmq.py line 131 (Wave 1)
+- [x] 08-02-PLAN.md — line_provider entrypoints/ → api/ + lifespan + middleware relocate + cross-service test sync + test_e2e_rabbitmq.py line 113 + audit test expansion (Wave 2)
+- [x] 08-03-PLAN.md — full quality gate + ROADMAP + REQUIREMENTS.md BM-03 closeout (Wave 3)
 
 ### Phase 9: UoW redesign + Repository removal
 **Goal**: `AsyncUnitOfWork` becomes an abstract contract + concrete Postgres implementation modeled on `~/Interexy/Metrikus/metrikus-app/api_common/unit_of_work/`; interactors take `uow: AsyncUnitOfWork` as a DI parameter and access the session only through `uow.session`. The `repositories/` layer is removed entirely — reads move into `selectors/` (thin SQL/in-memory wrappers, no commit/flush) and writes move into `interactors/` directly.
@@ -316,7 +321,7 @@ Plans:
 | 5. RabbitMQ integration | 10/10 | Complete | 2026-05-18 |
 | 6. Reconciliation job | 11/11 | Complete   | 2026-05-18 |
 | 7. Polish + Documentation | 12/12 | Complete   | 2026-05-18 |
-| 8. Flatten entrypoints/ → api/ | 0/? | Not started | - |
+| 8. Flatten entrypoints/ → api/ | 3/3 | Complete | 2026-05-18 |
 | 9. UoW redesign + Repository removal | 0/? | Not started | - |
 | 10. Shared-code consolidation | 0/? | Not started | - |
 

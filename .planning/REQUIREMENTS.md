@@ -31,7 +31,7 @@
 
 - [x] **BM-01**: SQLAlchemy 2.0 async модели для ставок (id UUID, event_id UUID, amount Decimal 12.2, status enum (PENDING/WON/LOST), created_at, updated_at). Per D-01 (Phase 3 CONTEXT.md): coefficient НЕ хранится в Bet — это атрибут события, живёт в line-provider; ТЗ стр. 3 `POST /bet` body = `{идентификатор события, сумма ставки}` без coefficient.
 - [x] **BM-02**: Unit of Work как async context manager поверх `async_sessionmaker.begin()`, репозитории флашат, UoW коммитит
-- [x] **BM-03**: Слоистая архитектура: entrypoints / facades / interactors / selectors / helpers (множественное число; helpers — pure functions)
+- [x] **BM-03**: Слоистая архитектура: api / facades / interactors / selectors / helpers (множественное число; helpers — pure functions)
 - [ ] **BM-04**: `GET /events` — проксирует список активных событий из line-provider через httpx с retry (tenacity). Per D-01 (Phase 4 CONTEXT.md): TTL cache не реализуется в P4 — ТЗ кэш не требует, только разрешает отставание в свежести; кэш отложен в README P7 как "next-step extension".
 - [x] **BM-05**: `POST /bet` — приём ставки; в теле `{event_id, amount}` (amount > 0, ровно 2 знака после запятой); ответ — 201 с BetRead `{id, event_id, amount, status, created_at}`; status=PENDING при создании. Per D-01 (Phase 3 CONTEXT.md): coefficient snapshot НЕ хранится — coefficient остаётся в line-provider; ТЗ стр. 3 не требует coefficient в Bet payload. Статусы ставки: `PENDING | WON | LOST | CANCELLED` (Phase 6 / D-03). `CANCELLED` — recovery-статус: ставка помечается reconciler'ом при 404 от line-provider (событие удалено или LP пересоздан) — инженерная трактовка ТЗ (memory `feedback_verify_against_tz`), отдельно отмечена в README §Reliability (DOC-04).
 - [x] **BM-06**: Валидация: проверка существования и активности события (deadline > now, state == NEW) перед сохранением ставки
@@ -170,11 +170,11 @@
 | DOC-02 | Phase 7 | Complete (Plan 07-10) |
 | DOC-03 | Phase 7 | Complete (Plan 07-10) |
 | DOC-04 | Phase 7 | Complete (Plan 07-10) |
-| REFACTOR-01 | Phase 8 | Pending |
+| REFACTOR-01 | Phase 8 | Complete |
 | REFACTOR-02 | Phase 9 | Pending |
 | REFACTOR-03 | Phase 9 | Pending |
 | REFACTOR-04 | Phase 10 | Pending |
-| REFACTOR-05 | Phases 8, 9, 10 (cross-cutting quality bar) | Pending |
+| REFACTOR-05 | Phases 8, 9, 10 (cross-cutting quality bar) | Phase 8 met — pending Phases 9, 10 |
 
 **Coverage:**
 - v1 requirements: 43 total — mapped to phases 1-7 (100%)
