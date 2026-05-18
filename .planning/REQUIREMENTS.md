@@ -39,7 +39,7 @@
 - [x] **BM-08**: Endpoint `GET /health` с проверкой PostgreSQL (`SELECT 1`) и RabbitMQ
 - [ ] **BM-09**: FastStream RabbitRouter consumer на очереди `bet_maker.events.finished` с `AckPolicy.MANUAL`, `prefetch_count=10` (через `Channel(prefetch_count=10)` на `RabbitRouter`), durable=true
 - [ ] **BM-10**: Interactor `settle_bets_for_event(event_id, outcome)`: вызывается консьюмером И reconciler'ом; идемпотентный; использует `SELECT FOR UPDATE SKIP LOCKED` чтобы не было гонок
-- [ ] **BM-11**: DLX `events.dlx` + DLQ `bet_maker.events.finished.dlq` с bounded retries (max 3) через `x-death` header
+- [ ] **BM-11**: DLX `bsw.events.dlx` + DLQ `bet_maker.events.finished.dlq`; bounded in-handler retries для transient ошибок через `tenacity` (3 попытки, exponential backoff `multiplier=0.2, min=0.2, max=2` вокруг `settle_bets_for_event`); poison-сообщения (ValidationError / UnsupportedSchemaVersion / IntegrityError) сразу `reject(requeue=False) → DLQ`; nack(requeue=True) НЕ используется (R7). Per D-08/D-09 (Phase 5 CONTEXT.md).
 - [ ] **BM-12**: Reconciliation job — asyncio background task в lifespan, период через pydantic-settings (default 30s); выбирает PENDING-ставки, тянет статус события из line-provider, доводит до WON/LOST
 - [x] **BM-13**: `GET /bet/{bet_id}` — получение ставки по id; 200 + BetRead `{id, event_id, amount, status, created_at}` или 404 `{"detail":"bet {id} not found"}`. Per D-02 (Phase 3 CONTEXT.md): эндпоинт присутствует на диаграмме ТЗ стр. 3 (отсутствует в текстовом описании); реализуется в P3.
 
