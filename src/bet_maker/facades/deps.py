@@ -5,6 +5,7 @@ from typing import Annotated, cast
 
 import httpx
 from fastapi import Depends, Request
+from faststream.rabbit import RabbitBroker
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from bet_maker.facades.event_lookup import EventLookup
@@ -70,6 +71,25 @@ def get_line_provider_http_client(request: Request) -> httpx.AsyncClient:
     return cast(httpx.AsyncClient, request.app.state.line_provider_http_client)
 
 
+def get_rabbit_broker(request: Request) -> RabbitBroker:
+    """Read the RabbitBroker singleton from FastStream router.
+
+    F5 / Anti-Pattern 5: there is exactly ONE RabbitRouter (declared in
+    bet_maker.entrypoints.messaging) -- its `broker` attribute is the
+    sole broker instance. Lifespan does `await router.broker.connect()`
+    on startup, so by the time /health or any DI consumer reads this,
+    the broker is connected.
+
+    Late import (inside the function) avoids a circular import: messaging.py
+    imports settle_bets_for_event from interactors, which imports from
+    schemas/repositories -- none of which need deps.py. Late import keeps
+    deps.py independent of the FastStream wiring module.
+    """
+    from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
+
+    return router.broker
+
+
 SettingsDep = Annotated[BetMakerSettings, Depends(get_settings)]
 EngineDep = Annotated[AsyncEngine, Depends(get_engine)]
 SessionmakerDep = Annotated[async_sessionmaker[AsyncSession], Depends(get_sessionmaker)]
@@ -77,3 +97,4 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 UoWDep = Annotated[AsyncUnitOfWork, Depends(get_uow)]
 EventLookupDep = Annotated[EventLookup, Depends(get_event_lookup)]
 LineProviderHttpClientDep = Annotated[httpx.AsyncClient, Depends(get_line_provider_http_client)]
+RabbitBrokerDep = Annotated[RabbitBroker, Depends(get_rabbit_broker)]
