@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -20,6 +20,11 @@ from line_provider.schemas.messages import EventFinishedMessage, EventTerminalSt
 _TERMINAL_TO_ROUTING: dict[EventState, str] = {
     EventState.FINISHED_WIN: EVENT_FINISHED_WIN,
     EventState.FINISHED_LOSE: EVENT_FINISHED_LOSE,
+}
+
+_EVENT_STATE_TO_TERMINAL: dict[EventState, EventTerminalState] = {
+    EventState.FINISHED_WIN: EventTerminalState.FINISHED_WIN,
+    EventState.FINISHED_LOSE: EventTerminalState.FINISHED_LOSE,
 }
 
 
@@ -50,9 +55,9 @@ async def set_event_state(
         await event_bus.publish(
             EventFinishedMessage(
                 event_id=new_event.event_id,
-                new_state=EventTerminalState(new_state.value),
+                new_state=_EVENT_STATE_TO_TERMINAL[new_state],
                 coefficient=new_event.coefficient,
-                occurred_at=new_event.deadline,
+                occurred_at=datetime.now(timezone.utc),
                 correlation_id=correlation_id,
             ),
             routing_key=_TERMINAL_TO_ROUTING[new_state],
