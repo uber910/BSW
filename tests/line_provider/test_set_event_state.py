@@ -22,6 +22,7 @@ from line_provider.infrastructure.store.in_memory import (
     InMemoryEventStore,
 )
 from line_provider.interactors.set_event_state import set_event_state
+from line_provider.messaging.routing import EVENT_FINISHED_LOSE, EVENT_FINISHED_WIN
 from line_provider.schemas.events import Event, EventState
 from tests.line_provider._fakes import FakeEventBus
 
@@ -204,6 +205,50 @@ async def test_published_message_carries_uuid_event_id() -> None:
     message, _ = bus.calls[0]
     assert str(message.event_id) == str(seeded.event_id)
     assert message.correlation_id == "req-uuid"
+
+
+@pytest.mark.asyncio(loop_scope="session")
+class TestRoutingConstantsWiring:
+    """D-05: set_event_state.py must use messaging/routing.py constants,
+    not inline string literals."""
+
+    async def test_publish_uses_event_finished_win_constant(self) -> None:
+        store = InMemoryEventStore()
+        bus = FakeEventBus()
+        seeded = await _seed(store)
+
+        await set_event_state(
+            store,
+            bus,
+            event_id=seeded.event_id,
+            coefficient=Decimal("1.50"),
+            deadline=seeded.deadline,
+            new_state=EventState.FINISHED_WIN,
+            correlation_id="cid-1",
+        )
+
+        assert len(bus.calls) == 1
+        _, routing_key = bus.calls[0]
+        assert routing_key == EVENT_FINISHED_WIN
+
+    async def test_publish_uses_event_finished_lose_constant(self) -> None:
+        store = InMemoryEventStore()
+        bus = FakeEventBus()
+        seeded = await _seed(store)
+
+        await set_event_state(
+            store,
+            bus,
+            event_id=seeded.event_id,
+            coefficient=Decimal("1.50"),
+            deadline=seeded.deadline,
+            new_state=EventState.FINISHED_LOSE,
+            correlation_id="cid-2",
+        )
+
+        assert len(bus.calls) == 1
+        _, routing_key = bus.calls[0]
+        assert routing_key == EVENT_FINISHED_LOSE
 
 
 async def test_concurrent_set_state_same_id_publishes_exactly_once() -> None:
