@@ -10,8 +10,8 @@
 - [x] **Phase 1: Skeleton + Infrastructure** — Both services boot via `docker compose up` with green CI and healthy deps
 - [x] **Phase 2: line-provider domain** — In-memory event store with full HTTP API (no AMQP yet)
 - [x] **Phase 3: bet-maker domain (DB)** — PostgreSQL persistence, UoW, place/list bets via HTTP
-- [ ] **Phase 4: bet-maker HTTP integration with line-provider** — `GET /events` proxy with retry and TTL cache
-- [ ] **Phase 5: RabbitMQ integration** — Publisher in line-provider, durable consumer + DLQ in bet-maker, atomic settle
+- [x] **Phase 4: bet-maker HTTP integration with line-provider** — `GET /events` proxy with retry and TTL cache
+- [x] **Phase 5: RabbitMQ integration** — Publisher in line-provider, durable consumer + DLQ in bet-maker, atomic settle
 - [x] **Phase 6: Reconciliation job** — Background worker recovers stuck PENDING bets via HTTP poll (defence-in-depth)
 - [x] **Phase 7: Polish + Documentation** — README, OpenAPI/AsyncAPI quality, e2e/coverage gate, "Looks Done But Isn't" audit
 
