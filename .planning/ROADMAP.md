@@ -290,7 +290,12 @@ Plans:
   - **Hidden session leaks**: `AbstractUnitOfWork.session` is the only public knob; tests cannot accidentally bypass it because `BetRepository` no longer exists.
   - **FOR UPDATE SKIP LOCKED regression**: must explicitly carry the `with_for_update(skip_locked=True)` invariant from `BetRepository.get_pending_locked` into its new home in `selectors/` and keep the static-audit hook (or the equivalent integration test) pointing at the new file.
   - **DI contract drift**: every interactor signature changes from positional `repo`/`session` arg to `uow: AbstractUnitOfWork`; route layer's `Annotated[AbstractUnitOfWork, Depends(get_uow)]` is the single seam to update.
-**Plans:** TBD
+**Plans:** 3 plans across 3 waves
+
+Plans:
+- [ ] 09-01-PLAN.md — Create selectors/get_pending_locked + get_pending_event_ids + retarget audit (Wave 1)
+- [ ] 09-02-PLAN.md — Introduce uow/ package (Abstract+Postgres), rewire interactors/messaging/reconciler + all consumer tests, delete facades/uow.py (Wave 2)
+- [ ] 09-03-PLAN.md — Delete src/bet_maker/repositories/ + tests/bet_maker/test_repositories.py + phase gate (Wave 3)
 
 ### Phase 10: Shared-code consolidation
 **Goal**: Cross-service near-duplicates (structlog wiring, request-id middleware with the A7 double-clear pattern, FastAPI app-factory boilerplate, lifespan helpers, SQLAlchemy async engine/sessionmaker factory, AMQP message schemas) live in a single shared package that both `bet_maker` and `line_provider` import; no copy-paste twin files remain. Exact list of consolidation targets is locked in discuss-phase.
@@ -322,7 +327,7 @@ Plans:
 | 6. Reconciliation job | 11/11 | Complete   | 2026-05-18 |
 | 7. Polish + Documentation | 12/12 | Complete   | 2026-05-18 |
 | 8. Flatten entrypoints/ → api/ | 3/3 | Complete | 2026-05-18 |
-| 9. UoW redesign + Repository removal | 0/? | Not started | - |
+| 9. UoW redesign + Repository removal | 0/3 | Planning complete | - |
 | 10. Shared-code consolidation | 0/? | Not started | - |
 
 ---
