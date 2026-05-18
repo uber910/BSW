@@ -9,7 +9,7 @@ Trigger:
   event no longer exists; CANCELLED is the recovery sink.
 
 Idempotency (mirrors settle_bets_for_event):
-- BetRepository.get_pending_locked() filters status='PENDING' and locks
+- selectors.get_pending_locked() filters status='PENDING' and locks
   via FOR UPDATE SKIP LOCKED. Second caller on same event_id: 0 rows ->
   0-row UPDATE -> structlog 'cancel.noop' info -> CancelResult(count=0).
 
@@ -38,14 +38,15 @@ from uuid import UUID
 import structlog
 from sqlalchemy import func, update
 
-from bet_maker.facades.uow import AsyncUnitOfWork
 from bet_maker.models.bet import Bet
 from bet_maker.schemas.bets import BetStatus
 from bet_maker.schemas.settle import CancelResult
+from bet_maker.selectors.get_pending_locked import get_pending_locked
+from bet_maker.uow.abstract import AbstractUnitOfWork
 
 
 async def cancel_bets_for_event(
-    uow: AsyncUnitOfWork,
+    uow: AbstractUnitOfWork,
     *,
     event_id: UUID,
     cancelled_via: Literal["reconciler"],
@@ -53,7 +54,7 @@ async def cancel_bets_for_event(
     log = structlog.get_logger()
     cancelled_at = datetime.now(timezone.utc)
     async with uow:
-        bets = await uow.bets.get_pending_locked(event_id)
+        bets = await get_pending_locked(uow.session, event_id)
         if not bets:
             log.info(
                 "cancel.noop",

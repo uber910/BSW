@@ -42,11 +42,12 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bet_maker.facades.http_event_lookup import HttpEventLookup
-from bet_maker.facades.uow import AsyncUnitOfWork
 from bet_maker.interactors.cancel_bets_for_event import cancel_bets_for_event
 from bet_maker.interactors.settle_bets_for_event import settle_bets_for_event
 from bet_maker.schemas.events import EventState
 from bet_maker.schemas.messages import EventTerminalState
+from bet_maker.selectors.get_pending_event_ids import get_pending_event_ids
+from bet_maker.uow.postgres import PostgresUnitOfWork
 
 _log = structlog.get_logger().bind(task="reconciliation")
 
@@ -80,8 +81,8 @@ async def _run_tick(app: FastAPI) -> None:
     """
     sessionmaker = cast("async_sessionmaker[AsyncSession]", app.state.sessionmaker)
     lookup = cast(HttpEventLookup, app.state.reconciler_event_lookup)
-    async with AsyncUnitOfWork(sessionmaker) as uow:
-        event_ids = await uow.bets.get_pending_event_ids()
+    async with PostgresUnitOfWork(sessionmaker) as uow:
+        event_ids = await get_pending_event_ids(uow.session)
 
     if not event_ids:
         _log.debug("reconciler.tick.noop")
@@ -109,7 +110,7 @@ async def _reconcile_event(
     snapshot = await lookup.get_event(event_id)
 
     if snapshot is None:
-        uow = AsyncUnitOfWork(sessionmaker)
+        uow = PostgresUnitOfWork(sessionmaker)
         await cancel_bets_for_event(uow, event_id=event_id, cancelled_via="reconciler")
         _log.info("reconciler.event.cancelled", event_id=str(event_id))
         return
@@ -118,7 +119,7 @@ async def _reconcile_event(
         _log.debug("reconciler.event.still_new", event_id=str(event_id))
         return
 
-    uow = AsyncUnitOfWork(sessionmaker)
+    uow = PostgresUnitOfWork(sessionmaker)
     terminal_state = EventTerminalState(snapshot.state.value)
     await settle_bets_for_event(
         uow,

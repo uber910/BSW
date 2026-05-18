@@ -22,11 +22,11 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from bet_maker.facades.uow import AsyncUnitOfWork
 from bet_maker.interactors.settle_bets_for_event import settle_bets_for_event
 from bet_maker.models.bet import Bet
 from bet_maker.schemas.bets import BetStatus
 from bet_maker.schemas.messages import EventTerminalState
+from bet_maker.uow.postgres import PostgresUnitOfWork
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -40,7 +40,7 @@ class TestSettleHappyPath:
             for amt in ("10.00", "20.00", "30.00"):
                 session.add(Bet(event_id=event_id, amount=Decimal(amt)))
         result = await settle_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_id,
             terminal_state=EventTerminalState.FINISHED_WIN,
             settled_via="consumer",
@@ -66,7 +66,7 @@ class TestSettleHappyPath:
         async with session_factory.begin() as session:
             session.add(Bet(event_id=event_id, amount=Decimal("10.00")))
         result = await settle_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_id,
             terminal_state=EventTerminalState.FINISHED_LOSE,
             settled_via="consumer",
@@ -89,13 +89,13 @@ class TestSettleNoop:
             session.add(Bet(event_id=event_id, amount=Decimal("20.00")))
 
         first = await settle_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_id,
             terminal_state=EventTerminalState.FINISHED_WIN,
             settled_via="consumer",
         )
         second = await settle_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_id,
             terminal_state=EventTerminalState.FINISHED_WIN,
             settled_via="consumer",
@@ -112,7 +112,7 @@ class TestSettleNoop:
         async with session_factory.begin() as session:
             session.add(Bet(event_id=event_id, amount=Decimal("10.00"), status=BetStatus.WON))
         result = await settle_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_id,
             terminal_state=EventTerminalState.FINISHED_WIN,
             settled_via="consumer",
@@ -128,7 +128,7 @@ class TestSettleNoop:
         async with session_factory.begin() as session:
             session.add(Bet(event_id=event_a, amount=Decimal("10.00")))
         result = await settle_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_b,
             terminal_state=EventTerminalState.FINISHED_WIN,
             settled_via="consumer",
@@ -155,13 +155,13 @@ class TestSettleConcurrent:
 
         r1, r2 = await asyncio.gather(
             settle_bets_for_event(
-                AsyncUnitOfWork(session_factory),
+                PostgresUnitOfWork(session_factory),
                 event_id=event_id,
                 terminal_state=EventTerminalState.FINISHED_WIN,
                 settled_via="consumer",
             ),
             settle_bets_for_event(
-                AsyncUnitOfWork(session_factory),
+                PostgresUnitOfWork(session_factory),
                 event_id=event_id,
                 terminal_state=EventTerminalState.FINISHED_WIN,
                 settled_via="reconciler",
@@ -202,13 +202,13 @@ class TestSettleConcurrent:
 
         r1, r2 = await asyncio.gather(
             settle_bets_for_event(
-                AsyncUnitOfWork(session_factory),
+                PostgresUnitOfWork(session_factory),
                 event_id=event_id,
                 terminal_state=EventTerminalState.FINISHED_WIN,
                 settled_via="consumer",
             ),
             settle_bets_for_event(
-                AsyncUnitOfWork(session_factory),
+                PostgresUnitOfWork(session_factory),
                 event_id=event_id,
                 terminal_state=EventTerminalState.FINISHED_WIN,
                 settled_via="reconciler",
@@ -226,7 +226,7 @@ class TestSettleResultShape:
     ) -> None:
         event_id = uuid4()
         result = await settle_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_id,
             terminal_state=EventTerminalState.FINISHED_WIN,
             settled_via="consumer",
@@ -240,7 +240,7 @@ class TestSettleResultShape:
     ) -> None:
         event_id = uuid4()
         result = await settle_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_id,
             terminal_state=EventTerminalState.FINISHED_WIN,
             settled_via="consumer",

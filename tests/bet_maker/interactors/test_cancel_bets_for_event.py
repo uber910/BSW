@@ -11,12 +11,12 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from bet_maker.facades.uow import AsyncUnitOfWork
 from bet_maker.interactors.cancel_bets_for_event import cancel_bets_for_event
 from bet_maker.interactors.settle_bets_for_event import settle_bets_for_event
 from bet_maker.models.bet import Bet
 from bet_maker.schemas.bets import BetStatus
 from bet_maker.schemas.messages import EventTerminalState
+from bet_maker.uow.postgres import PostgresUnitOfWork
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -30,7 +30,7 @@ class TestCancelHappyPath:
             for amt in ("10.00", "20.00"):
                 session.add(Bet(event_id=event_id, amount=Decimal(amt)))
         result = await cancel_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_id,
             cancelled_via="reconciler",
         )
@@ -49,7 +49,7 @@ class TestCancelHappyPath:
         async with session_factory.begin() as session:
             session.add(Bet(event_id=event_id, amount=Decimal("10.00")))
         await cancel_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_id,
             cancelled_via="reconciler",
         )
@@ -65,7 +65,7 @@ class TestCancelHappyPath:
         async with session_factory.begin() as session:
             session.add(Bet(event_id=event_id, amount=Decimal("10.00")))
         await cancel_bets_for_event(
-            AsyncUnitOfWork(session_factory),
+            PostgresUnitOfWork(session_factory),
             event_id=event_id,
             cancelled_via="reconciler",
         )
@@ -84,10 +84,10 @@ class TestCancelNoop:
         async with session_factory.begin() as session:
             session.add(Bet(event_id=event_id, amount=Decimal("10.00")))
         first = await cancel_bets_for_event(
-            AsyncUnitOfWork(session_factory), event_id=event_id, cancelled_via="reconciler"
+            PostgresUnitOfWork(session_factory), event_id=event_id, cancelled_via="reconciler"
         )
         second = await cancel_bets_for_event(
-            AsyncUnitOfWork(session_factory), event_id=event_id, cancelled_via="reconciler"
+            PostgresUnitOfWork(session_factory), event_id=event_id, cancelled_via="reconciler"
         )
         assert first.cancelled_count == 1
         assert second.cancelled_count == 0
@@ -98,7 +98,7 @@ class TestCancelNoop:
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
         result = await cancel_bets_for_event(
-            AsyncUnitOfWork(session_factory), event_id=uuid4(), cancelled_via="reconciler"
+            PostgresUnitOfWork(session_factory), event_id=uuid4(), cancelled_via="reconciler"
         )
         assert result.cancelled_count == 0
 
@@ -110,7 +110,7 @@ class TestCancelNoop:
         async with session_factory.begin() as session:
             session.add(Bet(event_id=event_id, amount=Decimal("10.00"), status=BetStatus.CANCELLED))
         result = await cancel_bets_for_event(
-            AsyncUnitOfWork(session_factory), event_id=event_id, cancelled_via="reconciler"
+            PostgresUnitOfWork(session_factory), event_id=event_id, cancelled_via="reconciler"
         )
         assert result.cancelled_count == 0
 
@@ -128,13 +128,13 @@ class TestCancelConcurrent:
                 session.add(Bet(event_id=event_id, amount=Decimal(amt)))
         r_settle, r_cancel = await asyncio.gather(
             settle_bets_for_event(
-                AsyncUnitOfWork(session_factory),
+                PostgresUnitOfWork(session_factory),
                 event_id=event_id,
                 terminal_state=EventTerminalState.FINISHED_WIN,
                 settled_via="consumer",
             ),
             cancel_bets_for_event(
-                AsyncUnitOfWork(session_factory),
+                PostgresUnitOfWork(session_factory),
                 event_id=event_id,
                 cancelled_via="reconciler",
             ),
@@ -150,7 +150,7 @@ class TestCancelResultShape:
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
         result = await cancel_bets_for_event(
-            AsyncUnitOfWork(session_factory), event_id=uuid4(), cancelled_via="reconciler"
+            PostgresUnitOfWork(session_factory), event_id=uuid4(), cancelled_via="reconciler"
         )
         with pytest.raises(ValidationError):
             result.cancelled_count = 999  # type: ignore[misc]
@@ -160,6 +160,6 @@ class TestCancelResultShape:
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
         result = await cancel_bets_for_event(
-            AsyncUnitOfWork(session_factory), event_id=uuid4(), cancelled_via="reconciler"
+            PostgresUnitOfWork(session_factory), event_id=uuid4(), cancelled_via="reconciler"
         )
         assert result.cancelled_at.tzinfo is not None

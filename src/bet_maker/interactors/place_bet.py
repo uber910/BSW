@@ -7,11 +7,11 @@ from uuid import UUID
 import structlog
 
 from bet_maker.facades.event_lookup import EventLookup
-from bet_maker.facades.uow import AsyncUnitOfWork
 from bet_maker.helpers.money import quantize_amount
 from bet_maker.models.bet import Bet
 from bet_maker.schemas.bets import BetRead
 from bet_maker.schemas.events import EventState
+from bet_maker.uow.abstract import AbstractUnitOfWork
 
 log = structlog.get_logger()
 
@@ -33,7 +33,7 @@ class EventNotBettable(Exception):  # noqa: N818
 
 
 async def place_bet(
-    uow: AsyncUnitOfWork,
+    uow: AbstractUnitOfWork,
     *,
     event_id: UUID,
     amount: Decimal,
@@ -74,7 +74,7 @@ async def place_bet(
 
     async with uow:
         bet = Bet(event_id=event_id, amount=quantize_amount(amount))
-        uow.bets.add(bet)
+        uow.session.add(bet)
         await uow.session.flush()
         await uow.session.refresh(bet)
         log.info(

@@ -11,8 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from bet_maker.facades.event_lookup import EventLookup
 from bet_maker.facades.http_event_lookup import HttpEventLookup
-from bet_maker.facades.uow import AsyncUnitOfWork
 from bet_maker.settings.config import BetMakerSettings
+from bet_maker.uow.abstract import AbstractUnitOfWork
+from bet_maker.uow.postgres import PostgresUnitOfWork
 
 
 def get_settings(request: Request) -> BetMakerSettings:
@@ -41,14 +42,14 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
         yield session
 
 
-def get_uow(request: Request) -> AsyncUnitOfWork:
+def get_uow(request: Request) -> AbstractUnitOfWork:
     """Construct a fresh UoW for the current request.
 
     Each request gets its own UoW -> its own AsyncSession -> its own
     transaction. Sessions are NEVER shared across requests.
     """
     sessionmaker = get_sessionmaker(request)
-    return AsyncUnitOfWork(sessionmaker)
+    return PostgresUnitOfWork(sessionmaker)
 
 
 def get_event_lookup(request: Request) -> EventLookup:
@@ -96,7 +97,7 @@ SettingsDependency = Annotated[BetMakerSettings, Depends(get_settings)]
 EngineDependency = Annotated[AsyncEngine, Depends(get_engine)]
 SessionmakerDependency = Annotated[async_sessionmaker[AsyncSession], Depends(get_sessionmaker)]
 SessionDependency = Annotated[AsyncSession, Depends(get_session)]
-UoWDependency = Annotated[AsyncUnitOfWork, Depends(get_uow)]
+UoWDependency = Annotated[AbstractUnitOfWork, Depends(get_uow)]
 EventLookupDependency = Annotated[EventLookup, Depends(get_event_lookup)]
 LineProviderHttpClientDependency = Annotated[
     httpx.AsyncClient, Depends(get_line_provider_http_client)

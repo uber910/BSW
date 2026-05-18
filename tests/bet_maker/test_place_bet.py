@@ -22,11 +22,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bet_maker.facades.event_lookup import EventSnapshot, StubEventLookup
-from bet_maker.facades.uow import AsyncUnitOfWork
 from bet_maker.interactors.place_bet import EventNotBettable, place_bet
 from bet_maker.models.bet import Bet
 from bet_maker.schemas.bets import BetRead, BetStatus
 from bet_maker.schemas.events import EventState
+from bet_maker.uow.postgres import PostgresUnitOfWork
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -41,7 +41,7 @@ class TestHappyPath:
         event_id = uuid4()
         lookup = StubEventLookup()
         lookup.seed_active(event_id)
-        uow = AsyncUnitOfWork(session_factory)
+        uow = PostgresUnitOfWork(session_factory)
 
         read = await place_bet(
             uow,
@@ -64,7 +64,7 @@ class TestHappyPath:
         event_id = uuid4()
         lookup = StubEventLookup()
         lookup.seed_active(event_id)
-        uow = AsyncUnitOfWork(session_factory)
+        uow = PostgresUnitOfWork(session_factory)
 
         read = await place_bet(
             uow,
@@ -81,7 +81,7 @@ class TestHappyPath:
         event_id = uuid4()
         lookup = StubEventLookup()
         lookup.seed_active(event_id)
-        uow = AsyncUnitOfWork(session_factory)
+        uow = PostgresUnitOfWork(session_factory)
 
         read = await place_bet(
             uow,
@@ -107,7 +107,7 @@ class TestRejections:
     ) -> None:
         """D-06: event_lookup.get_event returns None -> 'event not found'."""
         lookup = StubEventLookup()
-        uow = AsyncUnitOfWork(session_factory)
+        uow = PostgresUnitOfWork(session_factory)
 
         with pytest.raises(EventNotBettable) as exc:
             await place_bet(
@@ -126,7 +126,7 @@ class TestRejections:
         lookup = StubEventLookup()
         past = datetime.now(timezone.utc) - timedelta(hours=1)
         lookup.seed(EventSnapshot(event_id=event_id, deadline=past, state=EventState.NEW))
-        uow = AsyncUnitOfWork(session_factory)
+        uow = PostgresUnitOfWork(session_factory)
 
         with pytest.raises(EventNotBettable) as exc:
             await place_bet(
@@ -147,7 +147,7 @@ class TestRejections:
         lookup.seed(
             EventSnapshot(event_id=event_id, deadline=future, state=EventState.FINISHED_WIN)
         )
-        uow = AsyncUnitOfWork(session_factory)
+        uow = PostgresUnitOfWork(session_factory)
 
         with pytest.raises(EventNotBettable) as exc:
             await place_bet(
@@ -169,7 +169,7 @@ class TestRejections:
         pool. The test guards: no row appeared even transiently.
         """
         lookup = StubEventLookup()
-        uow = AsyncUnitOfWork(session_factory)
+        uow = PostgresUnitOfWork(session_factory)
 
         with pytest.raises(EventNotBettable):
             await place_bet(

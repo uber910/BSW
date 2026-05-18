@@ -37,11 +37,11 @@ from tenacity import (
     wait_exponential,
 )
 
-from bet_maker.facades.uow import AsyncUnitOfWork
 from bet_maker.interactors.settle_bets_for_event import settle_bets_for_event
 from bet_maker.messaging.routing import EVENT_FINISHED_WILDCARD
 from bet_maker.schemas.messages import EventFinishedMessage
 from bet_maker.settings.config import BetMakerSettings
+from bet_maker.uow.postgres import PostgresUnitOfWork
 
 _SCHEMA_VERSION_SUPPORTED = 1
 
@@ -165,7 +165,7 @@ async def on_event_finished(
             )
 
         sessionmaker = _require_sessionmaker()
-        async with AsyncUnitOfWork(sessionmaker) as uow:
+        async with PostgresUnitOfWork(sessionmaker) as uow:
             await _settle_with_retry(
                 uow,
                 event_id=message.event_id,

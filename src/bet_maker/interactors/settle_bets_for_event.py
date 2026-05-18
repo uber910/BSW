@@ -5,7 +5,7 @@ Called by:
 - The reconciliation job (settled_via='reconciler')
 
 Idempotency:
-- BetRepository.get_pending_locked() filters by status=PENDING + locks via
+- selectors.get_pending_locked() filters by status=PENDING + locks via
   FOR UPDATE SKIP LOCKED. Second caller on same event_id: 0 rows -> 0-row
   UPDATE -> structlog 'settle.noop' info -> SettleResult(settled_count=0).
 - No 'consumed_events' table — status filter is the single source of truth.
@@ -35,11 +35,12 @@ from uuid import UUID
 import structlog
 from sqlalchemy import func, update
 
-from bet_maker.facades.uow import AsyncUnitOfWork
 from bet_maker.models.bet import Bet
 from bet_maker.schemas.bets import BetStatus
 from bet_maker.schemas.messages import EventTerminalState
 from bet_maker.schemas.settle import SettleResult
+from bet_maker.selectors.get_pending_locked import get_pending_locked
+from bet_maker.uow.abstract import AbstractUnitOfWork
 
 _TERMINAL_TO_STATUS: dict[EventTerminalState, BetStatus] = {
     EventTerminalState.FINISHED_WIN: BetStatus.WON,
@@ -48,7 +49,7 @@ _TERMINAL_TO_STATUS: dict[EventTerminalState, BetStatus] = {
 
 
 async def settle_bets_for_event(
-    uow: AsyncUnitOfWork,
+    uow: AbstractUnitOfWork,
     *,
     event_id: UUID,
     terminal_state: EventTerminalState,
@@ -60,7 +61,7 @@ async def settle_bets_for_event(
     except KeyError as exc:
         raise ValueError(f"terminal_state={terminal_state!r} has no BetStatus mapping") from exc
     async with uow:
-        bets = await uow.bets.get_pending_locked(event_id)
+        bets = await get_pending_locked(uow.session, event_id)
         settled_at = datetime.now(timezone.utc)
         if not bets:
             log.info(
