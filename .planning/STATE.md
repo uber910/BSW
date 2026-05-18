@@ -2,41 +2,43 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-05-18T13:23:16.503Z"
+status: complete
+last_updated: "2026-05-18T23:59:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 65
-  completed_plans: 53
-  percent: 82
+  completed_plans: 65
+  percent: 100
 ---
 
 # Project State: BSW Betting System
 
-**Last updated:** 2026-05-17 (after Phase 4 Plan 09 — POST /bet now translates `LineProviderUnavailable` to `HTTPException(503, detail="event validation unavailable: line-provider unreachable")` per D-08 (T-04-09-Info-disclosure: static detail string, internal `LineProviderUnavailable.reason` preserved on exception chain via `from exc`); exception ladder order in `src/bet_maker/entrypoints/api/bets.py::post_bet` is `except LineProviderUnavailable -> 503` (line 48) FIRST, `except EventNotBettable -> 422` (line 53) SECOND — sibling exceptions but D-08 fixes order; `LineProviderUnavailable` import added from `bet_maker.facades.line_provider_client`; docstring extended with D-08 and Pitfall 7 references; `tests/bet_maker/test_bet_routes.py::TestPostBet503` added (2 tests) — `test_post_bet_503_when_line_provider_unavailable` injects `_RaisingLookup` via `app.dependency_overrides[get_event_lookup] = lambda: _RaisingLookup()` (try/finally cleanup with `pop(get_event_lookup, None)`) and asserts 503 + exact static detail + `count_before == count_after` via GET /bets proving NO PG write on validation-failure path (T-04-09-PartialWrite mitigation), `test_post_bet_503_ladder_precedes_422` proves ladder ordering by injecting raising lookup with bogus event_id — 503 fires before any None->EventNotBettable->422 mapping (T-04-09-LadderMisorder mitigation); module-top imports added: `FastAPI`, `EventSnapshot`, `LineProviderUnavailable`; ruff PLW0108 auto-fix on both lambdas: `# noqa: PLW0108` (preserves verbatim plan pattern + acceptance grep `dependency_overrides\[get_event_lookup\]` returning 2); 149 bet_maker passed +2 new, 244 total passed; mypy src clean 71 files; ruff clean; BM-04 fully closed — POST /bet validation goes through real HttpEventLookup, LP-down path produces clear 503)
+**Last updated:** 2026-05-18 (after Phase 7 Plan 12 phase-gate — milestone v1 complete. Phase 7 delivered: ErrorDetail schemas on both services + OpenAPI metadata polish (summary/responses/Body(openapi_examples)) on all routes + AsyncAPI /asyncapi endpoint smoke tests on both services + CI pytest --cov --cov-fail-under=85 gate + tests/audit/test_static.py with 7 regex audit tests + 07-AUDIT.md 19-row evidence table + README final pass (Architecture ASCII diagram + Reliability 6-point list + CANCELLED extension + Reviewer walkthrough 5-step curl + Project status 7/7) + mypy strict verified zero errors zero `# type: ignore` in src/. All 19 «Looks Done But Isn't» items verified. Coverage gate ≥85% green (95.49%); full test suite 358 tests green; ruff clean; mypy strict clean across 85 source files.)
+
+**Previous-update note (Phase 4):** Phase 4 Plan 09 — POST /bet now translates `LineProviderUnavailable` to `HTTPException(503, detail="event validation unavailable: line-provider unreachable")` per D-08 (T-04-09-Info-disclosure: static detail string, internal `LineProviderUnavailable.reason` preserved on exception chain via `from exc`); exception ladder order in `src/bet_maker/entrypoints/api/bets.py::post_bet` is `except LineProviderUnavailable -> 503` (line 48) FIRST, `except EventNotBettable -> 422` (line 53) SECOND — sibling exceptions but D-08 fixes order; `LineProviderUnavailable` import added from `bet_maker.facades.line_provider_client`; docstring extended with D-08 and Pitfall 7 references; `tests/bet_maker/test_bet_routes.py::TestPostBet503` added (2 tests) — `test_post_bet_503_when_line_provider_unavailable` injects `_RaisingLookup` via `app.dependency_overrides[get_event_lookup] = lambda: _RaisingLookup()` (try/finally cleanup with `pop(get_event_lookup, None)`) and asserts 503 + exact static detail + `count_before == count_after` via GET /bets proving NO PG write on validation-failure path (T-04-09-PartialWrite mitigation), `test_post_bet_503_ladder_precedes_422` proves ladder ordering by injecting raising lookup with bogus event_id — 503 fires before any None->EventNotBettable->422 mapping (T-04-09-LadderMisorder mitigation); module-top imports added: `FastAPI`, `EventSnapshot`, `LineProviderUnavailable`; ruff PLW0108 auto-fix on both lambdas: `# noqa: PLW0108` (preserves verbatim plan pattern + acceptance grep `dependency_overrides\[get_event_lookup\]` returning 2); 149 bet_maker passed +2 new, 244 total passed; mypy src clean 71 files; ruff clean; BM-04 fully closed — POST /bet validation goes through real HttpEventLookup, LP-down path produces clear 503)
 
 ## Project Reference
 
 **Core Value:** Ставка никогда не остаётся в статусе PENDING после того, как её событие завершилось.
 
-**Current focus:** Phase 06 — reconciliation-job
+**Current focus:** Phase 07 — polish-documentation
 
 ## Current Position
 
-Phase: 06 (reconciliation-job) — EXECUTING
-Plan: 2 of 11
+Phase: 07 (polish-documentation) — COMPLETE
+Plan: 12 of 12 — Phase 7 complete; milestone v1 complete
 
 - **Milestone:** v1
 - **Phase:** 6
 - **Plan:** 06-02 complete (Wave 0 scaffolding — 18 new files: 11 stub test files + 7 `__init__.py`; 48 Wave-0 pytest.fail stubs collected across jobs/, repositories/, interactors/, migrations/, config/, integration/, e2e/ sub-packages and test_lifespan_reconciler.py + test_health_reconciler.py; pytest --collect-only tests/bet_maker/ returns 236 tests; ruff clean; mypy clean; commits 955aa36 + ea3f947)
 - **Plan:** 04-08 complete (Wave 6 — `src/bet_maker/entrypoints/api/events.py` (NEW): `GET /events` route via `LineProviderHttpClientDep` -> `list_active_events(http_client)` -> `list[EventRead]`; on `LineProviderUnavailable` raises `HTTPException(503, "line-provider unreachable")` with `from exc` (D-10 / T-04-08-Info-disclosure: static detail string, internal reason kept on exception chain only); `src/bet_maker/app.py` extended to include `events.router` after `bets.router` (ordering: health -> bets -> events); `tests/bet_maker/test_events_routes.py` (NEW) with D-16 two-FastAPI-apps integration — session-scoped `lp_http_client` (ASGITransport over `line_provider_app`) + function-scoped `real_lp_wiring` overrides dep + event_lookup AFTER autouse stub-swap; 6 tests in 3 classes — TestGetEventsAgainstRealLp (active events / list shape / FINISHED_WIN drop), TestGetEvents503 (respx 503 overlay -> 503 + static detail), TestPostBetViaRealLp (happy path 201 / 404 -> 422); LP POST body drops `state` per `EventCreate(extra="forbid")` schema; 147 bet_maker passed +6 new, 242 total passed; mypy src clean 71 files; ruff clean)
 - **Plan:** 04-07 complete (Wave 5 — lifecycle wiring: singleton `httpx.AsyncClient(base_url=settings.line_provider_base_url, timeout=httpx.Timeout(5.0))` создан в `src/bet_maker/entrypoints/lifespan.py` после `wait_for_postgres` (D-02/D-19); `app.state.line_provider_http_client = http_client` + `app.state.event_lookup = HttpEventLookup(http_client=..., attempts=settings.line_provider_http_attempts, max_backoff=settings.line_provider_http_backoff_max_s)` заменяет StubEventLookup (D-14/D-21); shutdown reversed — nested `try: await http_client.aclose() finally: await engine.dispose()` гарантирует dispose даже если aclose бросит (D-20, Pitfall 6); `src/bet_maker/facades/deps.py` расширен `get_line_provider_http_client(request) -> httpx.AsyncClient` provider + `LineProviderHttpClientDep` Annotated alias через `cast(httpx.AsyncClient, request.app.state.line_provider_http_client)` (D-12, Anti-Pattern A2 — нет module-level singleton); `tests/bet_maker/conftest.py::_clear_event_lookup` переписан: вместо broken `app.state.event_lookup._events.clear()` (атрибут отсутствует на HttpEventLookup) теперь `app.state.event_lookup = StubEventLookup()` swap per-test — restores isolation без HttpEventLookup-specific internals (PATTERNS.md critical finding line 801); добавлена session-scoped fixture `line_provider_app` (LifespanManager(build_app())) для Plan 04-08 ASGI proxy integration tests (D-16); `tests/bet_maker/test_lifespan.py` переписан с 4 классами — TestLifespanStatePins (4 теста: engine/sessionmaker/settings + новый http_client), TestProductionLifespanWiring (новый — `test_event_lookup_is_http_in_production` строит fresh app через build_app() в обход autouse swap, проверяет isinstance HttpEventLookup), TestShutdownOrder (новый — `test_aclose_before_dispose` patch.object на httpx.AsyncClient.aclose + AsyncEngine.dispose, fake_аналоги appendят имена в `call_order: list[str]` перед делегацией оригиналу, ассерт `call_order.index("aclose") < call_order.index("dispose")` — изначально пытался `engine.dispose = fake_dispose` на instance, отвергнут AttributeError 'AsyncEngine' object attribute 'dispose' is read-only — переключён на class-level patch), TestLifespanRetryExhaustion (unchanged P3); 141 bet_maker passed (+2 new), 236 total passed; mypy src clean 70 files; ruff clean)
-- **Status:** Ready to execute
+- **Status:** Executing Phase 07
 - **Progress:** [██████████] 100%
 
 ```
-[███░░░░] 3/7 phases (43%)
+[███████] 7/7 phases (100%)
 ```
 
 ## Performance Metrics

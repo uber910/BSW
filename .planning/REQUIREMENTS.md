@@ -45,7 +45,7 @@
 
 ### Quality (QA)
 
-- [ ] **QA-01**: Полные type hints во всём коде; `mypy --strict` проходит без ошибок
+- [x] **QA-01**: Полные type hints во всём коде; `mypy --strict` проходит без ошибок (Plan 07-11)
 - [x] **QA-02**: `ruff check` + `ruff format` без замечаний; конфигурация в pyproject.toml
 - [x] **QA-03**: pre-commit hooks: ruff, mypy, end-of-file, trailing-whitespace, toml-lint
 - [x] **QA-04**: Unit-тесты на каждый слой (interactors/selectors/helpers/repositories) — pytest + pytest-asyncio (line-provider: schemas/state-machine/store/facades/interactors/selectors unit-тесты в плагинах 02-02..02-06; bet-maker — Phase 3 / Phase 5)
@@ -53,15 +53,15 @@
 - [ ] **QA-06**: Consumer тесты через `TestRabbitBroker` (FastStream native)
 - [x] **QA-07**: PG-тесты с реальной БД через testcontainers (НЕ SQLite, чтобы ловить `FOR UPDATE` баги)
 - [x] **QA-08**: Один e2e сценарий: создать событие → поставить ставку → завершить событие → проверить, что ставка стала WON/LOST через consumer + ещё одну через reconciler
-- [ ] **QA-09**: pytest-cov с минимальным порогом покрытия (≥80%)
+- [x] **QA-09**: pytest-cov с минимальным порогом покрытия (≥80%) (Plan 07-06)
 - [x] **QA-10**: GitHub Actions CI: lint + typecheck + unit + integration на каждый push/PR
 
 ### Documentation (DOC)
 
-- [ ] **DOC-01**: README.md с описанием системы, диаграммой компонентов, инструкцией запуска через `docker compose up`
-- [ ] **DOC-02**: Раздел «Architecture» — слои, UoW, RabbitMQ топология, reconciliation, ссылка на ARCHITECTURE.md
-- [ ] **DOC-03**: Раздел «Development» — uv install, миграции, запуск тестов, линтеров
-- [ ] **DOC-04**: Раздел «Reliability» — описание гарантий доставки и защиты от «зависших» ставок
+- [x] **DOC-01**: README.md с описанием системы, диаграммой компонентов, инструкцией запуска через `docker compose up` (Plan 07-10)
+- [x] **DOC-02**: Раздел «Architecture» — слои, UoW, RabbitMQ топология, reconciliation, ссылка на ARCHITECTURE.md (Plan 07-10)
+- [x] **DOC-03**: Раздел «Development» — uv install, миграции, запуск тестов, линтеров (Plan 07-10)
+- [x] **DOC-04**: Раздел «Reliability» — описание гарантий доставки и защиты от «зависших» ставок (Plan 07-10)
 
 ## v2 Requirements
 
@@ -144,7 +144,7 @@
 | BM-11 | Phase 5 | Pending |
 | BM-12 | Phase 6 | Complete |
 | BM-13 | Phase 3 | Complete (Plan 03-09) |
-| QA-01 | Phase 7 | Pending |
+| QA-01 | Phase 7 | Complete (Plan 07-11) |
 | QA-02 | Phase 1 | Complete |
 | QA-03 | Phase 1 | Complete |
 | QA-04 | Phase 2 | Complete |
@@ -152,12 +152,12 @@
 | QA-06 | Phase 5 | Pending |
 | QA-07 | Phase 3 | Complete (Plan 03-09) |
 | QA-08 | Phase 6 | Complete |
-| QA-09 | Phase 7 | Pending |
+| QA-09 | Phase 7 | Complete (Plan 07-06) |
 | QA-10 | Phase 1 | Complete |
-| DOC-01 | Phase 7 | Pending |
-| DOC-02 | Phase 7 | Pending |
-| DOC-03 | Phase 7 | Pending |
-| DOC-04 | Phase 7 | Pending |
+| DOC-01 | Phase 7 | Complete (Plan 07-10) |
+| DOC-02 | Phase 7 | Complete (Plan 07-10) |
+| DOC-03 | Phase 7 | Complete (Plan 07-10) |
+| DOC-04 | Phase 7 | Complete (Plan 07-10) |
 
 **Coverage:**
 - v1 requirements: 43 total
@@ -177,4 +177,4 @@ Note: QA-01 (`mypy --strict`) is **enforced from Phase 1** (CI gate established 
 
 ---
 *Requirements defined: 2026-05-13*
-*Last updated: 2026-05-18 after Phase 6 completion (Plan 06-11 — BM-12, QA-08 complete)*
+*Last updated: 2026-05-18 after Phase 7 completion (plans 07-01..07-12 — DOC-01..04, QA-01, QA-09 complete; milestone v1 done)*
