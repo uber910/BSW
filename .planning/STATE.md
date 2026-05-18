@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Architecture cleanup
-status: planning
-last_updated: "2026-05-18T16:13:55.205Z"
-last_activity: 2026-05-18
+status: Roadmap created (Phases 8-10 mapped); ready for `/gsd-discuss-phase 8` then `/gsd-plan-phase 8`
+last_updated: "2026-05-18T18:35:53.028Z"
+last_activity: 2026-05-18 — Milestone v1.1 roadmap created (3 phases, 5/5 REFACTOR requirements mapped)
 progress:
-  total_phases: 3
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 10
+  completed_phases: 7
+  total_plans: 65
+  completed_plans: 65
+  percent: 100
 ---
 
 # Project State: BSW Betting System
