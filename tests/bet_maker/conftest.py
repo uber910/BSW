@@ -45,7 +45,7 @@ def _clear_event_lookup(app: FastAPI) -> None:
 
 
 @pytest_asyncio.fixture(scope="session")
-async def app(pg_dsn: str) -> AsyncIterator[FastAPI]:
+async def app(pg_dsn: str, amqp_url: str) -> AsyncIterator[FastAPI]:
     """Session-scoped FastAPI bet_maker app with lifespan triggered.
 
     Session-scoped to avoid asyncpg event-loop mismatch: asyncpg connections
@@ -53,19 +53,25 @@ async def app(pg_dsn: str) -> AsyncIterator[FastAPI]:
     fixture creates a new engine per test, causing 'Future attached to a
     different loop' on engine.dispose() in the next function-loop.
 
-    Binds testcontainers pg_dsn into the process env before lifespan starts
-    — lifespan reads BetMakerSettings() which picks up BET_MAKER_POSTGRES_DSN.
+    Binds testcontainers pg_dsn + amqp_url into the process env before lifespan
+    starts — lifespan reads BetMakerSettings() which picks up BET_MAKER_POSTGRES_DSN
+    and BET_MAKER_RABBITMQ_URL. Plan 05-07: broker layer added to lifespan requires
+    AMQP URL; also patches broker._connection_kwargs since router is module-level.
     Yielded separately so tests can poke app.state.event_lookup (StubEventLookup).
     """
     from bet_maker.app import build_app  # noqa: PLC0415
+    from bet_maker.entrypoints.messaging import router as rabbit_router  # noqa: PLC0415
 
     os.environ["BET_MAKER_POSTGRES_DSN"] = pg_dsn
+    os.environ["BET_MAKER_RABBITMQ_URL"] = amqp_url
+    rabbit_router.broker._connection_kwargs["url"] = amqp_url
     try:
         application = build_app()
         async with LifespanManager(application):
             yield application
     finally:
         os.environ.pop("BET_MAKER_POSTGRES_DSN", None)
+        os.environ.pop("BET_MAKER_RABBITMQ_URL", None)
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -117,16 +123,23 @@ async def seed_event(app: FastAPI) -> Callable[..., UUID]:
 
 
 @pytest_asyncio.fixture(scope="session")
-async def line_provider_app() -> AsyncIterator[FastAPI]:
+async def line_provider_app(amqp_url: str) -> AsyncIterator[FastAPI]:
     """Session-scoped line_provider FastAPI app with lifespan triggered.
 
     D-16 / Pitfall A2: same session-scope as bet_maker `app` fixture -
     they MUST share the same event loop so httpx.ASGITransport can
     proxy between them without 'Future attached to a different loop'.
-    No env-var poke needed (line-provider has no Postgres).
+    Plan 05-07: broker layer added to line-provider lifespan requires
+    AMQP URL; patches broker._connection_kwargs since router is module-level.
     """
     from line_provider.app import build_app  # noqa: PLC0415
+    from line_provider.entrypoints.messaging import router as lp_rabbit_router  # noqa: PLC0415
 
-    application = build_app()
-    async with LifespanManager(application):
-        yield application
+    os.environ["LINE_PROVIDER_RABBITMQ_URL"] = amqp_url
+    lp_rabbit_router.broker._connection_kwargs["url"] = amqp_url
+    try:
+        application = build_app()
+        async with LifespanManager(application):
+            yield application
+    finally:
+        os.environ.pop("LINE_PROVIDER_RABBITMQ_URL", None)
