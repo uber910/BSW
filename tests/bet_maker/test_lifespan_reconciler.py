@@ -8,8 +8,8 @@ import inspect
 import pytest
 from fastapi import FastAPI
 
-from bet_maker.entrypoints.lifespan import lifespan
 from bet_maker.facades.http_event_lookup import HttpEventLookup
+from bet_maker.lifespan import lifespan
 
 
 @pytest.mark.asyncio(loop_scope="session")

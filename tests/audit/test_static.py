@@ -27,7 +27,7 @@ def test_subscribers_have_manual_ack() -> None:
     Default AckPolicy.REJECT_ON_ERROR would silently drop messages on
     any handler exception — breaks the Core Value invariant (no stuck PENDING bets).
     """
-    src = (SRC / "bet_maker" / "entrypoints" / "messaging.py").read_text()
+    src = (SRC / "bet_maker" / "api" / "messaging.py").read_text()
     subscribers = re.findall(r"@router\.subscriber\s*\(", src)
     manual_ack_kwargs = re.findall(r"ack_policy\s*=\s*AckPolicy\.MANUAL", src)
     assert subscribers, "no @router.subscriber decorator found — wrong file?"
@@ -116,10 +116,26 @@ def test_durable_queue_and_exchange() -> None:
     volume on /var/lib/rabbitmq, durability is what makes the stack
     survive a broker restart.
     """
-    src = (SRC / "bet_maker" / "entrypoints" / "messaging.py").read_text()
+    src = (SRC / "bet_maker" / "api" / "messaging.py").read_text()
     assert re.search(r"RabbitQueue\([^)]*durable\s*=\s*True", src, re.DOTALL), (
         "RabbitQueue must declare durable=True — see ARCHITECTURE.md R4/R10."
     )
     assert re.search(r"RabbitExchange\([^)]*durable\s*=\s*True", src, re.DOTALL), (
         "RabbitExchange must declare durable=True — see ARCHITECTURE.md R4/R10."
     )
+
+
+def test_no_entrypoints_dir() -> None:
+    """REFACTOR-01: the entrypoints directory under src/bet_maker must not exist.
+
+    Phase 8 plan 08-01 flattened bet_maker's HTTP routers + FastStream
+    RabbitRouter into src/bet_maker/api/ and relocated lifespan.py +
+    middleware.py to the service-package root. The legacy directory was
+    deleted; this audit fails if a future commit recreates it.
+
+    NOTE: line_provider entrypoints is NOT asserted here yet — plan
+    08-02 moves that directory and at that point expands this test to
+    also cover line_provider.
+    """
+    bm = SRC / "bet_maker" / "entrypoints"
+    assert not bm.exists(), f"{bm} re-introduced — Phase 8 flattened entrypoints/ → api/."

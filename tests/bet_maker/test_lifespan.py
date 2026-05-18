@@ -76,8 +76,8 @@ class TestProductionLifespanWiring:
         """
         from unittest.mock import AsyncMock  # noqa: PLC0415
 
+        from bet_maker.api.messaging import router  # noqa: PLC0415
         from bet_maker.app import build_app  # noqa: PLC0415
-        from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
 
         noop = AsyncMock(return_value=AsyncMock())
 
@@ -120,8 +120,8 @@ class TestShutdownOrder:
         """
         from sqlalchemy.ext.asyncio import AsyncEngine as _AsyncEngine  # noqa: PLC0415
 
+        from bet_maker.api.messaging import router  # noqa: PLC0415
         from bet_maker.app import build_app  # noqa: PLC0415
-        from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
 
         call_order: list[str] = []
 
@@ -183,7 +183,7 @@ class TestLifespanRetryExhaustion:
         os.environ["BET_MAKER_POSTGRES_DSN"] = bad_dsn
         try:
             app = build_app()
-            with patch("bet_maker.entrypoints.lifespan.wait_for_postgres") as mock_wait:
+            with patch("bet_maker.lifespan.wait_for_postgres") as mock_wait:
                 mock_wait.side_effect = RuntimeError("connection refused after retries")
                 with pytest.raises(RuntimeError):
                     async with LifespanManager(app):
@@ -201,7 +201,7 @@ class TestBrokerLifespan:
     """
 
     async def test_broker_connected_and_has_subscribers(self, app: FastAPI) -> None:
-        from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
+        from bet_maker.api.messaging import router  # noqa: PLC0415
 
         rmq_ok = await router.broker.ping(timeout=2.0)
         assert rmq_ok is True
@@ -210,7 +210,7 @@ class TestBrokerLifespan:
     async def test_shutdown_order_broker_before_httpx_before_engine(self, app: FastAPI) -> None:
         from inspect import getsource  # noqa: PLC0415
 
-        from bet_maker.entrypoints.lifespan import lifespan  # noqa: PLC0415
+        from bet_maker.lifespan import lifespan  # noqa: PLC0415
 
         src = getsource(lifespan)
         # Check within the shutdown finally block specifically.
@@ -235,7 +235,7 @@ class TestBrokerLifespan:
     async def test_dlq_declared_and_idempotent(self, app: FastAPI) -> None:
         from faststream.rabbit.schemas import RabbitQueue  # noqa: PLC0415
 
-        from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
+        from bet_maker.api.messaging import router  # noqa: PLC0415
 
         dlq = await router.broker.declare_queue(
             RabbitQueue("bet_maker.events.finished.dlq", durable=True)

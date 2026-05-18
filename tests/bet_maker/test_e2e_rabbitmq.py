@@ -128,7 +128,7 @@ class TestE2ERabbitMQ:
             persist=True,
         )
 
-        from bet_maker.entrypoints.messaging import router as bm_router  # noqa: PLC0415
+        from bet_maker.api.messaging import router as bm_router  # noqa: PLC0415
 
         dlq = await bm_router.broker.declare_queue(
             RabbitQueue("bet_maker.events.finished.dlq", durable=True, declare=False)

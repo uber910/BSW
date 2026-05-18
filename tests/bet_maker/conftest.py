@@ -73,8 +73,8 @@ async def app(pg_dsn: str, amqp_url: str) -> AsyncIterator[FastAPI]:
     AMQP URL; also patches broker._connection_kwargs since router is module-level.
     Yielded separately so tests can poke app.state.event_lookup (StubEventLookup).
     """
+    from bet_maker.api.messaging import router as rabbit_router  # noqa: PLC0415
     from bet_maker.app import build_app  # noqa: PLC0415
-    from bet_maker.entrypoints.messaging import router as rabbit_router  # noqa: PLC0415
 
     os.environ["BET_MAKER_POSTGRES_DSN"] = pg_dsn
     os.environ["BET_MAKER_RABBITMQ_URL"] = amqp_url

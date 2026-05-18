@@ -50,7 +50,7 @@ class TestHealth:
         the route layer's response to False directly here.
         """
         with patch(
-            "bet_maker.entrypoints.api.health.ping_postgres",
+            "bet_maker.api.health.ping_postgres",
             new=AsyncMock(return_value=False),
         ):
             response = await client.get("/health")
@@ -64,7 +64,7 @@ class TestHealth:
         self, app: FastAPI, client: AsyncClient
     ) -> None:
         """D-20 / SC#5: 503 when broker.ping fails (RMQ unreachable)."""
-        from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
+        from bet_maker.api.messaging import router  # noqa: PLC0415
 
         with patch.object(router.broker, "ping", new=AsyncMock(return_value=False)):
             response = await client.get("/health")
@@ -83,7 +83,7 @@ class TestHealth:
         broker.subscribers is a @property on Registrator base class, so
         patch.object must target the class (not instance) via PropertyMock.
         """
-        from bet_maker.entrypoints.messaging import router  # noqa: PLC0415
+        from bet_maker.api.messaging import router  # noqa: PLC0415
 
         broker_type = type(router.broker)
         with patch.object(broker_type, "subscribers", new_callable=PropertyMock, return_value=[]):

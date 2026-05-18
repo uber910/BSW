@@ -28,7 +28,7 @@ from faststream.rabbit.schemas import ExchangeType, RabbitExchange
 from faststream.rabbit.testing import TestRabbitBroker
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from bet_maker.entrypoints.messaging import router, set_sessionmaker
+from bet_maker.api.messaging import router, set_sessionmaker
 from bet_maker.schemas.messages import EventFinishedMessage, EventTerminalState
 from bet_maker.schemas.settle import SettleResult
 
@@ -95,7 +95,7 @@ class TestHappyPath:
     async def test_calls_settle_and_acks(self) -> None:
         msg = _valid_message()
         with patch(
-            "bet_maker.entrypoints.messaging._settle_with_retry",
+            "bet_maker.api.messaging._settle_with_retry",
             new=AsyncMock(return_value=_settle_result(msg.event_id, settled_count=1)),
         ) as settle_mock:
             async with TestRabbitBroker(router.broker) as br:
@@ -116,11 +116,11 @@ class TestPoison:
         msg = _valid_message()
         with (
             patch(
-                "bet_maker.entrypoints.messaging._SCHEMA_VERSION_SUPPORTED",
+                "bet_maker.api.messaging._SCHEMA_VERSION_SUPPORTED",
                 new=2,
             ),
             patch(
-                "bet_maker.entrypoints.messaging._settle_with_retry",
+                "bet_maker.api.messaging._settle_with_retry",
                 new=AsyncMock(),
             ) as settle_mock,
         ):
@@ -137,7 +137,7 @@ class TestPoison:
         msg = _valid_message()
         integ = IntegrityError("stmt", {}, Exception("violates check constraint"))
         with patch(
-            "bet_maker.entrypoints.messaging._settle_with_retry",
+            "bet_maker.api.messaging._settle_with_retry",
             new=AsyncMock(side_effect=integ),
         ) as settle_mock:
             async with TestRabbitBroker(router.broker) as br:
@@ -165,7 +165,7 @@ class TestTransient:
             return _settle_result(msg.event_id, settled_count=1)
 
         with patch(
-            "bet_maker.entrypoints.messaging._settle_with_retry",
+            "bet_maker.api.messaging._settle_with_retry",
             new=AsyncMock(side_effect=flaky),
         ):
             async with TestRabbitBroker(router.broker) as br:
@@ -179,7 +179,7 @@ class TestTransient:
     async def test_exhaustion_rejects(self) -> None:
         msg = _valid_message()
         with patch(
-            "bet_maker.entrypoints.messaging._settle_with_retry",
+            "bet_maker.api.messaging._settle_with_retry",
             new=AsyncMock(side_effect=OperationalError("stmt", {}, Exception("conn"))),
         ):
             async with TestRabbitBroker(router.broker) as br:
@@ -198,7 +198,7 @@ class TestNoop:
     async def test_zero_pending_acks(self) -> None:
         msg = _valid_message()
         with patch(
-            "bet_maker.entrypoints.messaging._settle_with_retry",
+            "bet_maker.api.messaging._settle_with_retry",
             new=AsyncMock(return_value=_settle_result(msg.event_id, settled_count=0)),
         ) as settle_mock:
             async with TestRabbitBroker(router.broker) as br:
@@ -216,7 +216,7 @@ class TestInvariants:
 
     def test_nack_never_called_in_source(self) -> None:
         """Statically verify the handler source. (Belt-and-suspenders for R7.)"""
-        src = Path("src/bet_maker/entrypoints/messaging.py").read_text()
+        src = Path("src/bet_maker/api/messaging.py").read_text()
         lines = src.splitlines()
         code_lines = [
             ln
