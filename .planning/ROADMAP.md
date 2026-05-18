@@ -15,6 +15,12 @@
 - [x] **Phase 6: Reconciliation job** — Background worker recovers stuck PENDING bets via HTTP poll (defence-in-depth)
 - [x] **Phase 7: Polish + Documentation** — README, OpenAPI/AsyncAPI quality, e2e/coverage gate, "Looks Done But Isn't" audit
 
+**v1.1 — Architecture cleanup** (post-v1 refactor, no functional change)
+
+- [ ] **Phase 8: Flatten entrypoints/ → api/** — Move HTTP routes + FastStream consumer under `src/<svc>/api/`; delete `entrypoints/`
+- [ ] **Phase 9: UoW redesign + Repository removal** — Metrikus-style abstract+postgres UoW; selectors absorb reads; interactors use UoW directly; `BetRepository` deleted
+- [ ] **Phase 10: Shared-code consolidation** — Lift duplicated cross-service code (structlog wiring, request-id middleware, lifespan helpers, app-factory, engine factory) into a shared package
+
 ### Parallelization
 
 Phase 2 and Phase 3 can be developed in parallel after Phase 1 completes (no shared code; both unblocked by skeleton). Critical path is 1 → 2 → 5 → 6 → 7 (covers the Core Value). Phase 3 and Phase 4 are on the critical path of the read side (`GET /bets`, `GET /events`).
@@ -246,6 +252,59 @@ Plans:
 **Wave 5** *(blocked on Wave 4 completion)*
 - [x] 07-12-phase-gate-PLAN.md — full quality gate + planning ledger update (Wave 5)
 
+### Phase 8: Flatten entrypoints/ → api/
+**Goal**: HTTP routers and the FastStream RabbitMQ router live in `src/<svc>/api/` for both services; the `entrypoints/` package is gone. Treat Rabbit as just another transport-layer API.
+**Depends on**: Phase 7 (closes v1.0 baseline)
+**Milestone**: v1.1
+**Requirements**: REFACTOR-01, REFACTOR-05
+**Success Criteria** (what must be TRUE):
+  1. `src/bet_maker/entrypoints/` and `src/line_provider/entrypoints/` do not exist (the directories are deleted, not just emptied); `find src -type d -name entrypoints` returns nothing.
+  2. `src/bet_maker/api/` and `src/line_provider/api/` contain all HTTP route modules (`bets.py`, `events.py`, `health.py`) AND the FastStream `messaging.py` consumer (bet_maker only) plus their `__init__.py` exporting routers; route imports across the codebase (`from <svc>.api.X import router`) resolve without legacy `entrypoints` references.
+  3. `lifespan.py` and `middleware.py` are relocated to a stable location agreed during discuss-phase (likely `src/<svc>/app/` or kept at `src/<svc>/` root next to `app.py`) and `app.py` wires them from the new location without dead imports.
+  4. v1.0 test suite stays green (355+ tests, no skips/xfails added); `mypy --strict src` reports zero errors; `ruff check src tests` clean; coverage gate ≥85% still holds (REFACTOR-05).
+  5. `tests/audit/test_static.py` and any other static audit referencing `entrypoints/` paths are updated in lockstep so the audit fails on regressions, not on the new layout.
+**Pitfalls this phase prevents**:
+  - **Stale import paths**: `git grep -E 'from (bet_maker|line_provider)\.entrypoints'` must return 0 hits after the move.
+  - **Hidden Alembic / Dockerfile / docker-compose path leaks**: `command: ["python","-m","<svc>"]` already abstracts the entry; verify Dockerfile + alembic env.py + CI workflow do not hardcode `entrypoints/`.
+  - **RabbitRouter wiring drift**: `app.include_router(messaging_router)` lives in `app.py` exactly as before — only the import path changes; AsyncAPI docs at `/asyncapi` still resolve.
+**Plans:** TBD
+
+### Phase 9: UoW redesign + Repository removal
+**Goal**: `AsyncUnitOfWork` becomes an abstract contract + concrete Postgres implementation modeled on `~/Interexy/Metrikus/metrikus-app/api_common/unit_of_work/`; interactors take `uow: AsyncUnitOfWork` as a DI parameter and access the session only through `uow.session`. The `repositories/` layer is removed entirely — reads move into `selectors/` (thin SQL/in-memory wrappers, no commit/flush) and writes move into `interactors/` directly.
+**Depends on**: Phase 8 (cleaner layout makes the move-targets stable)
+**Milestone**: v1.1
+**Requirements**: REFACTOR-02, REFACTOR-03, REFACTOR-05
+**Success Criteria** (what must be TRUE):
+  1. `src/bet_maker/facades/uow.py` (or `src/bet_maker/uow/`) exports `AbstractUnitOfWork` (ABC or Protocol — locked in discuss-phase) AND a concrete `PostgresUnitOfWork`; the abstract type is what interactors and tests depend on (`uow: AbstractUnitOfWork`), the concrete is what the FastAPI `Depends` provider returns.
+  2. `async with uow:` manages a single transaction; `uow.session` is the only session handle interactors touch; no interactor opens an `AsyncSession` directly and no module-level sessionmaker leaks into interactor signatures. `git grep -E 'async_sessionmaker|AsyncSession' src/bet_maker/interactors src/bet_maker/selectors` returns zero hits.
+  3. `src/bet_maker/repositories/` does not exist; `git grep 'class BetRepository'` returns zero hits across `src/` and `tests/`. `BetRepository.add` is absorbed by the relevant write interactors (`place_bet`, `settle_bets_for_event`, `cancel_bets_for_event`); `BetRepository.get_*` methods migrate to `selectors/` (e.g. `selectors/get_pending_locked.py`, `selectors/get_pending_event_ids.py`).
+  4. `tests/audit/test_static.py::test_repositories_use_for_update_skip_locked` is either deleted or replaced by an equivalent interactor-level audit (e.g. asserting `with_for_update(skip_locked=True)` lives in `selectors/get_pending_locked.py`); the static audit remains a regression net, just at the new seam.
+  5. v1.0 behavioural surface unchanged: 355+ tests stay green, mypy strict clean, ruff clean, coverage ≥85% (REFACTOR-05); `POST /bet` / `GET /bets` / consumer / reconciler all produce byte-identical responses on the e2e fixture.
+**Pitfalls this phase prevents**:
+  - **Intermediate half-broken state**: doing UoW redesign and Repository removal in one phase avoids the otherwise-mandatory "old UoW + new selectors" hybrid that breaks on every test run.
+  - **Hidden session leaks**: `AbstractUnitOfWork.session` is the only public knob; tests cannot accidentally bypass it because `BetRepository` no longer exists.
+  - **FOR UPDATE SKIP LOCKED regression**: must explicitly carry the `with_for_update(skip_locked=True)` invariant from `BetRepository.get_pending_locked` into its new home in `selectors/` and keep the static-audit hook (or the equivalent integration test) pointing at the new file.
+  - **DI contract drift**: every interactor signature changes from positional `repo`/`session` arg to `uow: AbstractUnitOfWork`; route layer's `Annotated[AbstractUnitOfWork, Depends(get_uow)]` is the single seam to update.
+**Plans:** TBD
+
+### Phase 10: Shared-code consolidation
+**Goal**: Cross-service near-duplicates (structlog wiring, request-id middleware with the A7 double-clear pattern, FastAPI app-factory boilerplate, lifespan helpers, SQLAlchemy async engine/sessionmaker factory, AMQP message schemas) live in a single shared package that both `bet_maker` and `line_provider` import; no copy-paste twin files remain. Exact list of consolidation targets is locked in discuss-phase.
+**Depends on**: Phase 9 (interactor/selector/UoW shape settled — shared boundaries don't keep moving)
+**Milestone**: v1.1
+**Requirements**: REFACTOR-04, REFACTOR-05
+**Success Criteria** (what must be TRUE):
+  1. A shared package (likely `src/shared/` or an extension of the existing `src/config/`; final name fixed in discuss-phase) exposes: `configure_structlog`, `RequestContextMiddleware`, app-factory helper, lifespan helpers (e.g. `make_postgres_lifespan_layer`), `create_engine_and_sessionmaker`, and the cross-service AMQP schema (`EventFinishedMessage`) as a single source of truth — no longer duplicated under `bet_maker/schemas/messages.py` and `line_provider/schemas/messages.py`.
+  2. `diff src/bet_maker/<file> src/line_provider/<file>` for any candidate file identified in discuss-phase either returns empty (both import from shared) or returns only intentional service-specific lines (documented in discuss CONTEXT.md).
+  3. Both services boot identically via `docker compose up`; `/health` on both still returns 200; `GET /events` proxy through bet-maker → line-provider still works; reconciler + consumer still settle bets — all v1.0 e2e tests stay green (REFACTOR-05).
+  4. `mypy --strict` continues to pass with the new package included (`packages = ["src/bet_maker", "src/line_provider", "src/shared"]` in pyproject `[tool.hatch.build.targets.wheel]`); no new `# type: ignore` or `# noqa` over the v1.0 baseline (REFACTOR-05).
+  5. Coverage gate ≥85% holds across all three packages combined; new shared modules either inherit coverage from existing tests or get dedicated thin unit tests (no shared module ships uncovered).
+**Pitfalls this phase prevents**:
+  - **Service-coupling regression**: shared package must not import from `bet_maker` or `line_provider` (one-way dep); enforce via a static audit test in `tests/audit/test_static.py` (`from bet_maker` / `from line_provider` inside `src/shared/` returns 0 hits).
+  - **AMQP schema drift**: a single `EventFinishedMessage` class is the single source of truth; v1.0 contract test that compared the two duplicate schemas byte-for-byte is replaced by a simpler assertion that both services import the same class object.
+  - **Hatch / pyproject packaging miss**: `pyproject.toml` `[tool.hatch.build.targets.wheel] packages` list must include the new shared dir, otherwise editable install fails silently for the shared package.
+  - **Late discovery of incompatible duplication**: discuss-phase locks the list of consolidation candidates BEFORE coding, so the phase doesn't snowball into a service-rewrite.
+**Plans:** TBD
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -253,13 +312,17 @@ Plans:
 | 1. Skeleton + Infrastructure | 7/7 | Complete | 2026-05-14 |
 | 2. line-provider domain | 7/7 | Complete | 2026-05-15 |
 | 3. bet-maker domain (DB) | 9/9 | Complete | 2026-05-15 |
-| 4. bet-maker HTTP integration with line-provider | 0/? | Not started | - |
-| 5. RabbitMQ integration | 0/? | Not started | - |
+| 4. bet-maker HTTP integration with line-provider | 9/9 | Complete | 2026-05-17 |
+| 5. RabbitMQ integration | 10/10 | Complete | 2026-05-18 |
 | 6. Reconciliation job | 11/11 | Complete   | 2026-05-18 |
 | 7. Polish + Documentation | 12/12 | Complete   | 2026-05-18 |
+| 8. Flatten entrypoints/ → api/ | 0/? | Not started | - |
+| 9. UoW redesign + Repository removal | 0/? | Not started | - |
+| 10. Shared-code consolidation | 0/? | Not started | - |
 
 ---
 *Roadmap created: 2026-05-13 from REQUIREMENTS.md + ARCHITECTURE.md*
-*Coverage: 42/42 v1 requirements mapped (no orphans)*
+*Coverage: 42/42 v1 requirements mapped (no orphans); v1.1 +5/+5 (REFACTOR-01..05) → 10 phases total*
+*Milestone v1.1 phases appended: 2026-05-18 (Phases 8-10, architecture cleanup, no functional change; behavioural invariants enforced via REFACTOR-05 in every phase)*
 *Phase 1 plans created: 2026-05-13 (7 plans across 4 waves)*
 *Phase 3 plans created: 2026-05-15 (9 plans across 6 waves)*

@@ -170,10 +170,15 @@
 | DOC-02 | Phase 7 | Complete (Plan 07-10) |
 | DOC-03 | Phase 7 | Complete (Plan 07-10) |
 | DOC-04 | Phase 7 | Complete (Plan 07-10) |
+| REFACTOR-01 | Phase 8 | Pending |
+| REFACTOR-02 | Phase 9 | Pending |
+| REFACTOR-03 | Phase 9 | Pending |
+| REFACTOR-04 | Phase 10 | Pending |
+| REFACTOR-05 | Phases 8, 9, 10 (cross-cutting quality bar) | Pending |
 
 **Coverage:**
-- v1 requirements: 43 total
-- Mapped to phases: 43 (100%)
+- v1 requirements: 43 total — mapped to phases 1-7 (100%)
+- v1.1 requirements: 5 total (REFACTOR-01..05) — mapped to phases 8-10 (100%); REFACTOR-05 is a cross-cutting quality bar asserted in every v1.1 phase
 - Unmapped: 0
 
 **Per-phase distribution:**
@@ -184,9 +189,13 @@
 - Phase 5 (RabbitMQ integration): 5 requirements (LP-06, BM-09..11, QA-06)
 - Phase 6 (Reconciliation): 2 requirements (BM-12, QA-08)
 - Phase 7 (Polish + Documentation): 6 requirements (DOC-01..04, QA-01, QA-09)
+- Phase 8 (Flatten entrypoints/ → api/): REFACTOR-01 + REFACTOR-05 (quality bar)
+- Phase 9 (UoW redesign + Repository removal): REFACTOR-02, REFACTOR-03 + REFACTOR-05 (quality bar)
+- Phase 10 (Shared-code consolidation): REFACTOR-04 + REFACTOR-05 (quality bar)
 
 Note: QA-01 (`mypy --strict`) is **enforced from Phase 1** (CI gate established with QA-10) but **owned** by Phase 7 because final-pass verification of zero strict-mode errors across both packages is the polish-phase deliverable.
 
 ---
 *Requirements defined: 2026-05-13*
 *Last updated: 2026-05-18 after Phase 7 completion (plans 07-01..07-12 — DOC-01..04, QA-01, QA-09 complete; milestone v1 done)*
+*v1.1 roadmap appended: 2026-05-18 (REFACTOR-01..05 → Phases 8-10; REFACTOR-05 cross-cutting)*
