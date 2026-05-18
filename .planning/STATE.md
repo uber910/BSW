@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-18T11:55:00.778Z"
+last_updated: "2026-05-18T11:58:23.734Z"
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 53
-  completed_plans: 50
-  percent: 94
+  completed_plans: 51
+  percent: 96
 ---
 
 # Project State: BSW Betting System
@@ -80,6 +80,7 @@ Plan: 2 of 11
 | Plan 04-08 duration | ~5 min (3 tasks: entrypoints/api/events.py NEW with GET /events 200/503 + static detail / app.py wired events router after bets / tests/bet_maker/test_events_routes.py NEW with D-16 two-FastAPI-apps integration + 6 tests in 3 classes; 3 files modified — 2 new; 147 bet_maker passed +6 new, 242 total passing; LP POST body drops state per EventCreate extra=forbid) |
 | Plan 04-09 duration | ~5 min (2 tasks TDD: src/bet_maker/entrypoints/api/bets.py extended with `except LineProviderUnavailable -> 503` clause BEFORE `except EventNotBettable -> 422` (D-08) + LineProviderUnavailable import + docstring update / tests/bet_maker/test_bet_routes.py extended with TestPostBet503 class — 2 tests via app.dependency_overrides[get_event_lookup] + _RaisingLookup with try/finally cleanup + GET /bets count-before/after PG-no-write assertion + ladder ordering proof; 2 files modified; 149 bet_maker passed +2 new, 244 total passing; BM-04 fully closed) |
 | Phase 06-reconciliation-job P08 | 10m | 2 tasks | 5 files |
+| Plan 06-09 duration | ~5 min (2 tasks, 2 files — 5 integration tests: SC#4 consumer-race x2 + SC#1 drop-publish x3) |
 
 ## Accumulated Context
 
@@ -137,10 +138,10 @@ Plan: 2 of 11
 
 ### Last Session
 
-- **Started:** 2026-05-17 (Plan 04-09 execute session)
-- **Ended:** 2026-05-17 (Plan 04-09 closed; Phase 4 implementation 9/9 complete)
-- **Activity:** Executed 04-09-PLAN.md (Wave 6 — POST /bet 503 path; parallel branch with Plan 04-08). Task 1: extended `src/bet_maker/entrypoints/api/bets.py` — added `from bet_maker.facades.line_provider_client import LineProviderUnavailable` import (alphabetical between `facades.deps` and `interactors.place_bet`); inserted new `except LineProviderUnavailable as exc: raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="event validation unavailable: line-provider unreachable") from exc` clause BEFORE the existing `except EventNotBettable -> 422` clause (D-08 ladder order); docstring updated with D-08 + Pitfall 7 references. Task 2: extended `tests/bet_maker/test_bet_routes.py` — added module-top imports `FastAPI`, `EventSnapshot`, `LineProviderUnavailable`; inserted `TestPostBet503` class between `TestPostBetEventNotBettable` and `TestGetBets` — 2 tests via `app.dependency_overrides[get_event_lookup] = lambda: _RaisingLookup()` (try/finally cleanup with `pop(get_event_lookup, None)`); `_RaisingLookup` implements `EventLookup` Protocol and raises `LineProviderUnavailable(reason=...)` on every `get_event(event_id)` call; `test_post_bet_503_when_line_provider_unavailable` asserts 503 + exact static detail + count_before == count_after (GET /bets snapshot) proving NO PG write on validation-failure path (T-04-09-PartialWrite mitigation); `test_post_bet_503_ladder_precedes_422` proves the exception ladder ordering invariant (LineProviderUnavailable caught BEFORE EventNotBettable). Source-line check: LineProviderUnavailable clause at line 48 < EventNotBettable clause at line 53 (D-08 verified). Verify: `uv run pytest tests/bet_maker/test_bet_routes.py::TestPostBet503 -q -x` → 2 passed; `uv run pytest tests/bet_maker -q -x` → 149 passed (+2 from Plan 04-08's 147); `uv run pytest -q` → 244 passed (+2 from Plan 04-08's 242); `uv run mypy src` clean (71 source files); `uv run ruff check` clean. Two TDD commits: 4d6d73e (feat — route exception ladder), 9869ae7 (test — TestPostBet503). Rule 1 auto-fix: ruff PLW0108 on `lambda: _RaisingLookup()` — `# noqa: PLW0108` added on both lambda lines (preserves verbatim plan pattern + acceptance grep `dependency_overrides\[get_event_lookup\]` returning 2).
-- **Outcome:** Plan 04-09 complete (32/32 plans). Phase 4 implementation done — all 9 plans across 6 waves landed. BM-04 fully closed. Phase awaits phase-gate review.
+- **Started:** 2026-05-18 (Plan 06-09 execute session)
+- **Ended:** 2026-05-18 (Plan 06-09 closed; 5 integration tests green)
+- **Activity:** Executed 06-09-PLAN.md (Wave 4 — integration tests: SC#4 consumer-race + SC#1 drop-publish). Task 1: replaced Wave-0 stub `tests/bet_maker/integration/test_reconciler_consumer_race.py` with 2 real tests — `TestReconcilerConsumerRace::test_concurrent_settle_consumer_and_reconciler_no_double_update` (asyncio.gather settle+_reconcile_event on same event_id, all 3 bets land WON) + `test_for_update_skip_locked_one_winner_one_noop` (asyncio.gather settle+cancel → [0,3] count split — strong SKIP LOCKED proof). Task 2: replaced Wave-0 stub `tests/bet_maker/integration/test_reconciler_drop_publish.py` with 3 real tests — respx-mocked LP returning FINISHED_WIN/404/NEW → reconciler settles to WON/cancels to CANCELLED/skips PENDING. Commit 8c54913. 5 passed `uv run pytest tests/bet_maker/integration/`; mypy + ruff clean.
+- **Outcome:** Plan 06-09 complete. SC#4 (FOR UPDATE SKIP LOCKED race) and SC#1 fast-path (drop-publish recovery) proven on real PG.
 
 ### Next Session
 
