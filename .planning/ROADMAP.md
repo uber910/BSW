@@ -295,7 +295,7 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — Create selectors/get_pending_locked + get_pending_event_ids + retarget audit (Wave 1)
 - [x] 09-02-PLAN.md — Introduce uow/ package (Abstract+Postgres), rewire interactors/messaging/reconciler + all consumer tests, delete facades/uow.py (Wave 2)
-- [ ] 09-03-PLAN.md — Delete src/bet_maker/repositories/ + tests/bet_maker/test_repositories.py + phase gate (Wave 3)
+- [x] 09-03-PLAN.md — Delete src/bet_maker/repositories/ + tests/bet_maker/test_repositories.py + phase gate (Wave 3)
 
 ### Phase 10: Shared-code consolidation
 **Goal**: Cross-service near-duplicates (structlog wiring, request-id middleware with the A7 double-clear pattern, FastAPI app-factory boilerplate, lifespan helpers, SQLAlchemy async engine/sessionmaker factory, AMQP message schemas) live in a single shared package that both `bet_maker` and `line_provider` import; no copy-paste twin files remain. Exact list of consolidation targets is locked in discuss-phase.

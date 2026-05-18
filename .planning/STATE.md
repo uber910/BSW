@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Architecture cleanup
-status: executing
-last_updated: "2026-05-18T21:33:49.384Z"
+status: verifying
+last_updated: "2026-05-18T21:43:07.439Z"
 last_activity: 2026-05-18
 progress:
   total_phases: 10
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 71
-  completed_plans: 70
-  percent: 99
+  completed_plans: 71
+  percent: 100
 ---
 
 # Project State: BSW Betting System
@@ -29,7 +29,7 @@ progress:
 
 Phase: 09 (uow-repository-removal) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-18
 
 ## Performance Metrics
@@ -76,6 +76,7 @@ Last activity: 2026-05-18
 | Plan 06-09 duration | ~5 min (2 tasks, 2 files — 5 integration tests: SC#4 consumer-race x2 + SC#1 drop-publish x3) |
 | Phase 09 P01 | 10m | - tasks | - files |
 | Phase 09 P02 | ~7m39s | 3 tasks | 17 files |
+| Phase 09 P03 | ~6 min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,7 @@ Last activity: 2026-05-18
 - [Phase ?]: Phase 9 Plan 01 (D-05): selectors accept AsyncSession directly — no UoW knowledge — unifying contract with existing get_bet / list_bets.
 - [Phase ?]: Phase 9 Plan 01 (D-08): R3 static audit (with_for_update(skip_locked=True)) retargeted from repositories/bets.py to selectors/get_pending_locked.py in the same commit as the new selector — Pitfall #5 (audit-reads-nonexistent-path window) avoided.
 - [Phase ?]: Plan 09-02: tasks 1+2+3 committed jointly because pre-commit mypy --strict forbids the planned mid-state where production code still imports the deleted bet_maker.facades.uow module
+- [Phase 09]: Phase 9 closed — BetRepository deleted; 353 tests at 94.54% coverage; mypy strict + ruff clean; type:ignore -4 vs Phase 8 baseline; REFACTOR-02 + REFACTOR-05 closed — Plan 09-03: src/bet_maker/repositories/ + tests/bet_maker/test_repositories.py removed wholesale; tests/audit/test_static.py docstring scrubbed to drop the literal 'BetRepository' token so the success-criterion grep matrix returns 0 hits. The 8 deleted tests targeted a class that no longer exists; replacement coverage lives in test_uow.py, test_place_bet.py, and selectors/test_get_pending_locked.py. D-09 honored: no new 'no repositories dir' static audit added. Docker-compose smoke (POST /bet, GET /bets, consumer settle, reconciler settle, /health) surfaced as checkpoint:human-verify for the operator.
 
 ### Open Todos
 
