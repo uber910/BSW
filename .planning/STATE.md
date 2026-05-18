@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Architecture cleanup
 status: executing
-last_updated: "2026-05-18T21:00:18.481Z"
-last_activity: 2026-05-18 -- Phase 09 planning complete
+last_updated: "2026-05-18T21:19:57.186Z"
+last_activity: 2026-05-18
 progress:
   total_phases: 10
   completed_phases: 8
   total_plans: 71
-  completed_plans: 68
-  percent: 96
+  completed_plans: 69
+  percent: 97
 ---
 
 # Project State: BSW Betting System
@@ -23,14 +23,14 @@ progress:
 
 **Core Value:** Ставка никогда не остаётся в статусе PENDING после того, как её событие завершилось.
 
-**Current focus:** Phase 08 — flatten-api
+**Current focus:** Phase 09 — uow-repository-removal
 
 ## Current Position
 
-Phase: 09
-Plan: Not started
+Phase: 09 (uow-repository-removal) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-05-18 -- Phase 09 planning complete
+Last activity: 2026-05-18
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Last activity: 2026-05-18 -- Phase 09 planning complete
 | Plan 04-09 duration | ~5 min (2 tasks TDD: src/bet_maker/entrypoints/api/bets.py extended with `except LineProviderUnavailable -> 503` clause BEFORE `except EventNotBettable -> 422` (D-08) + LineProviderUnavailable import + docstring update / tests/bet_maker/test_bet_routes.py extended with TestPostBet503 class — 2 tests via app.dependency_overrides[get_event_lookup] + _RaisingLookup with try/finally cleanup + GET /bets count-before/after PG-no-write assertion + ladder ordering proof; 2 files modified; 149 bet_maker passed +2 new, 244 total passing; BM-04 fully closed) |
 | Phase 06-reconciliation-job P08 | 10m | 2 tasks | 5 files |
 | Plan 06-09 duration | ~5 min (2 tasks, 2 files — 5 integration tests: SC#4 consumer-race x2 + SC#1 drop-publish x3) |
+| Phase 09 P01 | 10m | - tasks | - files |
 
 ## Accumulated Context
 
@@ -114,6 +115,8 @@ Last activity: 2026-05-18 -- Phase 09 planning complete
 - **2026-05-17 (Plan 04-01)**: Phase 4 Wave 1 — doc-sync per D-01 (TZ pages 2-3 verified: zero "кэш"/"cache"/"TTL" tokens, only "допускается небольшое отставание в свежести"). REQUIREMENTS.md BM-04 line rewritten in-place with inline citation `Per D-01 (Phase 4 CONTEXT.md): TTL cache не реализуется в P4`. ROADMAP.md Phase 4 Goal (line 114) — dropped `+ tiny TTL cache`, replaced with `retry (tenacity)` and inline D-01 citation. ROADMAP.md Phase 4 Success Criterion #1 (line 118) — replaced `cached via TTL dict` wording with `свежий результат каждого запроса; отставание = длительность одного HTTP-вызова к LP плюс retry-backoff` and inline D-01 citation. pyproject.toml `[dependency-groups] dev` array gained `respx>=0.22,<0.23`; uv.lock regenerated (respx 0.22.0 + transitives). `uv sync --frozen` clean; `uv run pytest -q` → 193 passed (baseline preserved, no regression); `uv run ruff check` clean; `uv run mypy src` clean. Three atomic commits (3f17b49 REQUIREMENTS sync, 45e300d ROADMAP sync, 7a257d5 respx dev-dep). Mirrors P2 Plan 02-01 / P3 Plan 03-01 first-task doc-sync pattern. BM-04 still Pending — closes in Plan 04-08 (GET /events route).
 - [Phase 03]: 2026-05-15 (Plan 03-09): Phase 3 closed — bet_maker domain (DB) — 9 plans across 6 waves, 9 requirements complete (BM-01/BM-02/BM-03/BM-05/BM-06/BM-07/BM-08/BM-13/QA-07). Stack: SQLAlchemy 2.0.49 async + asyncpg 0.31.0 + Alembic 1.18.4 + tenacity 9.1.4 + testcontainers 4.x. Архитектура: models/bet.py (Bet ORM, PG-ENUM bet_status, Numeric(12,2)), schemas/bets.py (BetCreate Annotated Decimal AfterValidator + BetRead extra='forbid' + from_attributes=True), schemas/events.py (EventState duplicated D-12), helpers/money.py (quantize_amount ROUND_HALF_UP), helpers/status.py (P5 stub), repositories/bets.py (BetRepository.add no-commit), facades/uow.py (AsyncUnitOfWork over async_sessionmaker.begin), facades/event_lookup.py (EventLookup Protocol + EventSnapshot frozen + StubEventLookup), facades/deps.py (6 providers + 6 Annotated aliases), infrastructure/db/engine.py (D-16 params + expire_on_commit=False), infrastructure/db/pings.py (wait_for_postgres tenacity + ping_postgres bool), interactors/place_bet.py (3-branch EventNotBettable BEFORE UoW open + model_validate inside session for A1), selectors/list_bets.py (ORDER BY created_at DESC) + get_bet.py (scalar_one_or_none → BetRead | None), entrypoints/api/bets.py (POST /bet 201/422 + GET /bets + GET /bet/{id} 200/404 + EventNotBettable→422 with detail), entrypoints/api/health.py REPLACED (per-request SELECT 1 → 200 with checks.postgres="ok" or 503 degraded), entrypoints/lifespan.py EXTENDED (engine+sessionmaker+wait_for_postgres tenacity 10 attempts+StubEventLookup+app.state pins+finally engine.dispose). Migration: alembic/versions/20260515_0001_bets_initial.py (ENUM.create checkfirst=True + create_type=False — verified idempotent через 3 successive command.upgrade calls в test_alembic.py + manual docker compose rehearsal approved). Final phase-gate (Plan 03-09): `uv run pytest -q` → 193 passed; `uv run pytest --cov=src/bet_maker --cov-fail-under=80` → 94.28%; `uv run pytest --cov=src/line_provider --cov-fail-under=85` → 96.42%; mypy strict 95 files clean; ruff check All checks passed; ruff format 98 files formatted. Phase 3 complete.
 - [Phase 02]: 2026-05-15 (Plan 02-05): Phase 2 Wave 3 first half — facades layer (EventBus Protocol + NoopEventBus + StoreDep/EventBusDep) and interactors layer (create_event + set_event_state with strict commit->publish ordering). EventBus Protocol structurally typed so NoopEventBus today / FakeEventBus in tests / RabbitEventBus in P5 all satisfy without inheritance. set_event_state: lock-free store.get_by_id -> is_transition_allowed (raises TransitionForbiddenError BEFORE mutation) -> store.update returns (new_event, previous_state) atomically under asyncio.Lock -> publish-gate previous_state == EventState.NEW AND new_state in _TERMINAL_TO_ROUTING. previous_state is the post-mutation atomic observation — closes Pitfall 5 TOCTOU (concurrent NEW->FINISHED_WIN + NEW->FINISHED_LOSE on same id publishes exactly once). FakeEventBus.fail=True records THEN raises, proving D-12 store.update commits BEFORE event_bus.publish (Anti-Pattern 2 mitigation). occurred_at=new_event.deadline (atomic under lock, stable in tests). 7 atomic commits across 3 task-pairs: 51b97fb/e6c77b9 facades, 4452263/b950b7f create_event, a6efc85/467ee5b set_event_state, plus 81f807e style import re-sort. Full suite 64 passed (49 baseline + 15 new), mypy strict 39 files clean, ruff All checks passed. Three auto-fixes folded (mypy func-returns-value, ruff SIM105 contextlib.suppress, ruff I001 RED-then-GREEN drift). LP-01/LP-03/LP-05/LP-08 still partial — full closure in Plan 02-07 routes.
+- [Phase ?]: Phase 9 Plan 01 (D-05): selectors accept AsyncSession directly — no UoW knowledge — unifying contract with existing get_bet / list_bets.
+- [Phase ?]: Phase 9 Plan 01 (D-08): R3 static audit (with_for_update(skip_locked=True)) retargeted from repositories/bets.py to selectors/get_pending_locked.py in the same commit as the new selector — Pitfall #5 (audit-reads-nonexistent-path window) avoided.
 
 ### Open Todos
 

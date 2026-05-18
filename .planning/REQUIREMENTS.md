@@ -171,7 +171,7 @@
 | DOC-03 | Phase 7 | Complete (Plan 07-10) |
 | DOC-04 | Phase 7 | Complete (Plan 07-10) |
 | REFACTOR-01 | Phase 8 | Complete |
-| REFACTOR-02 | Phase 9 | Pending |
+| REFACTOR-02 | Phase 9 | In Progress (Plan 01 done — selectors seam introduced; Plans 02-03 pending) |
 | REFACTOR-03 | Phase 9 | Pending |
 | REFACTOR-04 | Phase 10 | Pending |
 | REFACTOR-05 | Phases 8, 9, 10 (cross-cutting quality bar) | Phase 8 met — pending Phases 9, 10 |
