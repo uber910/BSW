@@ -5,7 +5,7 @@
 **Goal:** Привести архитектуру обоих сервисов к единому, более идиоматичному виду после первой итерации — без изменений в UX/функциональности.
 
 **Target deliverables:**
-- `entrypoints/` плоско переезжает в `api/` (HTTP-роуты + FastStream consumer'ы — Rabbit это тоже API)
+- ~~`entrypoints/` плоско переезжает в `api/` (HTTP-роуты + FastStream consumer'ы — Rabbit это тоже API)~~ — Validated in Phase 8
 - Слой Repository удалён; вся I/O-логика разделена на `selectors/` (чтение) и `interactors/` (запись)
 - UnitOfWork-паттерн приведён к виду как в `~/Interexy/Metrikus/metrikus-app/api_common/unit_of_work/` и передаётся как DI-зависимость во все interactor'ы
 - Дублирующийся код между `bet_maker` и `line_provider` (lifespan, request-id middleware, structlog wiring, БД-движок-фабрика, схемы сообщений) вынесен в shared-пакет
@@ -102,7 +102,7 @@
 | RabbitMQ + FastStream для межсервисного обмена | Надёжность (durable + ack + DLQ), декларативный FastStream, естественная асинхронность | — Pending |
 | Reconciliation job в bet-maker | Закрывает требование «ставка не зависает» если сообщение потеряно | — Pending |
 | Unit of Work + Repository pattern для PG | Lazy commits, единая транзакция на бизнес-операцию, тестируемость | — Pending |
-| Слоистая архитектура (entrypoints / facades / interactors / selectors / helpers) | Чёткое разделение ответственности, CQRS lite (interactors=write use cases, selectors=read-only queries), helpers — чистые функции без сайд-эффектов, удобное unit-тестирование | — Pending |
+| Слоистая архитектура (api / facades / interactors / selectors / helpers) | Чёткое разделение ответственности, CQRS lite (interactors=write use cases, selectors=read-only queries), helpers — чистые функции без сайд-эффектов, удобное unit-тестирование | Validated in Phase 8 (entrypoints/ → api/) |
 | Монорепо, src/ layout, 2 пакета | `src/line_provider/` + `src/bet_maker/`, общий pyproject и dev-deps, меньше дублирования | — Pending |
 | uv как менеджер пакетов | Современный, быстрый, lockfile, замена pip+venv+pip-tools | — Pending |
 | structlog для логов | JSON-логи с контекстом, production-style — показывает зрелость | — Pending |
@@ -130,4 +130,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 — milestone v1.0 closed (7/7 phases, 355 tests); milestone v1.1 "Architecture cleanup" opened for post-v1 refactor.*
+*Last updated: 2026-05-18 — Phase 8 closed (entrypoints/ → api/ flattened in both services; 356 tests, 94.58% coverage, mypy strict clean).*
