@@ -40,7 +40,7 @@ class RabbitEventBus:
 
     Implements the EventBus Protocol structurally — no inheritance.
     Constructed in lifespan with the FastStream RabbitBroker from
-    line_provider.entrypoints.messaging.router.broker.
+    line_provider.api.messaging.router.broker.
 
     correlation_id is propagated from EventFinishedMessage.correlation_id
     (set by the interactor from the HTTP request's request_id middleware

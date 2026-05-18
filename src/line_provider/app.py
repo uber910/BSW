@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from line_provider.entrypoints.api import events, health
-from line_provider.entrypoints.lifespan import lifespan
-from line_provider.entrypoints.messaging import router as rabbit_router
-from line_provider.entrypoints.middleware import RequestContextMiddleware
+from line_provider.api import events, health
+from line_provider.api.messaging import router as rabbit_router
+from line_provider.lifespan import lifespan
+from line_provider.middleware import RequestContextMiddleware
 
 
 def build_app() -> FastAPI:

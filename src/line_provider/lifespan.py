@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from faststream.rabbit.schemas import ExchangeType, RabbitExchange
 
 from config.logging import configure_structlog
-from line_provider.entrypoints.messaging import router as rabbit_router
+from line_provider.api.messaging import router as rabbit_router
 from line_provider.facades.event_bus import RabbitEventBus
 from line_provider.infrastructure.store.in_memory import InMemoryEventStore
 from line_provider.settings.config import LineProviderSettings
