@@ -16,7 +16,6 @@ import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
 
-from line_provider.facades.event_bus import NoopEventBus
 from line_provider.infrastructure.store.in_memory import InMemoryEventStore
 from line_provider.schemas.events import Event, EventState
 from tests.line_provider._fakes import FakeEventBus
@@ -45,10 +44,15 @@ def _create_body(coefficient: str = "1.50", deadline: str | None = None) -> dict
 class TestWiring:
     """LP-03/D-14: lifespan + router wiring smoke tests."""
 
-    async def test_lifespan_wires_event_store_and_bus(self, app: FastAPI) -> None:
-        """D-14: lifespan creates InMemoryEventStore + NoopEventBus in app.state."""
+    async def test_lifespan_wires_event_store(self, app: FastAPI) -> None:
+        """D-14: lifespan creates InMemoryEventStore in app.state.
+
+        Plan 05-07: NoopEventBus replaced with RabbitEventBus in production lifespan;
+        autouse _reset_event_store fixture replaces bus with FakeEventBus for test
+        isolation, so only the event_store type is verified here.
+        Production RabbitEventBus wiring is verified in test_lifespan.py::TestLineProviderLifespan.
+        """
         assert isinstance(app.state.event_store, InMemoryEventStore)
-        assert isinstance(app.state.event_bus, NoopEventBus)
 
     async def test_app_registers_events_router(self, app: FastAPI) -> None:
         """LP-03: build_app() includes events.router alongside health.router."""
