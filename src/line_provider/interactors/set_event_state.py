@@ -13,12 +13,13 @@ from line_provider.infrastructure.store.in_memory import (
     EventNotFoundError,
     InMemoryEventStore,
 )
+from line_provider.messaging.routing import EVENT_FINISHED_LOSE, EVENT_FINISHED_WIN
 from line_provider.schemas.events import Event, EventState
 from line_provider.schemas.messages import EventFinishedMessage, EventTerminalState
 
 _TERMINAL_TO_ROUTING: dict[EventState, str] = {
-    EventState.FINISHED_WIN: "event.finished.win",
-    EventState.FINISHED_LOSE: "event.finished.lose",
+    EventState.FINISHED_WIN: EVENT_FINISHED_WIN,
+    EventState.FINISHED_LOSE: EVENT_FINISHED_LOSE,
 }
 
 
