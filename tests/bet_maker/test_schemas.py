@@ -217,10 +217,18 @@ class TestEnums:
         """
         assert {m.value for m in EventState} == {m.value for m in LpEventState}
 
-    def test_betstatus_has_three_members(self) -> None:
-        """D-20: BetStatus = PENDING/WON/LOST as (str, Enum)."""
+    def test_betstatus_has_four_members(self) -> None:
+        """D-20 + D-03 (Phase 6): BetStatus = PENDING/WON/LOST/CANCELLED as (str, Enum).
+
+        CANCELLED value is lower-case per D-03 verbatim (distinct recovery status).
+        """
         members = {m.name: m.value for m in BetStatus}
-        assert members == {"PENDING": "PENDING", "WON": "WON", "LOST": "LOST"}
+        assert members == {
+            "PENDING": "PENDING",
+            "WON": "WON",
+            "LOST": "LOST",
+            "CANCELLED": "cancelled",
+        }
         assert all(isinstance(m.value, str) for m in BetStatus)
 
 

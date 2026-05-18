@@ -17,6 +17,7 @@ class BetStatus(str, Enum):
     PENDING -- bet placed, event not yet finished.
     WON -- event finished with the outcome the user bet on.
     LOST -- event finished with the opposite outcome.
+    CANCELLED -- recovery: bet flipped by reconciler when line-provider returns 404 (D-03 Phase 6).
 
     Settled by the RabbitMQ consumer (P5) or reconciliation job (P6).
     Python 3.10: `(str, Enum)` instead of `StrEnum` (3.11+); P2 D-20 locked.
@@ -25,6 +26,7 @@ class BetStatus(str, Enum):
     PENDING = "PENDING"
     WON = "WON"
     LOST = "LOST"
+    CANCELLED = "cancelled"
 
 
 Amount = Annotated[
