@@ -1,4 +1,3 @@
-ARG SERVICE
 ARG PYTHON_VERSION=3.10-slim-bookworm
 
 FROM python:${PYTHON_VERSION} AS builder
@@ -10,7 +9,7 @@ ENV PYTHONUNBUFFERED=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.14 /uv /usr/local/bin/uv
@@ -23,9 +22,6 @@ COPY src ./src
 RUN uv sync --frozen --no-dev
 
 FROM python:${PYTHON_VERSION} AS runtime
-
-ARG SERVICE
-ENV SERVICE=${SERVICE}
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -46,5 +42,3 @@ COPY --chown=app:app alembic.ini ./alembic.ini
 COPY --chown=app:app alembic ./alembic
 
 USER app
-
-CMD ["python", "-c", "import sys; sys.exit('SERVICE runtime command must be provided via docker-compose `command:` JSON-array (true exec-form). See Dockerfile comment near CMD.')"]

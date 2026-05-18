@@ -39,8 +39,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        SERVICE: line_provider
     command: ["python", "-m", "line_provider"]
     restart: unless-stopped
     stop_grace_period: 30s
@@ -69,8 +67,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        SERVICE: bet_maker
     command: ["python", "-m", "bet_maker"]
     restart: unless-stopped
     stop_grace_period: 30s
