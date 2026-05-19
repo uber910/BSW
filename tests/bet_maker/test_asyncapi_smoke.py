@@ -1,9 +1,9 @@
 """Smoke test: /asyncapi endpoint is exposed by FastStream RabbitRouter.
 
-D-10 / Pitfall 4 (RESEARCH.md): FastStream RabbitRouter auto-registers
-/asyncapi at its default URL when app.include_router(router) is called.
-A regression that comments out the include_router line would silently
-strip the endpoint — this smoke test catches that.
+FastStream RabbitRouter auto-registers /asyncapi at its default URL when
+app.include_router(router) is called. A regression that comments out the
+include_router line would silently strip the endpoint — this smoke test
+catches that.
 
 Content-type may be HTML (AsyncAPI rendering UI) or JSON depending on
 FastStream version; both are acceptable. The assertion is on status
@@ -21,7 +21,7 @@ class TestAsyncAPISmoke:
     """AsyncAPI endpoint smoke test — session loop for session-scoped client."""
 
     async def test_asyncapi_endpoint_returns_200(self, client: AsyncClient) -> None:
-        """D-10: /asyncapi must return 200 with non-empty body."""
+        """/asyncapi must return 200 with non-empty body."""
         response = await client.get("/asyncapi")
         assert response.status_code == 200, (
             f"GET /asyncapi returned {response.status_code} — "

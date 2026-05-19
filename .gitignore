@@ -40,3 +40,12 @@ htmlcov/
 # Alembic — versions are committed, but local-only sqlite snapshots are not
 *.sqlite3
 *.db
+
+# AI Tooling
+.claude/
+.serena/
+.planning/
+CLAUDE.md
+
+# PDF
+*.pdf

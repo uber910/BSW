@@ -1,4 +1,4 @@
-"""Lifespan tests for line-provider (Plan 05-07 / D-24).
+"""Lifespan tests for line-provider.
 
 Asserts: broker connect on startup, bsw.events exchange declared,
 RabbitEventBus pinned to app.state, broker.close on shutdown.

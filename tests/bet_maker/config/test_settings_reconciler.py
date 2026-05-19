@@ -1,9 +1,9 @@
-"""BetMakerSettings reconciler-field assertions (Plan 06-04 / BM-12 / D-09).
+"""BetMakerSettings reconciler-field assertions.
 
-Validates the two new fields (attempts + backoff_max_s) introduced for
-the reconciler HttpEventLookup profile. The third reconciler-related
-field (reconciliation_interval_s) was added in Phase 1 (Plan 01-04) and
-is exercised by existing tests/bet_maker/test_settings.py.
+Validates the two fields (attempts + backoff_max_s) used by the
+reconciler HttpEventLookup profile. The third reconciler-related field
+(reconciliation_interval_s) is exercised by
+``tests/bet_maker/test_settings.py``.
 """
 
 from __future__ import annotations

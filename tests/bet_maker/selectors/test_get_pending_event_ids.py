@@ -14,7 +14,7 @@ from bet_maker.selectors.get_pending_event_ids import get_pending_event_ids
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestGetPendingEventIds:
-    """BM-12: get_pending_event_ids -- DISTINCT event_ids with at least one PENDING bet."""
+    """get_pending_event_ids -- DISTINCT event_ids with at least one PENDING bet."""
 
     async def test_returns_distinct_event_ids_for_pending_only(
         self,

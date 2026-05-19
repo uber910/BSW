@@ -1,10 +1,10 @@
 """Unit tests for line_provider.helpers.state_machine.
 
-LP-08: state-machine forbids reverse transitions FINISHED_* -> NEW and cross
-FINISHED transitions; allowed: NEW -> FINISHED_WIN | FINISHED_LOSE plus
-no-op (current == new).
-D-08: 422 wording carries "state transition X->Y not allowed".
-D-09: no-op state is allowed (publish skipped at interactor level).
+The state machine forbids reverse transitions ``FINISHED_* -> NEW`` and
+cross-FINISHED transitions; allowed: ``NEW -> FINISHED_WIN |
+FINISHED_LOSE`` plus the no-op (``current == new``). The 422 wording
+carries "state transition X->Y not allowed". The no-op state is allowed
+(publish is skipped at the interactor level).
 """
 
 from __future__ import annotations
@@ -34,12 +34,12 @@ from line_provider.schemas.events import EventState
     ],
 )
 def test_is_transition_allowed_table(current: EventState, new: EventState, allowed: bool) -> None:
-    """LP-08: state-machine 3x3 truth table."""
+    """State-machine 3x3 truth table."""
     assert is_transition_allowed(current, new) is allowed
 
 
 def test_allowed_transitions_is_frozenset_with_two_entries() -> None:
-    """LP-08: ALLOWED_TRANSITIONS is immutable and has exactly two forward transitions."""
+    """ALLOWED_TRANSITIONS is immutable and has exactly two forward transitions."""
     assert isinstance(ALLOWED_TRANSITIONS, frozenset)
     assert len(ALLOWED_TRANSITIONS) == 2
     assert (EventState.NEW, EventState.FINISHED_WIN) in ALLOWED_TRANSITIONS
@@ -47,7 +47,7 @@ def test_allowed_transitions_is_frozenset_with_two_entries() -> None:
 
 
 def test_transition_forbidden_error_carries_states_and_message() -> None:
-    """D-08: TransitionForbiddenError preserves current/new + human-readable message."""
+    """TransitionForbiddenError preserves current/new + human-readable message."""
     err = TransitionForbiddenError(EventState.FINISHED_WIN, EventState.NEW)
     assert err.current == EventState.FINISHED_WIN
     assert err.new == EventState.NEW

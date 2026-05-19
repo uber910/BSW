@@ -1,12 +1,12 @@
 """Unit tests for bet_maker schemas + helpers/money.
 
-BM-05 / D-04: BetCreate.amount = Annotated[Decimal, Field(gt=0, max_digits=12,
-decimal_places=2), AfterValidator(quantize_amount)].
-BM-05 / D-19: Decimal serialization as string "10.00" (Pydantic v2 default,
-Pitfall A4 mitigation: tests compare strings, never floats).
-BM-06 / D-12: EventState duplicated from line_provider (value-parity).
-D-20 / P2 D-13: BetStatus is (str, Enum), not StrEnum (Python 3.10).
-D-30: helpers/status.event_state_to_bet_status is a P5 stub.
+``BetCreate.amount = Annotated[Decimal, Field(gt=0, max_digits=12,
+decimal_places=2), AfterValidator(quantize_amount)]``. Decimal is
+serialized as the string ``"10.00"`` (Pydantic v2 default — tests compare
+strings, never floats). ``EventState`` is duplicated from ``line_provider``
+(value parity). ``BetStatus`` is ``(str, Enum)``, not ``StrEnum``
+(Python 3.10). ``helpers/status.event_state_to_bet_status`` is a stub
+filled in by the settle interactor.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from line_provider.schemas.events import EventState as LpEventState
 
 
 class TestQuantize:
-    """D-04 / D-19: quantize_amount normalises amounts to 2dp ROUND_HALF_UP."""
+    """quantize_amount normalises amounts to 2dp ROUND_HALF_UP."""
 
     def test_pad_zeros(self) -> None:
         """`Decimal('10')` -> `Decimal('10.00')`."""
@@ -46,43 +46,43 @@ class TestQuantize:
 
 
 class TestBetCreate:
-    """BM-05 / D-04: BetCreate validates amount and forbids extra fields."""
+    """BetCreate validates amount and forbids extra fields."""
 
     def test_happy_path_quantizes(self) -> None:
-        """BM-05: `amount='10'` is accepted and quantized to `Decimal('10.00')`."""
+        """`amount='10'` is accepted and quantized to `Decimal('10.00')`."""
         body = BetCreate(event_id=uuid4(), amount=Decimal("10"))
         assert body.amount == Decimal("10.00")
 
     def test_string_input_quantizes(self) -> None:
-        """BM-05: JSON-like `amount='10'` (string) coerces to Decimal then quantizes."""
+        """JSON-like `amount='10'` (string) coerces to Decimal then quantizes."""
         body = BetCreate.model_validate({"event_id": str(uuid4()), "amount": "10"})
         assert body.amount == Decimal("10.00")
 
     def test_three_decimal_places_rejected(self) -> None:
-        """D-04: `amount='10.123'` -> ValidationError type=decimal_max_places."""
+        """`amount='10.123'` -> ValidationError type=decimal_max_places."""
         with pytest.raises(ValidationError) as exc:
             BetCreate.model_validate({"event_id": str(uuid4()), "amount": "10.123"})
         assert "decimal_max_places" in str(exc.value)
 
     def test_zero_rejected(self) -> None:
-        """D-04: `amount='0'` -> ValidationError type=greater_than (gt=0, not ge)."""
+        """`amount='0'` -> ValidationError type=greater_than (gt=0, not ge)."""
         with pytest.raises(ValidationError) as exc:
             BetCreate.model_validate({"event_id": str(uuid4()), "amount": "0"})
         assert "greater_than" in str(exc.value)
 
     def test_negative_rejected(self) -> None:
-        """D-04: `amount='-5'` -> ValidationError type=greater_than."""
+        """`amount='-5'` -> ValidationError type=greater_than."""
         with pytest.raises(ValidationError) as exc:
             BetCreate.model_validate({"event_id": str(uuid4()), "amount": "-5"})
         assert "greater_than" in str(exc.value)
 
     def test_invalid_uuid_rejected(self) -> None:
-        """T-03-3: malformed event_id rejected before reaching SQL layer."""
+        """Malformed event_id rejected before reaching SQL layer."""
         with pytest.raises(ValidationError):
             BetCreate.model_validate({"event_id": "not-a-uuid", "amount": "10"})
 
     def test_extra_field_rejected(self) -> None:
-        """D-01: coefficient is NOT a field on BetCreate; extra='forbid' rejects it."""
+        """coefficient is NOT a field on BetCreate; extra='forbid' rejects it."""
         with pytest.raises(ValidationError) as exc:
             BetCreate.model_validate(
                 {
@@ -95,22 +95,22 @@ class TestBetCreate:
         assert "Extra inputs are not permitted" in error_str or "extra_forbidden" in error_str
 
     def test_missing_amount_rejected(self) -> None:
-        """D-04: amount is required."""
+        """amount is required."""
         with pytest.raises(ValidationError):
             BetCreate.model_validate({"event_id": str(uuid4())})
 
     def test_oversized_amount_rejected(self) -> None:
-        """T-03-1 / D-04: max_digits=12 caps at 999_999_999_999.99."""
+        """max_digits=12 caps at 999_999_999_999.99."""
         with pytest.raises(ValidationError) as exc:
             BetCreate.model_validate({"event_id": str(uuid4()), "amount": "1000000000000.00"})
         assert "decimal" in str(exc.value).lower() or "max_digits" in str(exc.value).lower()
 
 
 class TestBetRead:
-    """BM-05 / D-19 / D-05: BetRead from_attributes + Decimal as JSON string."""
+    """BetRead from_attributes + Decimal as JSON string."""
 
     def test_from_attributes_accepts_orm_like(self) -> None:
-        """D-14: BetRead.model_validate(orm_obj, from_attributes=True) works."""
+        """BetRead.model_validate(orm_obj, from_attributes=True) works."""
         orm_like = SimpleNamespace(
             id=uuid4(),
             event_id=uuid4(),
@@ -124,7 +124,7 @@ class TestBetRead:
         assert read.amount == Decimal("10.00")
 
     def test_decimal_serializes_as_string(self) -> None:
-        """D-19 / Pitfall A4: amount serialises as string '10.00', not float."""
+        """amount serialises as string '10.00', not float."""
         orm_like = SimpleNamespace(
             id=uuid4(),
             event_id=uuid4(),
@@ -139,10 +139,10 @@ class TestBetRead:
 
 
 class TestEventRead:
-    """BM-04 / D-13: EventRead is the bet-maker-side mirror of LP GET /events item shape."""
+    """EventRead is the bet-maker-side mirror of LP GET /events item shape."""
 
     def test_event_read_parses_lp_payload(self) -> None:
-        """D-13: EventRead.model_validate accepts the canonical LP payload shape."""
+        """EventRead.model_validate accepts the canonical LP payload shape."""
         payload = {
             "event_id": "11111111-1111-1111-1111-111111111111",
             "coefficient": "2.50",
@@ -158,7 +158,7 @@ class TestEventRead:
         assert read.state == EventState.NEW
 
     def test_event_read_extra_forbid(self) -> None:
-        """D-13 / Pattern D: extra fields rejected to surface LP schema drift loud."""
+        """Extra fields rejected to surface LP schema drift loudly."""
         payload = {
             "event_id": str(uuid4()),
             "coefficient": "1.50",
@@ -170,7 +170,7 @@ class TestEventRead:
             EventRead.model_validate(payload)
 
     def test_event_read_frozen(self) -> None:
-        """D-13: EventRead is frozen -- mutations rejected post-construction."""
+        """EventRead is frozen -- mutations rejected post-construction."""
         read = EventRead.model_validate(
             {
                 "event_id": str(uuid4()),
@@ -183,7 +183,7 @@ class TestEventRead:
             read.event_id = uuid4()  # type: ignore[misc]
 
     def test_event_read_decimal_serializes_as_string(self) -> None:
-        """D-13 / Pitfall A4: coefficient serialises as JSON string '2.50' (not float)."""
+        """coefficient serialises as JSON string '2.50' (not float)."""
         read = EventRead.model_validate(
             {
                 "event_id": str(uuid4()),
@@ -198,10 +198,10 @@ class TestEventRead:
 
 
 class TestEnums:
-    """D-12 / D-20: EventState (duplicated) and BetStatus enum invariants."""
+    """EventState (duplicated) and BetStatus enum invariants."""
 
     def test_eventstate_has_three_members(self) -> None:
-        """D-12: EventState parity with line_provider -- 3 members, exact names."""
+        """EventState parity with line_provider -- 3 members, exact names."""
         members = {m.name: m.value for m in EventState}
         assert members == {
             "NEW": "NEW",
@@ -210,10 +210,11 @@ class TestEnums:
         }
 
     def test_eventstate_value_parity_with_line_provider(self) -> None:
-        """D-12: bet_maker EventState values match line_provider exactly.
+        """bet_maker EventState values match line_provider exactly.
 
-        P5 e2e tests assert byte-for-byte parity in EventFinishedMessage.
-        Here we only assert the same string values exist on both sides.
+        End-to-end tests assert byte-for-byte parity in
+        ``EventFinishedMessage``. Here we only assert the same string
+        values exist on both sides.
         """
         assert {m.value for m in EventState} == {m.value for m in LpEventState}
 
@@ -229,26 +230,26 @@ class TestEnums:
 
 
 class TestStatusStub:
-    """D-30: helpers/status.event_state_to_bet_status raises NotImplementedError."""
+    """helpers/status.event_state_to_bet_status raises NotImplementedError."""
 
     def test_raises_for_p5(self) -> None:
-        """D-30: P3 stub; P5 fills in real mapping."""
+        """Stub raises NotImplementedError; the settle interactor owns the real mapping."""
         with pytest.raises(NotImplementedError) as exc:
             event_state_to_bet_status(EventState.FINISHED_WIN)
         assert "P5" in str(exc.value)
 
 
 class TestExtraForbid:
-    """Schema-wide invariant: BetCreate AND BetRead both forbid extras (T-03-3)."""
+    """Schema-wide invariant: BetCreate AND BetRead both forbid extras."""
 
     def test_betcreate_extra_forbid(self) -> None:
-        """T-03-3: BetCreate.model_config extra='forbid'."""
+        """BetCreate.model_config extra='forbid'."""
         assert BetCreate.model_config.get("extra") == "forbid"
 
     def test_betread_extra_forbid(self) -> None:
-        """T-03-3: BetRead.model_config extra='forbid'."""
+        """BetRead.model_config extra='forbid'."""
         assert BetRead.model_config.get("extra") == "forbid"
 
     def test_eventread_extra_forbid(self) -> None:
-        """T-03-3 / D-13: EventRead.model_config extra='forbid'."""
+        """EventRead.model_config extra='forbid'."""
         assert EventRead.model_config.get("extra") == "forbid"

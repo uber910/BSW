@@ -1,7 +1,7 @@
 """Unit tests for line_provider.interactors.create_event.
 
-LP-03: create accepts EventCreate body, stores Event(state=NEW).
-LP-08: duplicate event_id propagates EventAlreadyExistsError up.
+create accepts EventCreate body and stores ``Event(state=NEW)``;
+duplicate event_id propagates ``EventAlreadyExistsError`` up.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ def _body() -> EventCreate:
 
 
 async def test_creates_event_with_state_new() -> None:
-    """LP-03: create_event produces Event with state=NEW regardless of body (state not in body)."""
+    """create_event produces Event with state=NEW regardless of body (state not in body)."""
     store = InMemoryEventStore()
     body = _body()
     event = await create_event(store, body=body)
@@ -39,7 +39,7 @@ async def test_creates_event_with_state_new() -> None:
 
 
 async def test_event_persists_in_store() -> None:
-    """LP-03: created event is retrievable via store.get_by_id."""
+    """created event is retrievable via store.get_by_id."""
     store = InMemoryEventStore()
     body = _body()
     event = await create_event(store, body=body)
@@ -47,7 +47,7 @@ async def test_event_persists_in_store() -> None:
 
 
 async def test_duplicate_event_id_raises() -> None:
-    """LP-08: duplicate create raises EventAlreadyExistsError (route maps to 409)."""
+    """Duplicate create raises EventAlreadyExistsError (route maps to 409)."""
     store = InMemoryEventStore()
     body = _body()
     await create_event(store, body=body)

@@ -1,12 +1,12 @@
-"""settle_bets_for_event interactor tests — Plan 05-04 (D-12 .. D-18).
+"""settle_bets_for_event interactor tests.
 
-Covers (per VALIDATION.md task IDs 05-04-01, 05-04-02):
+Covers:
 - Happy path (settle_count == row count)
 - Idempotency (second call on same event_id is 0-row noop)
-- Concurrent settle (R3 / consumer-vs-reconciler race)
+- Concurrent settle (consumer-vs-reconciler race)
 - SettleResult shape (frozen, UTC-aware settled_at)
 
-All tests run against real PG testcontainer (QA-07). SQLite would not
+All tests run against a real PG testcontainer. SQLite would not
 support FOR UPDATE SKIP LOCKED — this entire file's coverage would be
 fictional under SQLite.
 """
@@ -145,9 +145,8 @@ class TestSettleConcurrent:
         self,
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
-        """R3 / D-12: consumer + reconciler against same event_id together
-        settle exactly once. SKIP LOCKED -> one task gets all rows, the
-        other gets 0 rows."""
+        """Consumer + reconciler against the same event_id settle exactly
+        once. SKIP LOCKED -> one task gets all rows, the other gets 0 rows."""
         event_id = uuid4()
         async with session_factory.begin() as session:
             for amt in ("10.00", "20.00", "30.00"):
@@ -194,7 +193,7 @@ class TestSettleConcurrent:
         self,
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
-        """Strong R3 form: exactly ONE task settled rows, the other got 0."""
+        """Strong concurrency form: exactly ONE task settled rows, the other got 0."""
         event_id = uuid4()
         async with session_factory.begin() as session:
             for amt in ("10.00", "20.00", "30.00"):

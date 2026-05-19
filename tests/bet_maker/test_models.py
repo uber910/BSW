@@ -1,14 +1,14 @@
 """Unit tests for bet_maker.models.bet.
 
-BM-01 / D-09: Bet model -- id UUID PK (uuid.uuid4 default), event_id UUID (no FK),
-amount Numeric(12,2), status PG-ENUM bet_status (default PENDING),
-created_at/updated_at server_default=func.now() + onupdate.
-D-01: NO coefficient column.
-Pitfall 1 (RESEARCH §A1): after flush, server_default fields are None until
-`await session.refresh(bet)` loads them. interactor place_bet (Plan 03-07)
-relies on this -- test guards the contract.
-Pitfall 7: Decimal round-trip through asyncpg with Numeric(12,2) preserves
-exact value (asdecimal=True default).
+Bet model: id UUID PK (``uuid.uuid4`` default), event_id UUID (no FK),
+amount ``Numeric(12,2)``, status PG-ENUM bet_status (default PENDING),
+``created_at``/``updated_at`` ``server_default=func.now()`` + ``onupdate``.
+There is no coefficient column.
+
+After flush, ``server_default`` fields are ``None`` until
+``await session.refresh(bet)`` loads them. The ``place_bet`` interactor
+relies on this — test guards the contract. ``Numeric(12,2)`` + asyncpg
+preserve Decimal exactly (``asdecimal=True`` default).
 """
 
 from __future__ import annotations
@@ -27,14 +27,14 @@ from bet_maker.schemas.bets import BetStatus
 
 
 class TestSchema:
-    """BM-01 / D-09: Bet table schema invariants."""
+    """Bet table schema invariants."""
 
     def test_tablename(self) -> None:
-        """D-09: __tablename__ == 'bets'."""
+        """__tablename__ == 'bets'."""
         assert Bet.__tablename__ == "bets"
 
     def test_amount_numeric_12_2(self) -> None:
-        """D-09 / Pitfall A5: amount is NUMERIC(12,2), asdecimal=True."""
+        """amount is NUMERIC(12,2), asdecimal=True."""
         amount_col = Bet.__table__.c.amount
         assert str(amount_col.type).upper() == "NUMERIC(12, 2)"
         numeric_type = amount_col.type
@@ -45,7 +45,7 @@ class TestSchema:
         assert amount_col.nullable is False
 
     def test_status_is_pg_enum_bet_status(self) -> None:
-        """D-09: status is PG-native ENUM 'bet_status'."""
+        """status is PG-native ENUM 'bet_status'."""
         status_col = Bet.__table__.c.status
         enum_type = status_col.type
         assert isinstance(enum_type, SqlEnum)
@@ -53,13 +53,13 @@ class TestSchema:
         assert status_col.nullable is False
 
     def test_event_id_has_no_fk(self) -> None:
-        """D-09: event_id is UUID but NO FK -- events live in line-provider."""
+        """event_id is UUID but NO FK -- events live in line-provider."""
         event_id_col = Bet.__table__.c.event_id
         assert event_id_col.foreign_keys == set()
         assert event_id_col.nullable is False
 
     def test_id_default_is_uuid4(self) -> None:
-        """D-09: id default = uuid.uuid4 (Python-side, matches event_id pattern)."""
+        """id default = uuid.uuid4 (Python-side, matches event_id pattern)."""
         default_fn = Bet.__table__.c.id.default.arg
         assert callable(default_fn)
         assert default_fn.__module__ == uuid.__name__
@@ -67,36 +67,36 @@ class TestSchema:
         assert Bet.__table__.c.id.primary_key is True
 
     def test_created_at_server_default(self) -> None:
-        """D-09: created_at has server_default (DDL-level NOW())."""
+        """created_at has server_default (DDL-level NOW())."""
         assert Bet.__table__.c.created_at.server_default is not None
         assert Bet.__table__.c.created_at.nullable is False
 
     def test_updated_at_server_default_and_onupdate(self) -> None:
-        """D-09: updated_at has BOTH server_default AND onupdate."""
+        """updated_at has BOTH server_default AND onupdate."""
         assert Bet.__table__.c.updated_at.server_default is not None
         assert Bet.__table__.c.updated_at.onupdate is not None
         assert Bet.__table__.c.updated_at.nullable is False
 
     def test_no_coefficient_column(self) -> None:
-        """D-01: coefficient is NOT a column on Bet (D-01 / TZ page 3 compliance)."""
+        """coefficient is NOT a column on Bet (per TZ page 3)."""
         assert "coefficient" not in Bet.__table__.c
 
     def test_base_metadata_contains_only_bets(self) -> None:
-        """P3 scope: only one table -- bets. Other tables come in P5."""
+        """Only one table in the bet_maker schema -- bets."""
         assert set(Base.metadata.tables) == {"bets"}
 
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestRuntime:
-    """BM-01 integration: Bet INSERT against testcontainers PG + refresh."""
+    """Bet INSERT against testcontainers PG + refresh."""
 
     async def test_insert_and_refresh_loads_server_defaults(
         self,
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
-        """Pitfall 1 (RESEARCH §A1): after flush, server_default fields are
-        None until refresh(). interactor place_bet (Plan 03-07) calls
-        refresh -- this test guards that contract.
+        """After flush, ``server_default`` fields are ``None`` until
+        ``refresh()``. The ``place_bet`` interactor calls refresh — this
+        test guards that contract.
         """
         event_id = uuid4()
         async with session_factory.begin() as session:
@@ -115,9 +115,9 @@ class TestRuntime:
         self,
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
-        """Pitfall 7 / D-09: Numeric(12,2) + asyncpg -> Decimal round-trip exact.
+        """Numeric(12,2) + asyncpg -> Decimal round-trip is exact.
 
-        SC-6 (ROADMAP P3): "10.00" -> DB -> "10.00" with two decimal places.
+        "10.00" -> DB -> "10.00" with two decimal places.
         """
         async with session_factory.begin() as session:
             bet = Bet(event_id=uuid4(), amount=Decimal("10.00"))
@@ -131,7 +131,7 @@ class TestRuntime:
         self,
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
-        """D-09: status default = BetStatus.PENDING (Python-side ORM default)."""
+        """status default = BetStatus.PENDING (Python-side ORM default)."""
         async with session_factory.begin() as session:
             bet = Bet(event_id=uuid4(), amount=Decimal("5.50"))
             session.add(bet)

@@ -1,14 +1,12 @@
 """Unit tests for bet_maker.interactors.place_bet.
 
-BM-05: happy path inserts Bet, returns BetRead with PENDING status.
-BM-06 / D-14: three EventNotBettable branches (event not found / deadline /
-state != NEW).
-BM-05 / D-04 / D-19: amount quantization round-trip (e.g., '10' -> '10.00').
-D-14 / Anti-Pattern 5: model_validate inside session (A1 mitigation --
-no MissingGreenlet on returned BetRead).
-Critical Risk Axis 1 (Decimal precision) + Axis 9 (ordering -- verified in test_selectors).
-Validation MUST happen BEFORE UoW open -- test_no_db_write_on_validation_fail
-verifies failed validation produces zero DB writes.
+Happy path inserts Bet, returns BetRead with PENDING status. Three
+EventNotBettable branches (event not found / deadline passed / state
+!= NEW). Amount quantization round-trip (e.g., '10' -> '10.00').
+``model_validate`` inside session (no MissingGreenlet on returned
+BetRead). Validation MUST happen BEFORE UoW open --
+``test_no_db_write_on_validation_fail`` verifies failed validation
+produces zero DB writes.
 """
 
 from __future__ import annotations
@@ -31,12 +29,12 @@ from bet_maker.uow.postgres import PostgresUnitOfWork
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestHappyPath:
-    """BM-05: happy path inserts bet with PENDING status."""
+    """Happy path inserts bet with PENDING status."""
 
     async def test_returns_betread_with_pending_status(
         self, session_factory: async_sessionmaker[AsyncSession]
     ) -> None:
-        """BM-05 / D-14: place_bet returns BetRead, status=PENDING, server_default
+        """place_bet returns BetRead, status=PENDING, server_default
         created_at populated via refresh."""
         event_id = uuid4()
         lookup = StubEventLookup()
@@ -60,7 +58,7 @@ class TestHappyPath:
     async def test_amount_quantized_to_two_places(
         self, session_factory: async_sessionmaker[AsyncSession]
     ) -> None:
-        """D-04 / D-19: input Decimal('10') stored as '10.00' (quantize_amount)."""
+        """Input Decimal('10') stored as '10.00' (quantize_amount)."""
         event_id = uuid4()
         lookup = StubEventLookup()
         lookup.seed_active(event_id)
@@ -77,7 +75,7 @@ class TestHappyPath:
         assert str(read.amount) == "10.00"
 
     async def test_persists_to_db(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
-        """BM-05: UoW commits on clean exit -- second session sees the bet."""
+        """UoW commits on clean exit -- second session sees the bet."""
         event_id = uuid4()
         lookup = StubEventLookup()
         lookup.seed_active(event_id)
@@ -100,12 +98,12 @@ class TestHappyPath:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestRejections:
-    """BM-06 / D-14: three EventNotBettable branches."""
+    """Three EventNotBettable branches."""
 
     async def test_event_not_found_raises(
         self, session_factory: async_sessionmaker[AsyncSession]
     ) -> None:
-        """D-06: event_lookup.get_event returns None -> 'event not found'."""
+        """event_lookup.get_event returns None -> 'event not found'."""
         lookup = StubEventLookup()
         uow = PostgresUnitOfWork(session_factory)
 
@@ -140,7 +138,7 @@ class TestRejections:
     async def test_state_not_new_raises(
         self, session_factory: async_sessionmaker[AsyncSession]
     ) -> None:
-        """D-14: state != NEW (FINISHED_WIN/FINISHED_LOSE) -> 'event not active'."""
+        """state != NEW (FINISHED_WIN/FINISHED_LOSE) -> 'event not active'."""
         event_id = uuid4()
         lookup = StubEventLookup()
         future = datetime.now(timezone.utc) + timedelta(hours=1)
@@ -161,7 +159,7 @@ class TestRejections:
     async def test_no_db_write_on_validation_fail(
         self, session_factory: async_sessionmaker[AsyncSession]
     ) -> None:
-        """D-14: validation raises BEFORE UoW open -- DB stays empty.
+        """Validation raises BEFORE UoW open -- DB stays empty.
 
         If validation were INSIDE async with uow:, async_sessionmaker.begin()
         would auto-rollback on exception -- same observable end-state, but

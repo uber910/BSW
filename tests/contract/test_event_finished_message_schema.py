@@ -1,5 +1,5 @@
 """Contract test: EventFinishedMessage must be byte-for-byte identical
-across line_provider and bet_maker (D-28, D-29 / SC#6).
+across line_provider and bet_maker.
 
 A failing test here means a developer modified one copy without
 updating the other — CI breaks the PR before deployment drift can
@@ -20,7 +20,7 @@ def test_schemas_are_identical() -> None:
     assert lp_schema == bm_schema, (
         "EventFinishedMessage schema drift detected between line_provider "
         "and bet_maker — re-sync src/bet_maker/schemas/messages.py with "
-        "src/line_provider/schemas/messages.py byte-for-byte (D-28)."
+        "src/line_provider/schemas/messages.py byte-for-byte."
     )
 
 

@@ -1,4 +1,4 @@
-"""bet_maker.uow -- UnitOfWork package (Phase 9, REFACTOR-03).
+"""bet_maker.uow -- UnitOfWork package.
 
 Public surface:
 

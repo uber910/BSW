@@ -1,14 +1,14 @@
-"""E2E (Plan 06-10 / QA-08 / SC#5): real PG + real RMQ + drop-publish recovery.
+"""E2E: real PG + real RMQ + drop-publish recovery.
 
-Three scenarios from CONTEXT.md D-23 / ROADMAP Phase 6 SC#5:
-  a) consumer happy path (no regression on Phase 5).
-  b) drop-publish recovery via reconciler (main QA-08).
+Three scenarios:
+  a) consumer happy path (regression check).
+  b) drop-publish recovery via reconciler.
   c) delete-event recovery via reconciler (CANCELLED branch).
 
-Verified paths (implementer-adjusted from planner template):
-  - RabbitEventBus: line_provider.facades.event_bus.RabbitEventBus (confirmed by grep)
-  - event_store internal dict: _data (InMemoryEventStore uses self._data, not self._events)
-  - app.state.event_store: confirmed in line_provider/lifespan.py
+Verified paths:
+  - RabbitEventBus: line_provider.facades.event_bus.RabbitEventBus.
+  - event_store internal dict: _data (InMemoryEventStore uses self._data, not self._events).
+  - app.state.event_store: set in line_provider/lifespan.py.
   - reconciler uses app.state.reconciler_event_lookup (separate from app.state.event_lookup):
     both must be swapped to lp_client so the reconciler can reach the in-process LP app.
 """
@@ -34,7 +34,7 @@ _BUFFER_S = 1.5
 
 
 async def _swap_to_fast_reconciler(app: FastAPI) -> asyncio.Task[None]:
-    """D-24: cancel the default 30s task, return a 1.0s task pinned to app.state."""
+    """Cancel the default 30s task, return a 1.0s task pinned to app.state."""
     old = app.state.reconciliation_task
     old.cancel()
     with suppress(asyncio.CancelledError):
@@ -83,7 +83,7 @@ class TestReconcilerDropPublishE2E:
         client: AsyncClient,
         line_provider_app: FastAPI,
     ) -> None:
-        """SC#5 scenario a: consumer happy path (Phase 5 regression check)."""
+        """Scenario a: consumer happy path (regression check)."""
         lp_transport = ASGITransport(app=line_provider_app)
         async with AsyncClient(transport=lp_transport, base_url="http://lp") as lp_client:
             event_id = str(uuid4())
@@ -130,7 +130,7 @@ class TestReconcilerDropPublishE2E:
         client: AsyncClient,
         line_provider_app: FastAPI,
     ) -> None:
-        """SC#5 scenario b / QA-08: AMQP publish dropped; reconciler recovers."""
+        """Scenario b: AMQP publish dropped; reconciler recovers."""
         lp_transport = ASGITransport(app=line_provider_app)
         async with AsyncClient(transport=lp_transport, base_url="http://lp") as lp_client:
             event_id = str(uuid4())
@@ -182,7 +182,7 @@ class TestReconcilerDropPublishE2E:
         client: AsyncClient,
         line_provider_app: FastAPI,
     ) -> None:
-        """SC#5 scenario c: event deleted from LP -> bet -> CANCELLED."""
+        """Scenario c: event deleted from LP -> bet -> CANCELLED."""
         lp_transport = ASGITransport(app=line_provider_app)
         async with AsyncClient(transport=lp_transport, base_url="http://lp") as lp_client:
             event_id = str(uuid4())

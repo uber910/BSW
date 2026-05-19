@@ -1,9 +1,9 @@
 """Unit tests for line_provider.interactors.set_event_state.
 
-LP-03/LP-05/LP-08: state transitions through the interactor.
-D-09: no-op state mutates coefficient/deadline but does NOT publish.
-D-12: commit (store.update) happens BEFORE publish (Anti-Pattern 2 mitigation).
-Pitfall 5: concurrent set_event_state on same id results in exactly one publish.
+State transitions through the interactor. A no-op state mutates
+coefficient/deadline but does NOT publish. ``commit`` (``store.update``)
+happens BEFORE ``publish``. Concurrent ``set_event_state`` on the same
+id results in exactly one publish.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ async def _seed(store: InMemoryEventStore, state: EventState = EventState.NEW) -
 
 
 async def test_happy_path_new_to_finished_win_publishes() -> None:
-    """LP-08/D-12: NEW->FINISHED_WIN commits then publishes with routing key event.finished.win."""
+    """NEW->FINISHED_WIN commits then publishes with routing key event.finished.win."""
     store = InMemoryEventStore()
     bus = FakeEventBus()
     seeded = await _seed(store)
@@ -66,7 +66,7 @@ async def test_happy_path_new_to_finished_win_publishes() -> None:
 
 
 async def test_happy_path_new_to_finished_lose_publishes() -> None:
-    """LP-08/D-12: NEW->FINISHED_LOSE publishes with routing key event.finished.lose."""
+    """NEW->FINISHED_LOSE publishes with routing key event.finished.lose."""
     store = InMemoryEventStore()
     bus = FakeEventBus()
     seeded = await _seed(store)
@@ -86,7 +86,7 @@ async def test_happy_path_new_to_finished_lose_publishes() -> None:
 
 
 async def test_no_op_finished_state_mutates_but_does_not_publish() -> None:
-    """D-09: PUT with state == current_state mutates coefficient/deadline but skips publish."""
+    """PUT with state == current_state mutates coefficient/deadline but skips publish."""
     store = InMemoryEventStore()
     bus = FakeEventBus()
     seeded = await _seed(store, state=EventState.FINISHED_WIN)
@@ -106,7 +106,7 @@ async def test_no_op_finished_state_mutates_but_does_not_publish() -> None:
 
 
 async def test_no_op_new_state_does_not_publish() -> None:
-    """D-09: PUT NEW->NEW (no-op) does not publish."""
+    """PUT NEW->NEW (no-op) does not publish."""
     store = InMemoryEventStore()
     bus = FakeEventBus()
     seeded = await _seed(store, state=EventState.NEW)
@@ -125,7 +125,7 @@ async def test_no_op_new_state_does_not_publish() -> None:
 
 
 async def test_reverse_transition_aborts_without_mutate_or_publish() -> None:
-    """LP-08: FINISHED_WIN->NEW raises TransitionForbiddenError; store untouched; no publish."""
+    """FINISHED_WIN->NEW raises TransitionForbiddenError; store untouched; no publish."""
     store = InMemoryEventStore()
     bus = FakeEventBus()
     seeded = await _seed(store, state=EventState.FINISHED_WIN)
@@ -147,7 +147,7 @@ async def test_reverse_transition_aborts_without_mutate_or_publish() -> None:
 
 
 async def test_missing_event_raises_not_found() -> None:
-    """LP-04: set_event_state on missing id raises EventNotFoundError (route maps to 404)."""
+    """set_event_state on missing id raises EventNotFoundError (route maps to 404)."""
     store = InMemoryEventStore()
     bus = FakeEventBus()
     with pytest.raises(EventNotFoundError):
@@ -164,7 +164,7 @@ async def test_missing_event_raises_not_found() -> None:
 
 
 async def test_commit_happens_before_publish_failing_bus() -> None:
-    """D-12/Anti-Pattern 2: if publish fails, store mutation already committed."""
+    """If publish fails, the store mutation has already been committed."""
     store = InMemoryEventStore()
     bus = FakeEventBus(fail=True)
     seeded = await _seed(store, state=EventState.NEW)
@@ -187,7 +187,7 @@ async def test_commit_happens_before_publish_failing_bus() -> None:
 
 
 async def test_published_message_carries_uuid_event_id() -> None:
-    """D-05/D-13: EventFinishedMessage.event_id is the same UUID."""
+    """EventFinishedMessage.event_id is the same UUID."""
     store = InMemoryEventStore()
     bus = FakeEventBus()
     seeded = await _seed(store)
@@ -209,7 +209,7 @@ async def test_published_message_carries_uuid_event_id() -> None:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestRoutingConstantsWiring:
-    """D-05: set_event_state.py must use messaging/routing.py constants,
+    """set_event_state.py must use messaging/routing.py constants,
     not inline string literals."""
 
     async def test_publish_uses_event_finished_win_constant(self) -> None:
@@ -252,11 +252,12 @@ class TestRoutingConstantsWiring:
 
 
 async def test_concurrent_set_state_same_id_publishes_exactly_once() -> None:
-    """Pitfall 5: two concurrent set_event_state on the same NEW event publish ONCE.
+    """Two concurrent set_event_state on the same NEW event publish ONCE.
 
-    The store's update() is serialised under asyncio.Lock and returns previous_state;
-    only the call that observes previous_state == NEW publishes. The other call sees
-    previous_state == FINISHED_* (set by the first) and skips publish per D-09 guard.
+    The store's ``update()`` is serialised under ``asyncio.Lock`` and
+    returns previous_state; only the call that observes
+    ``previous_state == NEW`` publishes. The other call sees
+    ``previous_state == FINISHED_*`` (set by the first) and skips publish.
     """
     store = InMemoryEventStore()
     bus = FakeEventBus()

@@ -1,10 +1,7 @@
 """Unit tests for HttpEventLookup -- respx-backed (no real network).
 
-BM-04 / D-05 / D-07 / D-09 / D-15: covers all 5 contractual scenarios for
-the HTTP-backed EventLookup implementation.
-
-respx mock idiom verified against Context7 /lundberg/respx
-(04-RESEARCH.md lines 405-477).
+Covers all five contractual scenarios for the HTTP-backed EventLookup
+implementation.
 """
 
 from __future__ import annotations
@@ -27,7 +24,7 @@ LP_BASE_URL = "http://line-provider:8000"
 @pytest.mark.asyncio
 @respx.mock(base_url=LP_BASE_URL, assert_all_called=True)
 async def test_get_event_200_returns_snapshot(respx_mock: respx.MockRouter) -> None:
-    """BM-04 / D-09: 200 with valid payload -> EventSnapshot with typed fields."""
+    """200 with valid payload -> EventSnapshot with typed fields."""
     event_id = UUID("11111111-1111-1111-1111-111111111111")
     respx_mock.get(f"/event/{event_id}").mock(
         return_value=Response(
@@ -54,7 +51,7 @@ async def test_get_event_200_returns_snapshot(respx_mock: respx.MockRouter) -> N
 @pytest.mark.asyncio
 @respx.mock(base_url=LP_BASE_URL)
 async def test_get_event_404_returns_none(respx_mock: respx.MockRouter) -> None:
-    """BM-04 / D-09: 404 -> None (NOT raise); no retry (route.call_count == 1)."""
+    """404 -> None (NOT raise); no retry (route.call_count == 1)."""
     event_id = uuid4()
     route = respx_mock.get(f"/event/{event_id}").mock(return_value=Response(404))
 
@@ -63,13 +60,13 @@ async def test_get_event_404_returns_none(respx_mock: respx.MockRouter) -> None:
         result = await lookup.get_event(event_id)
 
     assert result is None
-    assert route.call_count == 1  # Pitfall 4: NO retry on 4xx
+    assert route.call_count == 1  # NO retry on 4xx
 
 
 @pytest.mark.asyncio
 @respx.mock(base_url=LP_BASE_URL)
 async def test_get_event_4xx_propagates_no_retry(respx_mock: respx.MockRouter) -> None:
-    """BM-04 / D-05: 422 from LP -> LineProviderUnavailable; called exactly once (no retry)."""
+    """422 from LP -> LineProviderUnavailable; called exactly once (no retry)."""
     event_id = uuid4()
     route = respx_mock.get(f"/event/{event_id}").mock(return_value=Response(422))
 
@@ -78,13 +75,13 @@ async def test_get_event_4xx_propagates_no_retry(respx_mock: respx.MockRouter) -
         with pytest.raises(LineProviderUnavailable):
             await lookup.get_event(event_id)
 
-    assert route.call_count == 1  # Pitfall 4: NO retry on 4xx
+    assert route.call_count == 1  # NO retry on 4xx
 
 
 @pytest.mark.asyncio
 @respx.mock(base_url=LP_BASE_URL)
 async def test_get_event_5xx_exhausts_raises(respx_mock: respx.MockRouter) -> None:
-    """BM-04 / D-05 / D-07: 503 every time -> LineProviderUnavailable.
+    """503 every time -> LineProviderUnavailable.
 
     route.call_count == attempts (no silent off-by-one).
     """
@@ -102,7 +99,7 @@ async def test_get_event_5xx_exhausts_raises(respx_mock: respx.MockRouter) -> No
 @pytest.mark.asyncio
 @respx.mock(base_url=LP_BASE_URL, assert_all_called=True)
 async def test_get_event_5xx_then_200_retry_succeeds(respx_mock: respx.MockRouter) -> None:
-    """BM-04 / D-05: 5xx triggers retry; subsequent 200 succeeds within `attempts`."""
+    """5xx triggers retry; subsequent 200 succeeds within `attempts`."""
     event_id_str = "22222222-2222-2222-2222-222222222222"
     route = respx_mock.get(f"/event/{event_id_str}").mock(
         side_effect=[
@@ -244,16 +241,16 @@ async def test_get_event_transport_error_reason_is_redacted(
 
 
 class TestHttpEventLookup:
-    """Marker class for plan acceptance criterion (artifact contains 'class TestHttpEventLookup').
+    """Marker class for discoverability.
 
     The 5 scenarios above are module-level functions because the respx
-    decorator pattern is cleanest at the function level (see Plan 04-05 note).
-    This class exists only as a discoverability anchor and a holder for
-    invariants asserted statically about HttpEventLookup itself.
+    decorator pattern is cleanest at the function level. This class
+    exists only as a discoverability anchor and a holder for invariants
+    asserted statically about HttpEventLookup itself.
     """
 
     def test_implements_event_lookup_protocol_structurally(self) -> None:
-        """D-11: HttpEventLookup satisfies the EventLookup Protocol (structural)."""
+        """HttpEventLookup satisfies the EventLookup Protocol (structural)."""
         client = httpx.AsyncClient(base_url=LP_BASE_URL)
         lookup: EventLookup = HttpEventLookup(http_client=client)
         assert lookup is not None

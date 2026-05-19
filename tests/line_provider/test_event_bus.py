@@ -1,8 +1,8 @@
-"""Unit tests for RabbitEventBus.publish (Plan 05-06 / LP-06).
+"""Unit tests for RabbitEventBus.publish.
 
-Pitfall 6: correlation_id propagation from message into broker.publish kwarg.
-Tests use AsyncMock(spec=RabbitBroker) — no real broker required for unit-level
-assertion of "broker received the right call".
+correlation_id propagation from message into the ``broker.publish``
+kwarg. Tests use ``AsyncMock(spec=RabbitBroker)`` — no real broker is
+required for the unit-level assertion of "broker received the right call".
 """
 
 from __future__ import annotations
@@ -53,7 +53,7 @@ class TestPublish:
         assert exchange.durable is True
 
     async def test_publish_propagates_correlation_id_from_message(self) -> None:
-        """Pitfall 6: two messages, two correlation_ids — both forwarded as-is."""
+        """Two messages, two correlation_ids — both forwarded as-is."""
         broker = AsyncMock(spec=RabbitBroker)
         bus = RabbitEventBus(broker)
 

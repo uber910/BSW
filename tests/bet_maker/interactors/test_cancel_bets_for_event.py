@@ -1,4 +1,4 @@
-"""cancel_bets_for_event interactor tests (Plan 06-06 / BM-12 / D-04..D-05)."""
+"""cancel_bets_for_event interactor tests."""
 
 from __future__ import annotations
 
@@ -121,7 +121,7 @@ class TestCancelConcurrent:
         self,
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
-        """R3 / D-05: settle vs cancel on same event_id — exactly one wins."""
+        """Settle vs cancel on same event_id — exactly one wins."""
         event_id = uuid4()
         async with session_factory.begin() as session:
             for amt in ("10.00", "20.00", "30.00"):

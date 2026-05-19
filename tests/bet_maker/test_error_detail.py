@@ -1,4 +1,4 @@
-"""Unit tests for bet_maker ErrorDetail schema (D-09)."""
+"""Unit tests for bet_maker ErrorDetail schema."""
 
 from __future__ import annotations
 

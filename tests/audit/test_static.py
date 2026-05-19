@@ -1,15 +1,15 @@
-"""Phase 7 D-19 static audit tests.
+"""Static audit tests.
 
-Each test asserts a single ``Looks Done But Isn't`` invariant from
-``.planning/research/PITFALLS.md``. The tests are pure file-content checks
-(``Path.read_text()`` + regex/substring) so they run in CI without spinning
-up Docker, RabbitMQ, or PostgreSQL.
+Each test asserts a single ``Looks Done But Isn't`` invariant about the
+codebase. The tests are pure file-content checks (``Path.read_text()`` +
+regex/substring) so they run in CI without spinning up Docker, RabbitMQ,
+or PostgreSQL.
 
-A failing test here means a refactor silently undid a Phase 1-6 invariant
-(e.g. someone re-formatted ``@router.subscriber(...)`` and dropped
-``ack_policy=AckPolicy.MANUAL``). The grep-style style is deliberate:
-Pitfall 6 (RESEARCH.md) warns formatting drift can break a regex, so the
-patterns anchor on stable substrings rather than full multi-line shapes.
+A failing test here means a refactor silently undid a load-bearing
+invariant (e.g. someone re-formatted ``@router.subscriber(...)`` and
+dropped ``ack_policy=AckPolicy.MANUAL``). The grep-style is deliberate:
+formatting drift can break a regex, so the patterns anchor on stable
+substrings rather than full multi-line shapes.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ SRC = REPO_ROOT / "src"
 
 
 def test_subscribers_have_manual_ack() -> None:
-    """R1 / F1: every @router.subscriber must declare ack_policy=AckPolicy.MANUAL.
+    """Every @router.subscriber must declare ack_policy=AckPolicy.MANUAL.
 
     Default AckPolicy.REJECT_ON_ERROR would silently drop messages on
     any handler exception — breaks the Core Value invariant (no stuck PENDING bets).
@@ -34,38 +34,35 @@ def test_subscribers_have_manual_ack() -> None:
     assert len(manual_ack_kwargs) >= len(subscribers), (
         f"{len(subscribers)} @router.subscriber decorators found, "
         f"but only {len(manual_ack_kwargs)} mentions of "
-        f"ack_policy=AckPolicy.MANUAL — see ARCHITECTURE.md R1/F1"
+        f"ack_policy=AckPolicy.MANUAL"
     )
 
 
 def test_pending_locked_selector_uses_for_update_skip_locked() -> None:
-    """R3: selectors/get_pending_locked must use with_for_update(skip_locked=True).
+    """selectors/get_pending_locked must use with_for_update(skip_locked=True).
 
     The row lock plus ``skip_locked=True`` is what makes consumer and
     reconciler concurrent settle idempotent against the same event_id.
-    Phase 9 moved this query into ``selectors/get_pending_locked.py`` —
-    audit retargeted to the new seam.
     """
     src = (SRC / "bet_maker" / "selectors" / "get_pending_locked.py").read_text()
     assert "with_for_update(skip_locked=True)" in src, (
-        "selectors/get_pending_locked must use "
-        "with_for_update(skip_locked=True) — see ARCHITECTURE.md R3."
+        "selectors/get_pending_locked must use with_for_update(skip_locked=True)."
     )
 
 
 def test_async_sessionmaker_expire_on_commit_false() -> None:
-    """A1 (Pitfall): async_sessionmaker must declare expire_on_commit=False.
+    """async_sessionmaker must declare expire_on_commit=False.
 
     Without this, any access to ORM attributes after commit raises
     MissingGreenlet (the async session would try to lazy-reload, which
-    requires greenlet). Plan 03-07 place_bet interactor depends on this.
+    requires greenlet). The ``place_bet`` interactor depends on this.
     """
     src = (SRC / "bet_maker" / "infrastructure" / "db" / "engine.py").read_text()
     assert re.search(
         r"async_sessionmaker\s*\([^)]*expire_on_commit\s*=\s*False",
         src,
         re.DOTALL,
-    ), "async_sessionmaker must declare expire_on_commit=False — see ARCHITECTURE.md A1."
+    ), "async_sessionmaker must declare expire_on_commit=False."
 
 
 def test_compose_command_exec_form() -> None:
@@ -86,20 +83,19 @@ def test_compose_command_exec_form() -> None:
 
 
 def test_dockerfile_pinned_python_bookworm() -> None:
-    """D-20: Dockerfile must pin python:3.10-slim-bookworm.
+    """Dockerfile must pin python:3.10-slim-bookworm.
 
     Rolling tag 3.10-slim resolves to trixie (since May 2026) which
     ships glibc/openssl changes that may break asyncpg wheels.
     """
     src = (REPO_ROOT / "Dockerfile").read_text()
     assert "3.10-slim-bookworm" in src, (
-        "Dockerfile must pin python:3.10-slim-bookworm explicitly "
-        "(not rolling 3.10-slim) — see CLAUDE.md Stack Patterns."
+        "Dockerfile must pin python:3.10-slim-bookworm explicitly (not rolling 3.10-slim)."
     )
 
 
 def test_pythonunbuffered_set() -> None:
-    """D-04: PYTHONUNBUFFERED=1 must be set so stdout flushes immediately.
+    """PYTHONUNBUFFERED=1 must be set so stdout flushes immediately.
 
     Without this, structlog logs are buffered in Docker and only appear
     after the process exits — invisible during steady-state run.
@@ -111,35 +107,31 @@ def test_pythonunbuffered_set() -> None:
 
 
 def test_durable_queue_and_exchange() -> None:
-    """R4 / R10: RabbitQueue and RabbitExchange must declare durable=True.
+    """RabbitQueue and RabbitExchange must declare durable=True.
 
     Non-durable queues/exchanges are deleted on RabbitMQ restart and
-    silently lose the EventFinishedMessage stream. Combined with named
-    volume on /var/lib/rabbitmq, durability is what makes the stack
-    survive a broker restart.
+    silently lose the EventFinishedMessage stream. Combined with the
+    named volume on /var/lib/rabbitmq, durability is what makes the
+    stack survive a broker restart.
     """
     src = (SRC / "bet_maker" / "api" / "messaging.py").read_text()
     assert re.search(r"RabbitQueue\([^)]*durable\s*=\s*True", src, re.DOTALL), (
-        "RabbitQueue must declare durable=True — see ARCHITECTURE.md R4/R10."
+        "RabbitQueue must declare durable=True."
     )
     assert re.search(r"RabbitExchange\([^)]*durable\s*=\s*True", src, re.DOTALL), (
-        "RabbitExchange must declare durable=True — see ARCHITECTURE.md R4/R10."
+        "RabbitExchange must declare durable=True."
     )
 
 
 def test_no_entrypoints_dir() -> None:
-    """REFACTOR-01: src/<svc>/entrypoints/ must not exist for either service.
+    """src/<svc>/entrypoints/ must not exist for either service.
 
-    Phase 8 flattened HTTP routers + FastStream RabbitRouter into
-    src/<svc>/api/ and relocated lifespan.py + middleware.py to the
-    service-package root. The legacy entrypoints/ directory was
-    deleted for both services; this audit fails if a future commit
-    recreates either one.
-
-    Plan 08-01 added the bet_maker assertion. Plan 08-02 added the
-    line_provider assertion.
+    HTTP routers + FastStream RabbitRouter live under ``src/<svc>/api/``
+    and ``lifespan.py`` + ``middleware.py`` sit at the service-package
+    root. The legacy ``entrypoints/`` directory was deleted for both
+    services; this audit fails if a future commit recreates either one.
     """
     bm = SRC / "bet_maker" / "entrypoints"
     lp = SRC / "line_provider" / "entrypoints"
-    assert not bm.exists(), f"{bm} re-introduced — Phase 8 flattened entrypoints/ → api/."
-    assert not lp.exists(), f"{lp} re-introduced — Phase 8 flattened entrypoints/ → api/."
+    assert not bm.exists(), f"{bm} re-introduced — entrypoints/ has been flattened into api/."
+    assert not lp.exists(), f"{lp} re-introduced — entrypoints/ has been flattened into api/."

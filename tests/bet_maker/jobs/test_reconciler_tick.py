@@ -1,4 +1,4 @@
-"""reconciler tick + error-isolation tests (Plan 06-07 / BM-12 / D-10..D-11)."""
+"""reconciler tick + error-isolation tests."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from bet_maker.schemas.events import EventState
 
 
 class _FakeLookup:
-    """Duck-typed EventLookup (CONTEXT.md D-08 — no Protocol gymnastics).
+    """Duck-typed EventLookup (no Protocol gymnastics).
 
     seed(event_id, snapshot_or_none_or_raise) registers a behaviour for
     get_event. raise = sentinel callable.
@@ -137,7 +137,7 @@ class TestReconcilerTick:
         app: FastAPI,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """D-17: asyncio.sleep MUST run before the first _run_tick call.
+        """asyncio.sleep MUST run before the first _run_tick call.
 
         Replace _run_tick with a counter; replace asyncio.sleep with a
         counter that records its argument; run reconciliation_loop for
@@ -167,7 +167,7 @@ class TestReconcilerTick:
 
         assert sleep_args, "asyncio.sleep was never called before first tick"
         if tick_calls:
-            assert tick_calls[0] >= 1, "first tick ran before any sleep -- D-17 violated"
+            assert tick_calls[0] >= 1, "first tick ran before any sleep"
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -201,7 +201,7 @@ class TestReconcilerErrorIsolation:
         src = inspect.getsource(reconciliation_loop)
         assert "except BaseException" not in src, (
             "reconciliation_loop must NOT catch BaseException — "
-            "SystemExit/KeyboardInterrupt must propagate (D-10)"
+            "SystemExit/KeyboardInterrupt must propagate"
         )
         assert "except Exception" in src, (
             "reconciliation_loop must use 'except Exception' (narrower than BaseException)"

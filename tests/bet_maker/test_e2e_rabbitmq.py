@@ -1,15 +1,15 @@
-"""E2E tests — real RabbitMQ + real PG (Plan 05-09 / QA-06 / SC#1 / SC#3).
+"""E2E tests — real RabbitMQ + real PG.
 
-These tests are the highest-fidelity validation in Phase 5. TestRabbitBroker
-(Plan 05) catches handler-level bugs; this file catches topology bugs:
-missing binding, wrong exchange type, missing DLX wiring, missing
-correlation propagation.
+These tests are the highest-fidelity integration validation. TestRabbitBroker
+catches handler-level bugs; this file catches topology bugs: missing
+binding, wrong exchange type, missing DLX wiring, missing correlation
+propagation.
 
 Fixtures used (all session-scoped from tests/conftest.py + tests/bet_maker/conftest.py):
-  - postgres_container / pg_dsn / async_engine — real PG via testcontainers (Phase 3)
-  - rabbitmq_container / amqp_url — real RMQ via testcontainers (Plan 05-01)
-  - app / client — bet-maker FastAPI with full lifespan (Plan 05-07)
-  - line_provider_app — line-provider FastAPI with full lifespan (Plan 05-07)
+  - postgres_container / pg_dsn / async_engine — real PG via testcontainers.
+  - rabbitmq_container / amqp_url — real RMQ via testcontainers.
+  - app / client — bet-maker FastAPI with full lifespan.
+  - line_provider_app — line-provider FastAPI with full lifespan.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from bet_maker.schemas.bets import BetStatus
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestE2ERabbitMQ:
-    """SC#1: PUT to terminal state -> bet flips WON/LOST within 1s (5s budget for CI)."""
+    """PUT to terminal state -> bet flips WON/LOST within 1s (5s budget for CI)."""
 
     async def test_consumer_settles_bet_after_lp_transitions_to_finished_win(
         self,
@@ -98,7 +98,7 @@ class TestE2ERabbitMQ:
         app: FastAPI,
         line_provider_app: FastAPI,
     ) -> None:
-        """SC#3: schema_version=99 -> reject(requeue=False) -> DLQ.
+        """schema_version=99 -> reject(requeue=False) -> DLQ.
 
         Publish a raw dict that does NOT match EventFinishedMessage (extra='forbid'
         + schema_version validation). Consumer rejects it to DLQ. We then passively

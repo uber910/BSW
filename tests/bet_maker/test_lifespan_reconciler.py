@@ -1,4 +1,4 @@
-"""Lifespan: reconciler_event_lookup + reconciliation_task wiring (Plan 06-08 / BM-12)."""
+"""Lifespan: reconciler_event_lookup + reconciliation_task wiring."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ class TestLifespanReconciler:
         assert app.state.reconciliation_task.get_name() == "reconciliation"
 
     async def test_task_started_after_broker_connect(self) -> None:
-        """D-15: create_task must come AFTER router.broker.connect() in source order."""
+        """create_task must come AFTER router.broker.connect() in source order."""
         src = inspect.getsource(lifespan)
         broker_connect_pos = src.index("await rabbit_router.broker.connect()")
         create_task_pos = src.index("create_task(")
@@ -39,7 +39,7 @@ class TestLifespanReconciler:
         assert "reconciliation_loop" in src[create_task_pos : create_task_pos + 200]
 
     async def test_task_cancelled_first_in_shutdown_finally(self) -> None:
-        """D-16: in the finally block, task.cancel() precedes broker.close()."""
+        """In the finally block, task.cancel() precedes broker.close()."""
         src = inspect.getsource(lifespan)
         shutdown_marker = 'log.info("bet_maker.shutdown")'
         shutdown_start = src.index(shutdown_marker)

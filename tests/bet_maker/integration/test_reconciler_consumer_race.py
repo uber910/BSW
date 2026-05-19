@@ -1,4 +1,4 @@
-"""Integration: reconciler + consumer concurrent settle (Plan 06-09 / SC#4 / D-22)."""
+"""Integration: reconciler + consumer concurrent settle."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ class TestReconcilerConsumerRace:
         self,
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
-        """SC#4: consumer settle + reconciler tick on same event_id ->
+        """Consumer settle + reconciler tick on same event_id ->
         exactly 3 bets in WON, zero PENDING."""
         event_id = uuid4()
         async with session_factory.begin() as session:
@@ -73,7 +73,7 @@ class TestReconcilerConsumerRace:
         self,
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
-        """R3: settle vs cancel on same event_id -> exactly one returns
+        """Settle vs cancel on same event_id -> exactly one returns
         count=3, the other count=0 (SKIP LOCKED + status filter)."""
         event_id = uuid4()
         async with session_factory.begin() as session:

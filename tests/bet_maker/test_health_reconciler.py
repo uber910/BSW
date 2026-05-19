@@ -1,4 +1,4 @@
-"""/health reconciler-check tests (Plan 06-08 / BM-12 / D-13)."""
+"""/health reconciler-check tests."""
 
 from __future__ import annotations
 

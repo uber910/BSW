@@ -1,13 +1,13 @@
 """Smoke test: line-provider /asyncapi endpoint exposed by FastStream RabbitRouter.
 
-D-10 (publisher side): line-provider's RabbitRouter (publisher-only —
-no @router.subscriber) still registers /asyncapi to document the publish
-contract. A regression that comments out app.include_router(rabbit_router)
-in src/line_provider/app.py would silently strip the endpoint — this
+line-provider's RabbitRouter (publisher-only — no ``@router.subscriber``)
+still registers ``/asyncapi`` to document the publish contract. A
+regression that comments out ``app.include_router(rabbit_router)`` in
+``src/line_provider/app.py`` would silently strip the endpoint — this
 smoke test catches that.
 
-Content-type may be HTML or JSON depending on FastStream version; both are
-acceptable (Pitfall 4 / PATTERNS.md caveat).
+Content-type may be HTML or JSON depending on FastStream version; both
+are acceptable.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from httpx import AsyncClient
 
 
 async def test_asyncapi_endpoint_returns_200(client: AsyncClient) -> None:
-    """D-10: /asyncapi available on line-provider for AsyncAPI publish-contract docs."""
+    """/asyncapi available on line-provider for AsyncAPI publish-contract docs."""
     response = await client.get("/asyncapi")
     assert response.status_code == 200, (
         f"GET /asyncapi returned {response.status_code} — "

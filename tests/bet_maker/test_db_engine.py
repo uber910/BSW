@@ -1,19 +1,16 @@
 """Unit tests for bet_maker.infrastructure.db.engine + pings.
 
-BM-02 / D-15 / D-16: create_engine_and_sessionmaker returns engine + sessionmaker
-with locked params (pool_size=10, max_overflow=20, pool_pre_ping=True,
-pool_recycle=1800, expire_on_commit=False).
-BM-08 / D-26 / D-29: ping_postgres returns True on healthy PG, False on
-SQLAlchemyError; never raises.
-Risk Axis 6 (partial — full coverage in Plan 03-08 test_health): health
-ping returns False when engine.connect raises SQLAlchemyError.
+``create_engine_and_sessionmaker`` returns engine + sessionmaker with
+locked params (pool_size=10, max_overflow=20, pool_pre_ping=True,
+pool_recycle=1800, expire_on_commit=False). ``ping_postgres`` returns
+True on healthy PG, False on ``SQLAlchemyError``; never raises.
 
 Note on asyncpg + OSError: a real connection-refused attempt against a
 non-routable port raises asyncpg's ConnectionRefusedError (an OSError subclass)
 which is NOT wrapped by SQLAlchemy into OperationalError in SQLAlchemy 2.0.49.
-To cleanly test the D-29 SQLAlchemyError->False contract without relying on
-asyncpg wrapping behaviour, we use unittest.mock to inject SQLAlchemyError
-directly into the connect path.
+To cleanly test the SQLAlchemyError->False contract without relying on
+asyncpg wrapping behaviour, we use ``unittest.mock`` to inject
+``SQLAlchemyError`` directly into the connect path.
 """
 
 from __future__ import annotations
@@ -37,7 +34,7 @@ from bet_maker.settings.config import BetMakerSettings
 
 
 class TestCreateEngineAndSessionmaker:
-    """D-15 + D-16: engine + sessionmaker built with locked params."""
+    """Engine + sessionmaker built with locked params."""
 
     def test_returns_engine_and_sessionmaker_tuple(self, pg_dsn: str) -> None:
         """Factory returns 2-tuple (AsyncEngine, async_sessionmaker)."""
@@ -50,7 +47,7 @@ class TestCreateEngineAndSessionmaker:
             pass
 
     async def test_sessionmaker_has_expire_on_commit_false(self, pg_dsn: str) -> None:
-        """D-15: sessionmaker MUST be expire_on_commit=False (A1 mitigation)."""
+        """Sessionmaker MUST be expire_on_commit=False."""
         settings = BetMakerSettings(postgres_dsn=PostgresDsn(pg_dsn))
         engine, maker = create_engine_and_sessionmaker(settings)
         try:
@@ -60,7 +57,7 @@ class TestCreateEngineAndSessionmaker:
             await engine.dispose()
 
     async def test_engine_pool_params_locked(self, pg_dsn: str) -> None:
-        """D-16: pool_size=10, max_overflow=20, pool_pre_ping=True, pool_recycle=1800."""
+        """pool_size=10, max_overflow=20, pool_pre_ping=True, pool_recycle=1800."""
         settings = BetMakerSettings(postgres_dsn=PostgresDsn(pg_dsn))
         engine, _ = create_engine_and_sessionmaker(settings)
         try:
@@ -75,7 +72,7 @@ class TestCreateEngineAndSessionmaker:
 
 
 class TestPingPostgres:
-    """BM-08 / D-26 / D-29: ping_postgres contract."""
+    """ping_postgres contract."""
 
     async def test_ping_returns_true_on_healthy_engine(self, pg_dsn: str) -> None:
         """Healthy PG (testcontainers) — SELECT 1 succeeds -> True.
@@ -94,7 +91,7 @@ class TestPingPostgres:
             await engine.dispose()
 
     async def test_ping_returns_false_on_sqlalchemy_error(self, async_engine: AsyncEngine) -> None:
-        """D-29: SQLAlchemyError from connect -> False (NOT raise).
+        """SQLAlchemyError from connect -> False (NOT raise).
 
         Injects OperationalError via mock so the test is independent of
         asyncpg's error-wrapping behaviour across SQLAlchemy patch versions.

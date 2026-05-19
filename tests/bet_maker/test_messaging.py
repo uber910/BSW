@@ -1,17 +1,17 @@
 """Unit tests for bet-maker AMQP consumer handler.
 
-Branches covered per D-30 / VALIDATION 05-05-01..05-05-05:
+Branches covered:
 - subscriber config (locked APIs verified)
 - happy path -> ack
 - poison (schema_version != 1, IntegrityError) -> reject(requeue=False)
 - transient (OperationalError) retry -> ack
 - transient exhaustion -> reject(requeue=False)
 - settle.noop (0 PENDING) -> ack
-- invariant: nack(requeue=True) never called (R7)
+- invariant: nack(requeue=True) never called
 
 TestRabbitBroker is in-memory -- no real broker needed. The settle interactor
 is mocked via _settle_with_retry to isolate handler-level error handling
-from DB plumbing. Plan 04 already proves the interactor against real PG.
+from DB plumbing. The interactor itself is proved against real PG elsewhere.
 """
 
 from __future__ import annotations
@@ -81,12 +81,12 @@ def _pin_fake_sessionmaker() -> None:
 
 
 class TestSubscriberConfig:
-    """05-05-01: locked FastStream API forms."""
+    """Locked FastStream API forms."""
 
     def test_subscriber_ack_policy_is_manual(self) -> None:
         subs = list(router.broker.subscribers)
         assert any(getattr(s, "ack_policy", None) == AckPolicy.MANUAL for s in subs), (
-            "no subscriber registered with AckPolicy.MANUAL (R1/F1)"
+            "no subscriber registered with AckPolicy.MANUAL"
         )
 
     def test_at_least_one_subscriber_registered(self) -> None:
@@ -96,7 +96,7 @@ class TestSubscriberConfig:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestHappyPath:
-    """05-05-02: ack only after UoW commit."""
+    """Ack only after UoW commit."""
 
     async def test_calls_settle_and_acks(self) -> None:
         msg = _valid_message()
@@ -116,7 +116,7 @@ class TestHappyPath:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestPoison:
-    """05-05-03: ValidationError / UnsupportedSchemaVersion / IntegrityError -> reject."""
+    """ValidationError / UnsupportedSchemaVersion / IntegrityError -> reject."""
 
     async def test_unsupported_schema_version_rejects(self) -> None:
         msg = _valid_message()
@@ -158,7 +158,7 @@ class TestPoison:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestTransient:
-    """05-05-04 / 05-05-05: transient retry then ack OR exhaust then reject."""
+    """Transient retry then ack OR exhaust then reject."""
 
     async def test_operational_error_retries_then_succeeds(self) -> None:
         msg = _valid_message()
@@ -199,7 +199,7 @@ class TestTransient:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestNoop:
-    """05-05-02 happy variant: 0 PENDING -> ack, not reject."""
+    """Happy variant: 0 PENDING -> ack, not reject."""
 
     async def test_zero_pending_acks(self) -> None:
         msg = _valid_message()
@@ -218,10 +218,10 @@ class TestNoop:
 
 
 class TestInvariants:
-    """R7: nack(requeue=True) must NEVER appear in handler module."""
+    """nack(requeue=True) must NEVER appear in the handler module."""
 
     def test_nack_never_called_in_source(self) -> None:
-        """Statically verify the handler source. (Belt-and-suspenders for R7.)"""
+        """Statically verify the handler source as a belt-and-suspenders check."""
         src = Path("src/bet_maker/api/messaging.py").read_text()
         lines = src.splitlines()
         code_lines = [
@@ -233,7 +233,7 @@ class TestInvariants:
             and not ln.strip().startswith("*")
         ]
         code = "\n".join(code_lines)
-        assert "msg.nack(" not in code, "R7 violated: msg.nack( call found in messaging.py"
+        assert "msg.nack(" not in code, "msg.nack( call found in messaging.py"
 
     def test_handler_does_not_open_uow_context(self) -> None:
         """CR-01 static regression: messaging.py must NOT open `async with

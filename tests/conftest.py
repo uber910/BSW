@@ -1,4 +1,4 @@
-"""Root conftest. PG-backed fixtures for Phase 3+ (testcontainers + Alembic)."""
+"""Root conftest. PG-backed fixtures (testcontainers + Alembic)."""
 
 from __future__ import annotations
 
@@ -25,11 +25,10 @@ from testcontainers.rabbitmq import RabbitMqContainer  # type: ignore[import-unt
 def postgres_container() -> Iterator[PostgresContainer]:
     """Session-scoped PostgreSQL 16 container.
 
-    QA-07: real PostgreSQL via testcontainers (not SQLite — would miss
-    FOR UPDATE SKIP LOCKED behaviour in P5).
-    D-21: PostgresContainer('postgres:16-alpine', driver='asyncpg').
-    Built-in ExecWaitStrategy (psql SELECT 1 inside the container) waits
-    for readiness — no manual sleep needed.
+    Real PostgreSQL via testcontainers (not SQLite — would miss
+    FOR UPDATE SKIP LOCKED behaviour). PostgresContainer is configured
+    with driver='asyncpg'. Built-in ExecWaitStrategy (psql SELECT 1
+    inside the container) waits for readiness — no manual sleep needed.
     """
     with PostgresContainer("postgres:16-alpine", driver="asyncpg") as pg:
         yield pg
@@ -45,10 +44,10 @@ def pg_dsn(postgres_container: PostgresContainer) -> str:
 def apply_migrations(pg_dsn: str) -> None:
     """Run `alembic upgrade head` programmatically against testcontainers DSN.
 
-    D-22: bootstrap schema via `alembic.command.upgrade` (no subprocess overhead).
-    Success criterion #5: rerun must be idempotent — second call must be no-op.
-    Pitfall 6: `set_main_option('sqlalchemy.url', ...)` overrides production
-    DSN baked into env.py (alembic.ini has no sqlalchemy.url line, so the
+    Bootstrap schema via `alembic.command.upgrade` (no subprocess overhead).
+    Rerun must be idempotent — second call must be no-op.
+    `set_main_option('sqlalchemy.url', ...)` overrides the production DSN
+    baked into env.py (alembic.ini has no sqlalchemy.url line, so the
     override is the single source of truth for test DSN).
     """
     alembic_cfg = Config("src/bet_maker/alembic.ini")
@@ -61,7 +60,7 @@ def apply_migrations(pg_dsn: str) -> None:
 async def async_engine(pg_dsn: str, apply_migrations: None) -> AsyncIterator[AsyncEngine]:
     """Session-scoped AsyncEngine bound to migrated testcontainers PG.
 
-    D-16: pool_pre_ping=True. pool_size and overflow not specified for tests
+    pool_pre_ping=True. pool_size and overflow not specified for tests
     (defaults suffice for ~30 sequential tests). Engine disposed at session end.
     """
     engine = create_async_engine(pg_dsn, pool_pre_ping=True)
@@ -77,7 +76,7 @@ async def session_factory(
 ) -> async_sessionmaker:  # type: ignore[type-arg]
     """Session-scoped async_sessionmaker bound to async_engine.
 
-    D-15: expire_on_commit=False — required to avoid MissingGreenlet on
+    expire_on_commit=False — required to avoid MissingGreenlet on
     post-commit attribute access in tests that inspect bets after UoW exit.
     """
     return async_sessionmaker(async_engine, expire_on_commit=False)
@@ -87,8 +86,8 @@ async def session_factory(
 async def truncate_bets(async_engine: AsyncEngine) -> AsyncIterator[None]:
     """Per-test isolation via TRUNCATE — explicit, function-scoped.
 
-    D-23: TRUNCATE bets RESTART IDENTITY CASCADE in teardown. NOT a savepoint
-    rollback — tests exercising real COMMIT-based UoW (and P5 FOR UPDATE
+    TRUNCATE bets RESTART IDENTITY CASCADE in teardown. NOT a savepoint
+    rollback — tests exercising real COMMIT-based UoW (and FOR UPDATE
     SKIP LOCKED) need actual transactions. Cost ~50-100ms per test, acceptable
     at test-task scale.
 
@@ -105,10 +104,10 @@ async def truncate_bets(async_engine: AsyncEngine) -> AsyncIterator[None]:
 def rabbitmq_container() -> Iterator[RabbitMqContainer]:
     """Session-scoped RabbitMQ 4.2 container for e2e + lifespan integration tests.
 
-    QA-06 / D-31: real RabbitMQ via testcontainers — TestRabbitBroker alone
-    misses topology bugs (F6). Image matches docker-compose.yml line-provider
-    and bet-maker production target.
-    Built-in readiness probe uses pika.BlockingConnection (pika is dev-dep).
+    Real RabbitMQ via testcontainers — TestRabbitBroker alone misses
+    topology bugs. Image matches docker-compose.yml line-provider and
+    bet-maker production target. Built-in readiness probe uses
+    pika.BlockingConnection (pika is dev-dep).
     """
     with RabbitMqContainer("rabbitmq:4.2-management-alpine") as rmq:
         yield rmq

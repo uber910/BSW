@@ -1,12 +1,12 @@
 """Unit tests for bet_maker.uow.PostgresUnitOfWork.
 
-BM-02 / D-17 / Phase 9 D-01..D-04: PostgresUnitOfWork over
-async_sessionmaker.begin(). Commit on clean __aexit__; rollback on
-exception. ``uow.session`` raises ``UnitOfWorkNotStartedError`` outside
-the ``async with`` context (regression of a silent stale-session bug).
+PostgresUnitOfWork over ``async_sessionmaker.begin()``: commit on clean
+``__aexit__``, rollback on exception. ``uow.session`` raises
+``UnitOfWorkNotStartedError`` outside the ``async with`` context
+(regression of a silent stale-session bug).
 
-Critical Risk Axis 3 (RESEARCH §Validation): per-request UoW isolation
-under concurrency -- verified via asyncio.gather over 5 UoWs.
+Per-request UoW isolation under concurrency is verified via
+``asyncio.gather`` over 5 UoWs.
 """
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ class TestShape:
             _ = uow.session
 
     def test_uow_has_no_public_commit_or_rollback(self) -> None:
-        """D-17 / Anti-Pattern 1: no manual commit/rollback on abstract or concrete."""
+        """No manual commit/rollback on abstract or concrete UoW."""
         for cls in (AbstractUnitOfWork, PostgresUnitOfWork):
             for forbidden in ("commit", "rollback"):
                 assert not hasattr(cls, forbidden), f"{cls.__name__}.{forbidden}"
@@ -68,7 +68,7 @@ class TestShape:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestTransactionSemantics:
-    """BM-02 / D-17: commit on clean exit, rollback on exception."""
+    """Commit on clean exit, rollback on exception."""
 
     async def test_commit_on_clean_exit(
         self,
@@ -112,15 +112,14 @@ class TestTransactionSemantics:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestConcurrency:
-    """Critical Risk Axis 3: per-request UoW isolation."""
+    """Per-request UoW isolation."""
 
     async def test_concurrent_uows_isolated(
         self,
         session_factory: async_sessionmaker,  # type: ignore[type-arg]
     ) -> None:
-        """Pitfall A2: 5 parallel UoWs each commit their own session
-        independently. asyncio.gather over independent UoWs must not
-        interfere or deadlock."""
+        """5 parallel UoWs each commit their own session independently.
+        asyncio.gather over independent UoWs must not interfere or deadlock."""
 
         async def place_one(value: str) -> Bet:
             async with PostgresUnitOfWork(session_factory) as uow:

@@ -1,8 +1,8 @@
 """Tests for bet_maker lifespan wiring.
 
-D-13 / D-14 / D-19 / D-20: app.state.engine/sessionmaker/event_lookup/
-line_provider_http_client pinned after startup; shutdown reverse-order
-(http_client.aclose BEFORE engine.dispose).
+app.state.engine/sessionmaker/event_lookup/line_provider_http_client
+pinned after startup; shutdown reverse-order (http_client.aclose BEFORE
+engine.dispose).
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from bet_maker.facades.http_event_lookup import HttpEventLookup
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestLifespanStatePins:
-    """D-13: successful startup pins required app.state attributes.
+    """Successful startup pins required app.state attributes.
 
     Uses the shared `app` fixture - autouse _clear_event_lookup may
     swap event_lookup, so we assert only attributes that autouse does
@@ -29,22 +29,22 @@ class TestLifespanStatePins:
     """
 
     async def test_engine_pinned_on_state(self, app: FastAPI) -> None:
-        """D-13: app.state.engine is AsyncEngine after lifespan startup."""
+        """app.state.engine is AsyncEngine after lifespan startup."""
         assert hasattr(app.state, "engine")
         assert isinstance(app.state.engine, AsyncEngine)
 
     async def test_sessionmaker_pinned_on_state(self, app: FastAPI) -> None:
-        """D-13: app.state.sessionmaker is async_sessionmaker after lifespan startup."""
+        """app.state.sessionmaker is async_sessionmaker after lifespan startup."""
         assert hasattr(app.state, "sessionmaker")
         assert isinstance(app.state.sessionmaker, async_sessionmaker)
 
     async def test_settings_pinned_on_state(self, app: FastAPI) -> None:
-        """D-13: app.state.settings is present after startup."""
+        """app.state.settings is present after startup."""
         assert hasattr(app.state, "settings")
         assert app.state.settings.service_name == "bet-maker"
 
     async def test_http_client_pinned_on_state(self, app: FastAPI) -> None:
-        """D-12 / D-19: app.state.line_provider_http_client is httpx.AsyncClient.
+        """app.state.line_provider_http_client is httpx.AsyncClient.
 
         Autouse _clear_event_lookup swaps event_lookup but leaves
         line_provider_http_client alone, so this assertion holds
@@ -56,21 +56,21 @@ class TestLifespanStatePins:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestProductionLifespanWiring:
-    """D-14 / D-19: in a clean lifespan run (no autouse swap), event_lookup is HttpEventLookup.
+    """In a clean lifespan run (no autouse swap), event_lookup is HttpEventLookup.
 
     Builds a fresh app inside the test body, bypassing conftest autouse fixtures.
     Mirrors TestLifespanRetryExhaustion pattern.
     """
 
     async def test_event_lookup_is_http_in_production(self, pg_dsn: str, amqp_url: str) -> None:
-        """D-14: app.state.event_lookup is HttpEventLookup right after lifespan yield.
+        """app.state.event_lookup is HttpEventLookup right after lifespan yield.
 
         Captures the value BEFORE the autouse _clear_event_lookup fixture
-        could possibly run (we never request it). Asserts production-shape.
+        could possibly run (we never request it). Asserts production shape.
 
-        Plan 05-07: stubs out the broker lifecycle methods (connect/close and
-        topology declarations) so that the session-scoped singleton broker state
-        is never mutated by this test's private LifespanManager.  Only the PG
+        Stubs out the broker lifecycle methods (connect/close and topology
+        declarations) so that the session-scoped singleton broker state is
+        never mutated by this test's private LifespanManager. Only the PG
         and httpx layers are exercised here; broker wiring is covered by
         TestBrokerLifespan which uses the session-scoped `app` fixture directly.
         """
@@ -103,10 +103,10 @@ class TestProductionLifespanWiring:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestShutdownOrder:
-    """D-20: http_client.aclose() called BEFORE engine.dispose() on shutdown."""
+    """http_client.aclose() called BEFORE engine.dispose() on shutdown."""
 
     async def test_aclose_before_dispose(self, pg_dsn: str, amqp_url: str) -> None:
-        """D-20 / Pitfall 6: capture call order during lifespan shutdown.
+        """Capture call order during lifespan shutdown.
 
         Patches both httpx.AsyncClient.aclose and AsyncEngine.dispose at the
         class level (AsyncEngine.dispose is a read-only descriptor on the
@@ -114,9 +114,9 @@ class TestShutdownOrder:
         Each patched method appends its name to a shared list before
         delegating to the original implementation.
 
-        Plan 05-07: also patches rabbit_router.broker.close to a no-op so the
-        singleton broker connection is not closed (which would break the session-
-        scoped `app` fixture that holds the same broker open).
+        Also patches rabbit_router.broker.close to a no-op so the singleton
+        broker connection is not closed (which would break the session-scoped
+        `app` fixture that holds the same broker open).
         """
         from sqlalchemy.ext.asyncio import AsyncEngine as _AsyncEngine  # noqa: PLC0415
 
@@ -172,11 +172,11 @@ class TestShutdownOrder:
 
 
 class TestLifespanRetryExhaustion:
-    """D-27 / Risk Axis 5: tenacity retry exhaustion with bad DSN crashes startup."""
+    """Tenacity retry exhaustion with bad DSN crashes startup."""
 
     @pytest.mark.asyncio(loop_scope="session")
     async def test_bad_dsn_raises_after_retries(self) -> None:
-        """D-27: bad DSN -> wait_for_postgres exhausts retries -> RuntimeError propagates."""
+        """Bad DSN -> wait_for_postgres exhausts retries -> RuntimeError propagates."""
         from bet_maker.app import build_app  # noqa: PLC0415
 
         bad_dsn = "postgresql+asyncpg://invalid:invalid@localhost:19999/nonexistent"
@@ -194,7 +194,7 @@ class TestLifespanRetryExhaustion:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestBrokerLifespan:
-    """Plan 05-07: AMQP broker layer added to bet-maker lifespan.
+    """AMQP broker layer added to bet-maker lifespan.
 
     Uses session-scoped `app` fixture (already started with PG + RMQ testcontainers).
     The broker is already connected when these tests run.

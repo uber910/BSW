@@ -1,14 +1,12 @@
 """Integration tests for bet-maker GET /events + POST /bet against a real
-line-provider FastAPI app in the same event loop (D-16).
+line-provider FastAPI app in the same event loop.
 
-BM-04 / D-09 / D-10 / D-16: two FastAPI apps wired via ASGITransport.
-LifespanManager triggers both apps' lifespans (Pitfall 3 mitigation).
-Session-scoped fixtures match asyncio_default_fixture_loop_scope=session
-(Pitfall A2 mitigation).
+Two FastAPI apps wired via ASGITransport. LifespanManager triggers both
+apps' lifespans. Session-scoped fixtures match
+``asyncio_default_fixture_loop_scope=session``.
 
 For 5xx scenarios where the real LP cannot easily be forced to fail, we
-use respx overlay on the lp_client (Claude's Discretion bullet in CONTEXT
-D-16).
+use respx overlay on the lp_client.
 """
 
 from __future__ import annotations
@@ -36,8 +34,7 @@ async def lp_http_client(
     """AsyncClient whose transport is the in-process LP app.
 
     Session-scoped to share event loop with `app` and `line_provider_app`
-    fixtures. Pitfall A2 — all three are session-scoped, so they share
-    one loop.
+    fixtures. All three are session-scoped, so they share one loop.
     """
     client = AsyncClient(
         transport=ASGITransport(app=line_provider_app),
@@ -89,7 +86,7 @@ async def lp_client(line_provider_app: FastAPI) -> AsyncIterator[AsyncClient]:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestGetEventsAgainstRealLp:
-    """BM-04 / D-10 / D-16: GET /events against real line-provider in-process."""
+    """GET /events against real line-provider in-process."""
 
     async def test_returns_active_events(
         self,
@@ -97,7 +94,7 @@ class TestGetEventsAgainstRealLp:
         lp_client: AsyncClient,
         real_lp_wiring: None,
     ) -> None:
-        """D-16: POST event to LP → bet-maker GET /events returns it."""
+        """POST event to LP → bet-maker GET /events returns it."""
         event_id = str(uuid4())
         deadline = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
         create_resp = await lp_client.post(
@@ -121,10 +118,10 @@ class TestGetEventsAgainstRealLp:
         app: FastAPI,
         client: AsyncClient,
     ) -> None:
-        """D-10: empty LP → bet-maker GET /events returns exactly [].
+        """Empty LP → bet-maker GET /events returns exactly [].
 
-        WR-03: uses respx overlay on the bet-maker's lp_client (same pattern
-        as TestGetEvents503) so /events deterministically returns json=[]
+        Uses respx overlay on the bet-maker's lp_client (same pattern as
+        TestGetEvents503) so /events deterministically returns json=[]
         independent of the session-scoped real LP state.
         """
         with respx.mock(base_url=LP_BASE_URL, assert_all_called=True) as mock_router:
@@ -146,7 +143,7 @@ class TestGetEventsAgainstRealLp:
         lp_client: AsyncClient,
         real_lp_wiring: None,
     ) -> None:
-        """D-10: PUT event to FINISHED_WIN in LP → bet-maker GET /events drops it."""
+        """PUT event to FINISHED_WIN in LP → bet-maker GET /events drops it."""
         event_id = str(uuid4())
         deadline = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
         create_resp = await lp_client.post(
@@ -177,7 +174,7 @@ class TestGetEventsAgainstRealLp:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestGetEvents503:
-    """BM-04 / D-10: GET /events returns 503 when LP unreachable.
+    """GET /events returns 503 when LP unreachable.
 
     Overlays respx on the bet-maker's lp_client so /events returns 503
     on every attempt — independent of the real LP state.
@@ -188,7 +185,7 @@ class TestGetEvents503:
         app: FastAPI,
         client: AsyncClient,
     ) -> None:
-        """D-10 / D-07: persistent 5xx from LP -> bet-maker /events 503 + static detail."""
+        """Persistent 5xx from LP -> bet-maker /events 503 + static detail."""
         # Build a respx-mocked AsyncClient that always returns 503
         with respx.mock(base_url=LP_BASE_URL, assert_all_called=False) as mock_router:
             mock_router.get("/events").mock(return_value=Response(503))
@@ -212,7 +209,7 @@ class TestGetEvents503:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestPostBetViaRealLp:
-    """BM-04 / D-09 / D-16: POST /bet validates event via real LP (HttpEventLookup chain)."""
+    """POST /bet validates event via real LP (HttpEventLookup chain)."""
 
     async def test_happy_path_through_real_lp(
         self,
@@ -220,7 +217,7 @@ class TestPostBetViaRealLp:
         lp_client: AsyncClient,
         real_lp_wiring: None,
     ) -> None:
-        """D-09: POST event to LP → POST /bet via bet-maker → 201 (full chain works)."""
+        """POST event to LP → POST /bet via bet-maker → 201 (full chain works)."""
         event_id = str(uuid4())
         deadline = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
         await lp_client.post(
@@ -245,7 +242,7 @@ class TestPostBetViaRealLp:
         client: AsyncClient,
         real_lp_wiring: None,
     ) -> None:
-        """D-09: LP 404 -> HttpEventLookup -> None -> EventNotBettable -> 422."""
+        """LP 404 -> HttpEventLookup -> None -> EventNotBettable -> 422."""
         unknown = str(uuid4())
         response = await client.post(
             "/bet",

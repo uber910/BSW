@@ -1,11 +1,10 @@
 """Integration tests for bet_maker bets API routes.
 
-BM-05: POST /bet 201 + BetRead happy path; 422 on invalid input.
-BM-06: POST /bet 422 on EventNotBettable (event_lookup miss / deadline / state).
-BM-07: GET /bets 200 + ordering by created_at DESC.
-BM-13: GET /bet/{id} 200 + 404.
-SC-6 (ROADMAP P3): Decimal round-trip "10.00" -> body["amount"] == "10.00" (D-19).
-Risk Axes: 1 (Decimal), 7 (422 specificity), 8 (EventLookup stub seeding).
+``POST /bet`` returns 201 + ``BetRead`` on the happy path and 422 on
+invalid input or ``EventNotBettable`` (event_lookup miss / deadline /
+state). ``GET /bets`` returns 200 with bets ordered by ``created_at``
+DESC. ``GET /bet/{id}`` returns 200 or 404. Decimal round-trips as a
+string ("10.00" -> ``body["amount"] == "10.00"``).
 """
 
 from __future__ import annotations
@@ -26,14 +25,14 @@ from bet_maker.facades.line_provider_client import LineProviderUnavailable
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestPostBet:
-    """POST /bet — happy path and validation errors (BM-05/BM-06)."""
+    """POST /bet — happy path and validation errors."""
 
     async def test_post_bet_happy_path_returns_201(
         self,
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """BM-05: POST /bet returns 201 + BetRead with all required fields."""
+        """POST /bet returns 201 + BetRead with all required fields."""
         event_id = seed_event()
         response = await client.post("/bet", json={"event_id": str(event_id), "amount": "10.00"})
         assert response.status_code == 201
@@ -48,7 +47,7 @@ class TestPostBet:
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """SC-6 / D-19: amount "10.00" round-trip preserved as string (not float)."""
+        """amount "10.00" round-trip preserved as string (not float)."""
         event_id = seed_event()
         response = await client.post("/bet", json={"event_id": str(event_id), "amount": "10.00"})
         assert response.status_code == 201
@@ -60,7 +59,7 @@ class TestPostBet:
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """D-19 / Risk Axis 1: integer amount "10" is normalised to "10.00"."""
+        """Integer amount "10" is normalised to "10.00"."""
         event_id = seed_event()
         response = await client.post("/bet", json={"event_id": str(event_id), "amount": "10"})
         assert response.status_code == 201
@@ -71,7 +70,7 @@ class TestPostBet:
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """BM-05 / Risk Axis 7: 422 when amount has > 2 decimal places."""
+        """422 when amount has > 2 decimal places."""
         event_id = seed_event()
         response = await client.post("/bet", json={"event_id": str(event_id), "amount": "10.123"})
         assert response.status_code == 422
@@ -81,7 +80,7 @@ class TestPostBet:
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """BM-05 / Risk Axis 7: 422 when amount == 0 (must be > 0)."""
+        """422 when amount == 0 (must be > 0)."""
         event_id = seed_event()
         response = await client.post("/bet", json={"event_id": str(event_id), "amount": "0"})
         assert response.status_code == 422
@@ -91,18 +90,18 @@ class TestPostBet:
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """BM-05 / Risk Axis 7: 422 when amount < 0."""
+        """422 when amount < 0."""
         event_id = seed_event()
         response = await client.post("/bet", json={"event_id": str(event_id), "amount": "-5.00"})
         assert response.status_code == 422
 
     async def test_post_bet_422_missing_amount(self, client: AsyncClient) -> None:
-        """BM-05 / Risk Axis 7: 422 when amount field is missing."""
+        """422 when amount field is missing."""
         response = await client.post("/bet", json={"event_id": str(uuid4())})
         assert response.status_code == 422
 
     async def test_post_bet_422_invalid_event_id(self, client: AsyncClient) -> None:
-        """BM-05 / Risk Axis 7: 422 when event_id is not a valid UUID."""
+        """422 when event_id is not a valid UUID."""
         response = await client.post("/bet", json={"event_id": "not-a-uuid", "amount": "10.00"})
         assert response.status_code == 422
 
@@ -111,7 +110,7 @@ class TestPostBet:
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """BM-05 / Risk Axis 7: 422 when extra field is sent (extra='forbid')."""
+        """422 when extra field is sent (extra='forbid')."""
         event_id = seed_event()
         response = await client.post(
             "/bet",
@@ -122,10 +121,10 @@ class TestPostBet:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestPostBetEventNotBettable:
-    """POST /bet — EventNotBettable reason strings (BM-06)."""
+    """POST /bet — EventNotBettable reason strings."""
 
     async def test_post_bet_422_event_not_found(self, client: AsyncClient) -> None:
-        """BM-06: 422 with 'event not found' when event_id not in lookup."""
+        """422 with 'event not found' when event_id not in lookup."""
         unknown_id = uuid4()
         response = await client.post("/bet", json={"event_id": str(unknown_id), "amount": "10.00"})
         assert response.status_code == 422
@@ -138,7 +137,7 @@ class TestPostBetEventNotBettable:
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """BM-06: 422 with 'deadline passed' when event deadline is in the past."""
+        """422 with 'deadline passed' when event deadline is in the past."""
         past = dt.now(timezone.utc) - timedelta(hours=1)
         event_id = seed_event(deadline=past)
         response = await client.post("/bet", json={"event_id": str(event_id), "amount": "10.00"})
@@ -151,7 +150,7 @@ class TestPostBetEventNotBettable:
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """BM-06: 422 with 'event not active' when event state is FINISHED_WIN."""
+        """422 with 'event not active' when event state is FINISHED_WIN."""
         event_id = seed_event(state="FINISHED_WIN")
         response = await client.post("/bet", json={"event_id": str(event_id), "amount": "10.00"})
         assert response.status_code == 422
@@ -161,14 +160,14 @@ class TestPostBetEventNotBettable:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestPostBet503:
-    """POST /bet — 503 when LineProviderUnavailable raised (D-08 / D-17)."""
+    """POST /bet — 503 when LineProviderUnavailable raised."""
 
     async def test_post_bet_503_when_line_provider_unavailable(
         self,
         app: FastAPI,
         client: AsyncClient,
     ) -> None:
-        """D-08: LineProviderUnavailable in place_bet -> 503 with static detail.
+        """LineProviderUnavailable in place_bet -> 503 with static detail.
 
         No PG row should be written (verified by counting bets via GET /bets
         before and after — count must be equal).
@@ -211,7 +210,7 @@ class TestPostBet503:
         app: FastAPI,
         client: AsyncClient,
     ) -> None:
-        """D-08: Even if event_id is bogus (would normally 422), the 503 fires first.
+        """Even if event_id is bogus (would normally 422), the 503 fires first.
 
         This proves the exception ladder ordering — LineProviderUnavailable is
         caught BEFORE EventNotBettable (which would be raised if the lookup
@@ -242,10 +241,10 @@ class TestPostBet503:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestGetBets:
-    """GET /bets — list all bets ordered by created_at DESC (BM-07)."""
+    """GET /bets — list all bets ordered by created_at DESC."""
 
     async def test_get_bets_empty_returns_list(self, client: AsyncClient) -> None:
-        """BM-07: GET /bets returns empty list when no bets exist."""
+        """GET /bets returns empty list when no bets exist."""
         response = await client.get("/bets")
         assert response.status_code == 200
         assert response.json() == []
@@ -255,7 +254,7 @@ class TestGetBets:
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """BM-07: GET /bets includes the bet just placed."""
+        """GET /bets includes the bet just placed."""
         event_id = seed_event()
         await client.post("/bet", json={"event_id": str(event_id), "amount": "5.00"})
         response = await client.get("/bets")
@@ -269,7 +268,7 @@ class TestGetBets:
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """BM-07: GET /bets returns bets newest-first (created_at DESC)."""
+        """GET /bets returns bets newest-first (created_at DESC)."""
         e1 = seed_event()
         e2 = seed_event()
         await client.post("/bet", json={"event_id": str(e1), "amount": "1.00"})
@@ -285,14 +284,14 @@ class TestGetBets:
 
 @pytest.mark.asyncio(loop_scope="session")
 class TestGetBet:
-    """GET /bet/{id} — fetch single bet (BM-13)."""
+    """GET /bet/{id} — fetch single bet."""
 
     async def test_get_bet_by_id_returns_200(
         self,
         client: AsyncClient,
         seed_event: Callable[..., UUID],
     ) -> None:
-        """BM-13: GET /bet/{id} returns 200 + BetRead on existing bet."""
+        """GET /bet/{id} returns 200 + BetRead on existing bet."""
         event_id = seed_event()
         post_resp = await client.post("/bet", json={"event_id": str(event_id), "amount": "15.50"})
         assert post_resp.status_code == 201
@@ -306,7 +305,7 @@ class TestGetBet:
         assert Decimal(body["amount"]) == Decimal("15.50")
 
     async def test_get_bet_by_id_returns_404(self, client: AsyncClient) -> None:
-        """BM-13: GET /bet/{id} returns 404 with detail='bet {id} not found' on miss."""
+        """GET /bet/{id} returns 404 with detail='bet {id} not found' on miss."""
         missing_id = uuid4()
         response = await client.get(f"/bet/{missing_id}")
         assert response.status_code == 404

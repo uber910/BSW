@@ -1,8 +1,9 @@
 """Unit tests for line_provider.infrastructure.store.in_memory.
 
-LP-01: in-memory storage guarded by asyncio.Lock.
-LP-08: update() returns (new, previous_state) for publish-decision-without-rtrip.
-Anti-Pattern 6 (PITFALLS.md): concurrent dict access mitigated by single asyncio.Lock.
+In-memory storage guarded by ``asyncio.Lock``. ``update()`` returns
+``(new, previous_state)`` so callers can decide whether to publish
+without a re-read. Concurrent dict access is mitigated by a single
+``asyncio.Lock``.
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ def _event(state: EventState = EventState.NEW, event_id: UUID | None = None) -> 
 
 
 async def test_add_returns_event() -> None:
-    """LP-01: add returns the stored event."""
+    """add returns the stored event."""
     store = InMemoryEventStore()
     event = _event()
     result = await store.add(event)
@@ -44,7 +45,7 @@ async def test_add_returns_event() -> None:
 
 
 async def test_add_persists_event() -> None:
-    """LP-01: stored event is retrievable via get_by_id."""
+    """Stored event is retrievable via get_by_id."""
     store = InMemoryEventStore()
     event = _event()
     await store.add(event)
@@ -52,7 +53,7 @@ async def test_add_persists_event() -> None:
 
 
 async def test_add_duplicate_raises() -> None:
-    """LP-01: duplicate event_id raises EventAlreadyExistsError."""
+    """Duplicate event_id raises EventAlreadyExistsError."""
     store = InMemoryEventStore()
     event = _event()
     await store.add(event)
@@ -62,7 +63,7 @@ async def test_add_duplicate_raises() -> None:
 
 
 async def test_update_returns_new_and_previous() -> None:
-    """LP-08: update returns (new_event, previous_state)."""
+    """update returns (new_event, previous_state)."""
     store = InMemoryEventStore()
     event = _event(state=EventState.NEW)
     await store.add(event)
@@ -79,7 +80,7 @@ async def test_update_returns_new_and_previous() -> None:
 
 
 async def test_update_creates_new_object_not_mutating_current() -> None:
-    """D-16/D-17: update produces a new frozen object; original kept references stay intact."""
+    """update produces a new frozen object; original references stay intact."""
     store = InMemoryEventStore()
     event = _event(state=EventState.NEW)
     await store.add(event)
@@ -96,7 +97,7 @@ async def test_update_creates_new_object_not_mutating_current() -> None:
 
 
 async def test_update_no_op_state_preserves_previous_marker() -> None:
-    """D-09: previous_state reports the state BEFORE update, even on no-op."""
+    """previous_state reports the state BEFORE update, even on no-op."""
     store = InMemoryEventStore()
     event = _event(state=EventState.FINISHED_WIN)
     await store.add(event)
@@ -112,7 +113,7 @@ async def test_update_no_op_state_preserves_previous_marker() -> None:
 
 
 async def test_update_missing_raises() -> None:
-    """LP-08: update on absent id raises EventNotFoundError."""
+    """update on absent id raises EventNotFoundError."""
     store = InMemoryEventStore()
     with pytest.raises(EventNotFoundError):
         await store.update(
@@ -124,13 +125,13 @@ async def test_update_missing_raises() -> None:
 
 
 async def test_get_by_id_returns_none_for_missing() -> None:
-    """LP-01: get_by_id returns None when event absent (caller decides 404)."""
+    """get_by_id returns None when event absent (caller decides 404)."""
     store = InMemoryEventStore()
     assert await store.get_by_id(uuid4()) is None
 
 
 async def test_list_all_returns_snapshot() -> None:
-    """LP-01/D-16: list_all returns a snapshot; later add does not retroactively appear."""
+    """list_all returns a snapshot; later add does not retroactively appear."""
     store = InMemoryEventStore()
     await store.add(_event())
     snapshot = await store.list_all()
@@ -140,7 +141,7 @@ async def test_list_all_returns_snapshot() -> None:
 
 
 async def test_concurrent_add_distinct_ids_all_succeed() -> None:
-    """LP-01: asyncio.gather of 100 add() with distinct ids — all stored."""
+    """asyncio.gather of 100 add() with distinct ids — all stored."""
     store = InMemoryEventStore()
     events = [_event() for _ in range(100)]
     await asyncio.gather(*[store.add(e) for e in events])
@@ -148,7 +149,7 @@ async def test_concurrent_add_distinct_ids_all_succeed() -> None:
 
 
 async def test_concurrent_add_same_id_exactly_one_succeeds() -> None:
-    """LP-01: 20 concurrent add() of same event_id — exactly 1 succeeds."""
+    """20 concurrent add() of same event_id — exactly 1 succeeds."""
     store = InMemoryEventStore()
     event = _event()
     results = await asyncio.gather(
@@ -162,9 +163,9 @@ async def test_concurrent_add_same_id_exactly_one_succeeds() -> None:
 
 
 async def test_smoke_crud_lifecycle() -> None:
-    """W-2 revision: smoke replaces inline python -c verify from Task 1.
+    """Smoke test covering the full store lifecycle.
 
-    Covers: add -> duplicate -> update (new, prev) -> not-found -> get_by_id -> list_all.
+    add -> duplicate -> update (new, prev) -> not-found -> get_by_id -> list_all.
     """
     store = InMemoryEventStore()
     eid = uuid4()
@@ -199,8 +200,8 @@ async def test_smoke_crud_lifecycle() -> None:
 
 
 async def test_concurrent_update_serialised_under_lock() -> None:
-    """LP-08/Anti-Pattern 6: two concurrent update() on same id are serialised — the second
-    observes previous_state set by the first, not the original state.
+    """Two concurrent update() calls on the same id are serialised — the
+    second observes previous_state set by the first, not the original state.
     """
     store = InMemoryEventStore()
     event = _event(state=EventState.NEW)

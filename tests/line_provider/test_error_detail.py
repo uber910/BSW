@@ -1,4 +1,4 @@
-"""Unit tests for line_provider ErrorDetail schema (D-09)."""
+"""Unit tests for line_provider ErrorDetail schema."""
 
 from __future__ import annotations
 

@@ -1,10 +1,10 @@
 """Tests for bet_maker /health endpoint.
 
-QA-10: pytest must collect and pass green.
-INFR-08: HTTP-level E2E proof of structlog request-id propagation via
-RequestContextMiddleware — X-Request-ID is echoed back in response headers.
-D-28: response shape updated: {status, checks: {postgres}} — not bare {status: ok}.
-BM-08: 503 when PG engine pool is disposed (D-29 SQLAlchemyError -> False).
+Pytest must collect and pass green. HTTP-level E2E proof of structlog
+request-id propagation via ``RequestContextMiddleware`` —
+``X-Request-ID`` is echoed back in response headers. Response shape:
+``{status, checks: {postgres}}`` — not a bare ``{status: ok}``. Returns
+503 when the PG engine pool is disposed (``SQLAlchemyError -> False``).
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ class TestHealth:
     """Health endpoint tests — session loop for session-scoped app/client fixtures."""
 
     async def test_health_returns_status_ok(self, client: AsyncClient) -> None:
-        """QA-10: /health returns 200 with all three checks ok (D-28/D-20).
+        """/health returns 200 with all three checks ok.
 
         Shape: {status: ok, checks: {postgres, rabbitmq, rabbitmq_consumer}}.
         """
@@ -34,19 +34,19 @@ class TestHealth:
         assert body["checks"]["rabbitmq_consumer"] == "ok"
 
     async def test_health_echoes_request_id_header(self, client: AsyncClient) -> None:
-        """INFR-08 (HTTP-level E2E): RequestContextMiddleware echoes X-Request-ID.
+        """HTTP-level E2E: RequestContextMiddleware echoes X-Request-ID.
 
-        Without correct middleware wiring, this fails. Unchanged from P1 baseline.
+        Without correct middleware wiring, this fails.
         """
         response = await client.get("/health")
         assert "X-Request-ID" in response.headers
         assert len(response.headers["X-Request-ID"]) > 0
 
     async def test_health_returns_503_when_pg_down(self, app: FastAPI, client: AsyncClient) -> None:
-        """BM-08 / D-28: 503 + {status: degraded, checks: {postgres: down}} when PG unreachable.
+        """503 + {status: degraded, checks: {postgres: down}} when PG unreachable.
 
         monkeypatch ping_postgres to return False — simulates pool closed / DSN changed.
-        D-29: ping_postgres catches SQLAlchemyError and returns False; we test
+        ``ping_postgres`` catches ``SQLAlchemyError`` and returns False; we test
         the route layer's response to False directly here.
         """
         with patch(
@@ -63,7 +63,7 @@ class TestHealth:
     async def test_health_returns_503_when_rmq_down(
         self, app: FastAPI, client: AsyncClient
     ) -> None:
-        """D-20 / SC#5: 503 when broker.ping fails (RMQ unreachable)."""
+        """503 when broker.ping fails (RMQ unreachable)."""
         from bet_maker.api.messaging import router  # noqa: PLC0415
 
         with patch.object(router.broker, "ping", new=AsyncMock(return_value=False)):
@@ -78,7 +78,7 @@ class TestHealth:
     async def test_health_returns_503_when_no_subscribers(
         self, app: FastAPI, client: AsyncClient
     ) -> None:
-        """D-20 / SC#5 / R6: 503 when len(broker.subscribers) == 0.
+        """503 when len(broker.subscribers) == 0.
 
         broker.subscribers is a @property on Registrator base class, so
         patch.object must target the class (not instance) via PropertyMock.
@@ -96,7 +96,7 @@ class TestHealth:
     async def test_health_returns_200_includes_rabbitmq_checks(
         self, app: FastAPI, client: AsyncClient
     ) -> None:
-        """D-20: happy path returns 200 with all three checks 'ok'."""
+        """Happy path returns 200 with all three checks 'ok'."""
         response = await client.get("/health")
         assert response.status_code == 200
         body = response.json()

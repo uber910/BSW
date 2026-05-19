@@ -1,15 +1,12 @@
 """Abstract UnitOfWork contract.
 
-Async mirror of ``~/Interexy/Metrikus/metrikus-app/api_common/unit_of_work/abstract.py``.
-Decision D-01 (CONTEXT.md): ABC, not Protocol -- explicit inheritance gives
-mypy strict the leverage to flag missing methods at concrete instantiation.
+ABC (not Protocol): explicit inheritance gives mypy strict the leverage to
+flag missing methods at concrete instantiation.
 
-Decision D-03 (CONTEXT.md): no public ``commit()`` / ``rollback()`` /
-``execute()`` / ``fetch()`` etc. -- the concrete class owns the transaction
-through ``__aenter__`` / ``__aexit__``. Interactors write to ``uow.session``
-directly via the SQLAlchemy 2.0 API (``session.add``, ``session.execute(update(...))``,
-``session.flush()``). Verified by tests/bet_maker/test_uow.py::TestShape::
-test_uow_has_no_public_commit_or_rollback.
+No public ``commit()`` / ``rollback()`` / ``execute()`` / ``fetch()`` --
+the concrete class owns the transaction through ``__aenter__`` / ``__aexit__``.
+Interactors write to ``uow.session`` directly via the SQLAlchemy 2.0 API
+(``session.add``, ``session.execute(update(...))``, ``session.flush()``).
 """
 
 from __future__ import annotations

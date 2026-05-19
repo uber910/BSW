@@ -16,7 +16,7 @@ from httpx import ASGITransport, AsyncClient
 def _auto_truncate(truncate_bets: None) -> None:
     """Auto-use wrapper that activates truncate_bets for all bet_maker tests.
 
-    D-23: per-test isolation. truncate_bets is defined in root conftest and
+    Per-test isolation. truncate_bets is defined in root conftest and
     performs TRUNCATE bets after each test. This fixture requests it with
     autouse=True so every test in tests/bet_maker/ gets the cleanup without
     explicit fixture declaration.
@@ -41,16 +41,16 @@ def _restore_reconciler_event_lookup(app: FastAPI) -> Generator[None, None, None
 def _clear_event_lookup(app: FastAPI) -> None:
     """Swap event_lookup with a fresh StubEventLookup before each test.
 
-    After Plan 04-07 (D-14), production lifespan wires HttpEventLookup
-    instead of StubEventLookup. To keep existing unit/integration tests
-    (test_bet_routes.py POST /bet, GET /bets) working, every test in
-    tests/bet_maker/ gets its own StubEventLookup pinned by autouse -
-    the seed_event fixture seeds it, post-test the next test gets a
-    fresh empty Stub. This restores per-test isolation without
-    depending on HttpEventLookup-specific internals.
+    Production lifespan wires HttpEventLookup instead of StubEventLookup.
+    To keep existing unit/integration tests (test_bet_routes.py POST /bet,
+    GET /bets) working, every test in tests/bet_maker/ gets its own
+    StubEventLookup pinned by autouse - the seed_event fixture seeds it,
+    post-test the next test gets a fresh empty Stub. This restores
+    per-test isolation without depending on HttpEventLookup-specific
+    internals.
 
-    Integration tests that need the real HttpEventLookup (Plan 04-08's
-    test_events_routes.py against line_provider_app) explicitly override
+    Integration tests that need the real HttpEventLookup
+    (test_events_routes.py against line_provider_app) explicitly override
     app.state.event_lookup AFTER this autouse fixture runs.
     """
     from bet_maker.facades.event_lookup import StubEventLookup  # noqa: PLC0415
@@ -69,8 +69,8 @@ async def app(pg_dsn: str, amqp_url: str) -> AsyncIterator[FastAPI]:
 
     Binds testcontainers pg_dsn + amqp_url into the process env before lifespan
     starts — lifespan reads BetMakerSettings() which picks up BET_MAKER_POSTGRES_DSN
-    and BET_MAKER_RABBITMQ_URL. Plan 05-07: broker layer added to lifespan requires
-    AMQP URL; also patches broker._connection_kwargs since router is module-level.
+    and BET_MAKER_RABBITMQ_URL. The broker layer in lifespan requires the AMQP URL;
+    we also patch broker._connection_kwargs since router is module-level.
     Yielded separately so tests can poke app.state.event_lookup (StubEventLookup).
     """
     from bet_maker.api.messaging import router as rabbit_router  # noqa: PLC0415
@@ -104,8 +104,8 @@ async def seed_event(app: FastAPI) -> Callable[..., UUID]:
     """Helper fixture for tests that need to seed StubEventLookup.
 
     Returns a callable: seed_event(event_id=None, deadline=None, state="NEW").
-    D-11: StubEventLookup.seed_active / seed are the canonical helpers,
-    exposed via app.state.event_lookup.
+    StubEventLookup.seed_active / seed are the canonical helpers, exposed
+    via app.state.event_lookup.
     """
 
     def _seed(
@@ -140,11 +140,11 @@ async def seed_event(app: FastAPI) -> Callable[..., UUID]:
 async def line_provider_app(amqp_url: str) -> AsyncIterator[FastAPI]:
     """Session-scoped line_provider FastAPI app with lifespan triggered.
 
-    D-16 / Pitfall A2: same session-scope as bet_maker `app` fixture -
-    they MUST share the same event loop so httpx.ASGITransport can
-    proxy between them without 'Future attached to a different loop'.
-    Plan 05-07: broker layer added to line-provider lifespan requires
-    AMQP URL; patches broker._connection_kwargs since router is module-level.
+    Same session-scope as bet_maker `app` fixture - they MUST share the
+    same event loop so httpx.ASGITransport can proxy between them without
+    'Future attached to a different loop'. The broker layer in
+    line-provider lifespan requires the AMQP URL; we patch
+    broker._connection_kwargs since router is module-level.
     """
     from line_provider.api.messaging import router as lp_rabbit_router  # noqa: PLC0415
     from line_provider.app import build_app  # noqa: PLC0415

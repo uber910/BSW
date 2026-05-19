@@ -1,20 +1,16 @@
 """Concrete PostgresUnitOfWork over async_sessionmaker.begin().
 
-Phase 9 (D-01 / D-03 / D-04): extracted from the previous
-``src/bet_maker/facades/uow.py`` (now deleted) with three deliberate
-changes vs the analog:
+Key properties:
 
-1. Inherits from ``AbstractUnitOfWork`` (was a standalone class).
+1. Inherits from ``AbstractUnitOfWork``.
 2. ``session`` is a property over a private ``_session: AsyncSession | None``
    that raises ``UnitOfWorkNotStartedError`` if accessed outside the
-   ``async with`` context (was a public attribute that could be stale-read
-   after exit).
-3. The legacy repository attribute is gone -- write interactors now call
-   ``uow.session.add(bet)`` directly; reads moved to
+   ``async with`` context.
+3. Write interactors call ``uow.session.add(bet)`` directly; reads live in
    ``src/bet_maker/selectors/get_pending_locked.py`` and
    ``src/bet_maker/selectors/get_pending_event_ids.py``.
 
-The ``_cm: Any`` idiom is preserved verbatim -- ``async_sessionmaker.begin()``
+The ``_cm: Any`` idiom is intentional -- ``async_sessionmaker.begin()``
 returns ``_AsyncSessionContextManager`` (private SQLAlchemy type, not part
 of the public API). ``Any`` is the documented mypy-strict-safe wrapper.
 """

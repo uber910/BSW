@@ -63,6 +63,21 @@ services:
       retries: 3
       start_period: 10s
 
+  bet-maker-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["alembic", "-c", "src/bet_maker/alembic.ini", "upgrade", "head"]
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      BET_MAKER_POSTGRES_DSN: postgresql+asyncpg://${POSTGRES_USER:-bsw}:${POSTGRES_PASSWORD:-bsw}@postgres:5432/${POSTGRES_DB:-bsw}
+      BET_MAKER_LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   bet-maker:
     build:
       context: .
@@ -87,6 +102,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      bet-maker-migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8001/health || exit 1"]
       interval: 5s

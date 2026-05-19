@@ -1,7 +1,7 @@
 """Unit tests for list_active_events selector -- respx-backed.
 
-BM-04 / D-05 / D-07 / D-10 / D-15: covers all 4 contractual scenarios.
-Mirrors test_http_event_lookup.py respx idiom.
+Covers all four contractual scenarios. Mirrors the respx idiom in
+``test_http_event_lookup.py``.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ LP_BASE_URL = "http://line-provider:8000"
 @pytest.mark.asyncio
 @respx.mock(base_url=LP_BASE_URL, assert_all_called=True)
 async def test_returns_empty_list_when_lp_empty(respx_mock: respx.MockRouter) -> None:
-    """BM-04 / D-10: empty LP active list -> empty bet-maker list."""
+    """Empty LP active list -> empty bet-maker list."""
     respx_mock.get("/events").mock(return_value=Response(200, json=[]))
 
     async with httpx.AsyncClient(base_url=LP_BASE_URL, timeout=httpx.Timeout(5.0)) as client:
@@ -38,7 +38,7 @@ async def test_returns_empty_list_when_lp_empty(respx_mock: respx.MockRouter) ->
 async def test_returns_event_read_list_when_lp_has_events(
     respx_mock: respx.MockRouter,
 ) -> None:
-    """BM-04 / D-10 / D-13: 200 + payload of 2 events -> list[EventRead] with typed fields."""
+    """200 + payload of 2 events -> list[EventRead] with typed fields."""
     e1_id = str(uuid4())
     e2_id = str(uuid4())
     respx_mock.get("/events").mock(
@@ -73,7 +73,7 @@ async def test_returns_event_read_list_when_lp_has_events(
 @pytest.mark.asyncio
 @respx.mock(base_url=LP_BASE_URL, assert_all_called=True)
 async def test_5xx_then_200_retry_succeeds(respx_mock: respx.MockRouter) -> None:
-    """BM-04 / D-05: 5xx triggers retry; 200 succeeds within `attempts`."""
+    """5xx triggers retry; 200 succeeds within `attempts`."""
     event_id = str(uuid4())
     route = respx_mock.get("/events").mock(
         side_effect=[
@@ -104,7 +104,7 @@ async def test_5xx_then_200_retry_succeeds(respx_mock: respx.MockRouter) -> None
 @pytest.mark.asyncio
 @respx.mock(base_url=LP_BASE_URL)
 async def test_5xx_exhausts_raises_unavailable(respx_mock: respx.MockRouter) -> None:
-    """BM-04 / D-05 / D-07: persistent 5xx -> LineProviderUnavailable.
+    """Persistent 5xx -> LineProviderUnavailable.
 
     route.call_count == attempts (exact, no off-by-one).
     """
@@ -181,15 +181,15 @@ async def test_transport_error_reason_is_redacted(respx_mock: respx.MockRouter) 
 
 
 class TestListActiveEvents:
-    """Marker class for must_haves artifact contract (`contains: 'class TestListActiveEvents'`).
+    """Marker class for discoverability.
 
-    The 4 D-15 scenarios above are module-level functions because the respx
-    decorator pattern is cleanest at the function level (mirrors
-    test_http_event_lookup.py). This class exists as a discoverability anchor
-    and a holder for an invariant asserted statically about the selector
-    function itself.
+    The four scenarios above are module-level functions because the
+    respx decorator pattern is cleanest at the function level (mirrors
+    ``test_http_event_lookup.py``). This class exists as a
+    discoverability anchor and a holder for an invariant asserted
+    statically about the selector function itself.
     """
 
     def test_list_active_events_is_async_callable(self) -> None:
-        """D-11: list_active_events is the bet-maker-side selector callable."""
+        """list_active_events is the bet-maker-side selector callable."""
         assert inspect.iscoroutinefunction(list_active_events)

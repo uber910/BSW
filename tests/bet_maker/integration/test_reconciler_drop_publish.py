@@ -1,5 +1,4 @@
-"""Integration: respx-mocked LP drives reconciler decision branches
-(Plan 06-09 / SC#1 / D-02 / D-23 Scenario 2)."""
+"""Integration: respx-mocked LP drives reconciler decision branches."""
 
 from __future__ import annotations
 

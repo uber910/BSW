@@ -1,4 +1,4 @@
-"""reconciler CancelledError propagation (Plan 06-07 / BM-12 / D-10)."""
+"""reconciler CancelledError propagation."""
 
 from __future__ import annotations
 

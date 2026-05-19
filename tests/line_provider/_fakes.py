@@ -1,7 +1,7 @@
 """Test doubles shared across line_provider unit/integration tests.
 
-FakeEventBus records publish() calls for verification of commit->publish ordering
-(D-12 / Anti-Pattern 2 mitigation).
+FakeEventBus records publish() calls for verification of
+commit -> publish ordering.
 """
 
 from __future__ import annotations

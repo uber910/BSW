@@ -77,7 +77,7 @@ async def _run_tick(app: FastAPI) -> None:
 
     Read-only session for the work-list — no UoW wrapper because
     ``get_pending_event_ids`` is a single SELECT DISTINCT with no
-    ``FOR UPDATE`` (D-05 selectors take ``AsyncSession`` directly). A bare
+    ``FOR UPDATE`` (selectors take ``AsyncSession`` directly). A bare
     ``sessionmaker()`` context avoids the empty COMMIT that
     ``async_sessionmaker.begin()`` would send every tick.
 
