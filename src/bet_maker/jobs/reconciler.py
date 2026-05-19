@@ -116,6 +116,10 @@ async def _reconcile_event(
     FINISHED_WIN | FINISHED_LOSE -> settle
     None (LP 404)                -> cancel
     NEW                           -> skip
+    other (future LP state)       -> log + skip (NOT raise -- avoids ValueError
+                                    noise from ``EventTerminalState(...)`` if
+                                    ``EventState`` gains additional non-terminal
+                                    states in v2).
     """
     snapshot = await lookup.get_event(event_id)
 
@@ -125,12 +129,28 @@ async def _reconcile_event(
         _log.info("reconciler.event.cancelled", event_id=str(event_id))
         return
 
-    if snapshot.state == EventState.NEW:
-        _log.debug("reconciler.event.still_new", event_id=str(event_id))
-        return
+    # Explicit whitelist of terminal states. Non-terminal states (NEW today;
+    # future CANCELLED_BY_LP / POSTPONED / etc.) skip rather than raise
+    # ``ValueError`` from ``EventTerminalState(snapshot.state.value)``, which
+    # would otherwise log as ``reconciler.event.failed`` every tick until LP
+    # transitions to a terminal state and confuse it with real DB/HTTP errors.
+    match snapshot.state:
+        case EventState.FINISHED_WIN:
+            terminal_state = EventTerminalState.FINISHED_WIN
+        case EventState.FINISHED_LOSE:
+            terminal_state = EventTerminalState.FINISHED_LOSE
+        case EventState.NEW:
+            _log.debug("reconciler.event.still_new", event_id=str(event_id))
+            return
+        case _:
+            _log.warning(
+                "reconciler.event.unexpected_state",
+                event_id=str(event_id),
+                state=snapshot.state.value,
+            )
+            return
 
     uow = PostgresUnitOfWork(sessionmaker)
-    terminal_state = EventTerminalState(snapshot.state.value)
     await settle_bets_for_event(
         uow,
         event_id=event_id,
