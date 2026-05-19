@@ -40,6 +40,7 @@ from uuid import UUID
 import structlog
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from structlog.contextvars import bound_contextvars
 
 from bet_maker.facades.http_event_lookup import HttpEventLookup
 from bet_maker.interactors.cancel_bets_for_event import cancel_bets_for_event
@@ -93,11 +94,16 @@ async def _run_tick(app: FastAPI) -> None:
         return
 
     for event_id in event_ids:
-        try:
-            await _reconcile_event(sessionmaker, lookup, event_id)
-        except Exception:
-            _log.exception("reconciler.event.failed", event_id=str(event_id))
-            continue
+        # Bind event_id into structlog contextvars for the whole reconciliation
+        # of this event_id so child logs (selectors, interactors, HTTP client)
+        # inherit it. Mirrors the consumer handler pattern in
+        # api/messaging.py:154-194.
+        with bound_contextvars(event_id=str(event_id)):
+            try:
+                await _reconcile_event(sessionmaker, lookup, event_id)
+            except Exception:
+                _log.exception("reconciler.event.failed")
+                continue
 
 
 async def _reconcile_event(
