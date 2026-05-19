@@ -101,8 +101,8 @@
 | In-memory dict в line-provider | Требование ТЗ | — Pending |
 | RabbitMQ + FastStream для межсервисного обмена | Надёжность (durable + ack + DLQ), декларативный FastStream, естественная асинхронность | — Pending |
 | Reconciliation job в bet-maker | Закрывает требование «ставка не зависает» если сообщение потеряно | — Pending |
-| Unit of Work + Repository pattern для PG | Lazy commits, единая транзакция на бизнес-операцию, тестируемость | — Pending |
-| Слоистая архитектура (api / facades / interactors / selectors / helpers) | Чёткое разделение ответственности, CQRS lite (interactors=write use cases, selectors=read-only queries), helpers — чистые функции без сайд-эффектов, удобное unit-тестирование | Validated in Phase 8 (entrypoints/ → api/) |
+| Unit of Work pattern для PG (Repository removed in v1.1) | Lazy commits, единая транзакция на бизнес-операцию; абстрактный UoW + Postgres-реализация (Metrikus-style), интеракторы держат `uow: AbstractUnitOfWork`; чтения мигрировали в `selectors/`, `BetRepository` удалён | Validated in Phase 9 (UoW redesign + Repository removal) |
+| Слоистая архитектура (api / facades / interactors / selectors / helpers) | Чёткое разделение ответственности, CQRS lite (interactors=write use cases, selectors=read-only queries), helpers — чистые функции без сайд-эффектов, удобное unit-тестирование | Validated in Phase 8 (entrypoints/ → api/) и Phase 9 (selectors absorbed all reads; repositories removed) |
 | Монорепо, src/ layout, 2 пакета | `src/line_provider/` + `src/bet_maker/`, общий pyproject и dev-deps, меньше дублирования | — Pending |
 | uv как менеджер пакетов | Современный, быстрый, lockfile, замена pip+venv+pip-tools | — Pending |
 | structlog для логов | JSON-логи с контекстом, production-style — показывает зрелость | — Pending |
@@ -130,4 +130,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-18 — Phase 8 closed (entrypoints/ → api/ flattened in both services; 356 tests, 94.58% coverage, mypy strict clean).*
+*Last updated: 2026-05-19 — Phase 9 closed (UoW redesign + Repository removal; 355 tests, 94.25% coverage, mypy strict clean, 1 critical + 4 warnings from code review resolved).*
