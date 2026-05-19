@@ -18,7 +18,7 @@
 **v1.1 — Architecture cleanup** (post-v1 refactor, no functional change)
 
 - [x] **Phase 8: Flatten entrypoints/ → api/** — Move HTTP routes + FastStream consumer under `src/<svc>/api/`; delete `entrypoints/`
-- [ ] **Phase 9: UoW redesign + Repository removal** — Metrikus-style abstract+postgres UoW; selectors absorb reads; interactors use UoW directly; `BetRepository` deleted
+- [x] **Phase 9: UoW redesign + Repository removal** — Metrikus-style abstract+postgres UoW; selectors absorb reads; interactors use UoW directly; `BetRepository` deleted
 - [ ] **Phase 10: Shared-code consolidation** — Lift duplicated cross-service code (structlog wiring, request-id middleware, lifespan helpers, app-factory, engine factory) into a shared package
 
 ### Parallelization

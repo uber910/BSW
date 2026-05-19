@@ -71,7 +71,7 @@
 
 - [ ] **REFACTOR-01**: Cлой `entrypoints/` упразднён; HTTP-роутеры лежат в `src/<svc>/api/`, FastStream-роутер (RabbitMQ messaging) тоже в `src/<svc>/api/` (Rabbit = транспорт API). Каталог `entrypoints/` отсутствует в обоих сервисах.
 - [x] **REFACTOR-02**: Слой `repositories/` удалён полностью. Чтения мигрируют в `selectors/` (тонкие SQL/in-memory обёртки, никаких commit/flush). Записи — в `interactors/`, которые работают только через UoW. `BetRepository` и его файл больше не существуют; `tests/audit/test_static.py::test_repositories_use_for_update_skip_locked` либо удалён, либо заменён на эквивалентный аудит на interactor-слое.
-- [ ] **REFACTOR-03**: `AsyncUnitOfWork` приведён к структуре `~/Interexy/Metrikus/metrikus-app/api_common/unit_of_work/`: абстрактный класс + конкретная Postgres-реализация, `async with uow:` управляет транзакцией, инжектится в interactor как `uow: AsyncUnitOfWork` (FastAPI DI). Никаких прямых сессий в interactor'ах — только через `uow.session`.
+- [x] **REFACTOR-03**: `AsyncUnitOfWork` приведён к структуре `~/Interexy/Metrikus/metrikus-app/api_common/unit_of_work/`: абстрактный класс + конкретная Postgres-реализация, `async with uow:` управляет транзакцией, инжектится в interactor как `uow: AsyncUnitOfWork` (FastAPI DI). Никаких прямых сессий в interactor'ах — только через `uow.session`.
 - [ ] **REFACTOR-04**: Дублирующийся cross-service код вынесен в shared-пакет (`src/shared/` или расширение `src/config/`): structlog wiring, request-id middleware, FastAPI app-factory boilerplate, lifespan-помощники, БД-движок-фабрика — туда, где это применимо к обоим сервисам. Цель — устранить near-duplicate файлы; точные кандидаты на вынос фиксируются в discuss-phase.
 - [x] **REFACTOR-05**: Тестовый suite остаётся зелёным после всех правок (355+ тестов), mypy strict чистый, ruff чистый, coverage ≥85%. Никаких новых `# type: ignore` или `# noqa` сверх baseline.
 
@@ -171,10 +171,10 @@
 | DOC-03 | Phase 7 | Complete (Plan 07-10) |
 | DOC-04 | Phase 7 | Complete (Plan 07-10) |
 | REFACTOR-01 | Phase 8 | Complete |
-| REFACTOR-02 | Phase 9 | In Progress (Plan 01 done — selectors seam introduced; Plans 02-03 pending) |
-| REFACTOR-03 | Phase 9 | Pending |
+| REFACTOR-02 | Phase 9 | Complete (Plan 03 deleted BetRepository; selectors absorbed reads in Plan 01) |
+| REFACTOR-03 | Phase 9 | Complete (Plan 02 introduced AbstractUnitOfWork + PostgresUnitOfWork; AsyncUnitOfWork symbol gone) |
 | REFACTOR-04 | Phase 10 | Pending |
-| REFACTOR-05 | Phases 8, 9, 10 (cross-cutting quality bar) | Phase 8 met — pending Phases 9, 10 |
+| REFACTOR-05 | Phases 8, 9, 10 (cross-cutting quality bar) | Phases 8, 9 met — pending Phase 10 |
 
 **Coverage:**
 - v1 requirements: 43 total — mapped to phases 1-7 (100%)
