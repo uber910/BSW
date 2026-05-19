@@ -74,15 +74,19 @@ async def reconciliation_loop(app: FastAPI, *, interval_s: float) -> None:
 async def _run_tick(app: FastAPI) -> None:
     """One tick of the loop. Read work-list, then process each event_id.
 
-    Read-only UoW for the work-list: short transaction, minimal lock
-    contention with the consumer. Per-event UoW happens inside
-    _reconcile_event so a long-running event lookup does not hold an
-    open DB transaction.
+    Read-only session for the work-list — no UoW wrapper because
+    ``get_pending_event_ids`` is a single SELECT DISTINCT with no
+    ``FOR UPDATE`` (D-05 selectors take ``AsyncSession`` directly). A bare
+    ``sessionmaker()`` context avoids the empty COMMIT that
+    ``async_sessionmaker.begin()`` would send every tick.
+
+    Per-event UoW happens inside ``_reconcile_event`` so a long-running event
+    lookup does not hold an open DB transaction.
     """
     sessionmaker = cast("async_sessionmaker[AsyncSession]", app.state.sessionmaker)
     lookup = cast(HttpEventLookup, app.state.reconciler_event_lookup)
-    async with PostgresUnitOfWork(sessionmaker) as uow:
-        event_ids = await get_pending_event_ids(uow.session)
+    async with sessionmaker() as session:
+        event_ids = await get_pending_event_ids(session)
 
     if not event_ids:
         _log.debug("reconciler.tick.noop")
