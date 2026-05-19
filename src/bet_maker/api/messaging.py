@@ -26,7 +26,7 @@ from typing import Any
 
 import structlog
 from faststream import AckPolicy
-from faststream.rabbit.fastapi import RabbitMessage, RabbitRouter
+from faststream.rabbit.fastapi import Context, RabbitMessage, RabbitRouter
 from faststream.rabbit.schemas import Channel, ExchangeType, RabbitExchange, RabbitQueue
 from pydantic import ValidationError
 from sqlalchemy.exc import DBAPIError, IntegrityError, OperationalError
@@ -45,6 +45,11 @@ from bet_maker.messaging.routing import EVENT_FINISHED_WILDCARD
 from bet_maker.schemas.messages import EventFinishedMessage
 from bet_maker.settings.config import BetMakerSettings
 from bet_maker.uow.postgres import PostgresUnitOfWork
+
+# Context-repo key used to pin the lifespan-built sessionmaker into the
+# FastStream RabbitRouter scope. The handler reads it via `Context()` so
+# state stays on the router (not as a module-level mutable global).
+_SESSIONMAKER_CONTEXT_KEY = "bet_maker_sessionmaker"
 
 _SCHEMA_VERSION_SUPPORTED = 1
 
@@ -89,27 +94,6 @@ _settle_with_retry = retry(
 )(settle_bets_for_event)
 
 
-# ------------------- sessionmaker pin (set by lifespan) -------------------
-_sessionmaker: async_sessionmaker[AsyncSession] | None = None
-
-
-def set_sessionmaker(sm: async_sessionmaker[AsyncSession]) -> None:
-    """Pin the sessionmaker created by lifespan so the handler can build
-    a fresh UoW per message (never share sessions across tasks).
-    Called by `src/bet_maker/lifespan.py` after engine init.
-    """
-    global _sessionmaker  # noqa: PLW0603
-    _sessionmaker = sm
-
-
-def _require_sessionmaker() -> async_sessionmaker[AsyncSession]:
-    if _sessionmaker is None:
-        raise RuntimeError(
-            "messaging.set_sessionmaker has not been called — lifespan wiring missing"
-        )
-    return _sessionmaker
-
-
 # ------------------- router + subscriber ----------------------------------
 
 _settings = BetMakerSettings()
@@ -118,6 +102,18 @@ router = RabbitRouter(
     str(_settings.rabbitmq_url),
     default_channel=Channel(prefetch_count=10),
 )
+
+
+def set_sessionmaker(sm: async_sessionmaker[AsyncSession]) -> None:
+    """Pin the sessionmaker created by lifespan into the router context.
+
+    Called by `src/bet_maker/lifespan.py` after engine init. The handler reads
+    it via `Context(_SESSIONMAKER_CONTEXT_KEY)` so the long-lived sessionmaker
+    lives on `router.context` (the FastStream-handler analog of `app.state`)
+    rather than as a module-level mutable global. Per-message UoW construction
+    still happens inside the handler — sessions are NEVER shared across tasks.
+    """
+    router.context.set_global(_SESSIONMAKER_CONTEXT_KEY, sm)
 
 
 @router.subscriber(
@@ -136,6 +132,7 @@ router = RabbitRouter(
 async def on_event_finished(
     payload: dict[str, Any],
     msg: RabbitMessage,
+    sessionmaker: async_sessionmaker[AsyncSession] = Context(_SESSIONMAKER_CONTEXT_KEY),
 ) -> None:
     """Settle PENDING bets for a finished event.
 
@@ -153,6 +150,11 @@ async def on_event_finished(
     With a typed parameter FastStream pre-validates and any ValidationError
     would escape the handler's except block, leaving the message unacked
     until consumer timeout.
+
+    `sessionmaker` is FastStream-injected from `router.context` (pinned by
+    `set_sessionmaker` from lifespan). Same architectural principle as
+    `jobs/reconciler.py` reading from `app.state` — long-lived objects live
+    on the scope owner, not as module-level mutable globals.
     """
     clear_contextvars()
     try:
@@ -167,7 +169,6 @@ async def on_event_finished(
                 f"schema_version={message.schema_version} not supported (expected 1)"
             )
 
-        sessionmaker = _require_sessionmaker()
         uow = PostgresUnitOfWork(sessionmaker)
         await _settle_with_retry(
             uow,

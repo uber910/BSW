@@ -26,12 +26,17 @@ import pytest
 from faststream import AckPolicy
 from faststream.rabbit.schemas import ExchangeType, RabbitExchange
 from faststream.rabbit.testing import TestRabbitBroker
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, OperationalError
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+import bet_maker.api.messaging as msg_mod
 from bet_maker.api.messaging import router, set_sessionmaker
+from bet_maker.models.bet import Bet
+from bet_maker.schemas.bets import BetStatus
 from bet_maker.schemas.messages import EventFinishedMessage, EventTerminalState
 from bet_maker.schemas.settle import SettleResult
+from bet_maker.uow.postgres import PostgresUnitOfWork
 
 EXCHANGE = RabbitExchange("bsw.events", type=ExchangeType.TOPIC, durable=True)
 
@@ -279,7 +284,7 @@ class TestCR01HandlerOwnsNoUoWContext:
 
     async def test_handler_enters_uow_exactly_once_on_happy_path(
         self,
-        session_factory: async_sessionmaker,  # type: ignore[type-arg]
+        session_factory: async_sessionmaker[AsyncSession],
     ) -> None:
         """Behavioural guard: real interactor + real PG via TestRabbitBroker;
         ``PostgresUnitOfWork.__aenter__`` is called exactly once per message.
@@ -294,13 +299,6 @@ class TestCR01HandlerOwnsNoUoWContext:
         The interactor's own ``async with uow:`` accounts for the only enter.
         Two enters means the handler reopened the UoW (CR-01 regression).
         """
-        from sqlalchemy import select  # noqa: PLC0415
-
-        import bet_maker.api.messaging as msg_mod  # noqa: PLC0415
-        from bet_maker.models.bet import Bet  # noqa: PLC0415
-        from bet_maker.schemas.bets import BetStatus  # noqa: PLC0415
-        from bet_maker.uow.postgres import PostgresUnitOfWork  # noqa: PLC0415
-
         # Pin the REAL session_factory so the handler builds a real UoW
         # against the testcontainers PG.
         set_sessionmaker(session_factory)

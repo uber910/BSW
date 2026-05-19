@@ -50,6 +50,16 @@ src = ["src", "tests"]
 select = ["E", "W", "F", "I", "B", "UP", "N", "SIM", "ASYNC", "PL", "RUF"]
 ignore = ["PLR0913"]
 
+# DI-injection call-in-default is idiomatic for FastAPI/FastStream and
+# returns a sentinel marker (not a live object). Adding to B008's
+# extend-immutable-calls avoids the false positive without a per-line `noqa`.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "faststream.Context",
+    "faststream.rabbit.fastapi.Context",
+]
+
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["PLR2004", "S101"]
 "src/bet_maker/alembic/versions/*.py" = ["E501", "N999"]
