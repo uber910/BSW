@@ -7,7 +7,10 @@ RabbitQueue.arguments.
 
 Invariants:
 - `ack_policy=AckPolicy.MANUAL` (never default REJECT_ON_ERROR).
-- `await msg.ack()` is the LAST statement after `async with uow:` exits cleanly.
+- `await msg.ack()` is the LAST statement after `await _settle_with_retry(uow, ...)`
+  returns (UoW context owned by the interactor — see `settle_bets_for_event`).
+  The handler MUST NOT open its own `async with uow:` because the interactor
+  already does, and `PostgresUnitOfWork.__aenter__` is not reentrant.
 - `msg.nack(requeue=True)` is NEVER called; transient retried in-handler via tenacity,
   then reject(requeue=False) on exhaustion.
 - `Channel(prefetch_count=10)`.
@@ -165,13 +168,13 @@ async def on_event_finished(
             )
 
         sessionmaker = _require_sessionmaker()
-        async with PostgresUnitOfWork(sessionmaker) as uow:
-            await _settle_with_retry(
-                uow,
-                event_id=message.event_id,
-                terminal_state=message.new_state,
-                settled_via="consumer",
-            )
+        uow = PostgresUnitOfWork(sessionmaker)
+        await _settle_with_retry(
+            uow,
+            event_id=message.event_id,
+            terminal_state=message.new_state,
+            settled_via="consumer",
+        )
         await msg.ack()
 
     except (ValidationError, UnsupportedSchemaVersion, IntegrityError) as exc:

@@ -27,6 +27,7 @@ from faststream import AckPolicy
 from faststream.rabbit.schemas import ExchangeType, RabbitExchange
 from faststream.rabbit.testing import TestRabbitBroker
 from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from bet_maker.api.messaging import router, set_sessionmaker
 from bet_maker.schemas.messages import EventFinishedMessage, EventTerminalState
@@ -228,3 +229,130 @@ class TestInvariants:
         ]
         code = "\n".join(code_lines)
         assert "msg.nack(" not in code, "R7 violated: msg.nack( call found in messaging.py"
+
+    def test_handler_does_not_open_uow_context(self) -> None:
+        """CR-01 static regression: messaging.py must NOT open `async with
+        PostgresUnitOfWork(...)`.
+
+        Manual-ack ladder relies on the interactor owning the UoW context.
+        Reopening the UoW in the handler trips
+        ``PostgresUnitOfWork.__aexit__``'s assert (non-reentrant) and rejects
+        happy-path messages to DLQ even though the UPDATE committed.
+        """
+        src = Path("src/bet_maker/api/messaging.py").read_text()
+        assert "async with PostgresUnitOfWork" not in src, (
+            "CR-01 regression: messaging.py must NOT open `async with "
+            "PostgresUnitOfWork(...)` -- the interactor `settle_bets_for_event` "
+            "already owns its own UoW context. A second `async with` here trips "
+            "`PostgresUnitOfWork.__aexit__`'s assert and rejects happy-path "
+            "messages to DLQ."
+        )
+
+
+@pytest.mark.asyncio(loop_scope="session")
+class TestCR01HandlerOwnsNoUoWContext:
+    """CR-01 regression: handler MUST NOT open `async with uow:` itself.
+
+    ``PostgresUnitOfWork.__aenter__`` is not reentrant: a second call from inside
+    ``settle_bets_for_event`` (the interactor opens its own ``async with uow:``)
+    overwrites ``_cm``/``_session``, the inner ``__aexit__`` resets them to
+    ``None``, and the outer ``__aexit__`` then trips
+    ``assert self._cm is not None``.
+
+    On the happy path the inner UPDATE commits BEFORE the assert fires, so the
+    DB state looks correct. But the AssertionError leaks out of the outer
+    ``async with`` block, is caught by ``except Exception`` in the handler,
+    logged as ``settle.transient_exhausted``, and the message is rejected to DLQ
+    instead of being acked.
+
+    Because the handler ack/reject is invisible to bet-status assertions (UPDATE
+    already committed) the e2e test
+    ``test_consumer_settles_bet_after_lp_transitions`` does NOT catch this.
+
+    Behavioural net: invoking the handler against a real ``_settle_with_retry``
+    (no ``AsyncMock``) MUST hit exactly ONE ``PostgresUnitOfWork.__aenter__``
+    per message, not two. Two enters means the outer ``async with`` is back.
+
+    The complementary static guard lives in
+    ``TestInvariants::test_handler_does_not_open_uow_context``.
+    """
+
+    async def test_handler_enters_uow_exactly_once_on_happy_path(
+        self,
+        session_factory: async_sessionmaker,  # type: ignore[type-arg]
+    ) -> None:
+        """Behavioural guard: real interactor + real PG via TestRabbitBroker;
+        ``PostgresUnitOfWork.__aenter__`` is called exactly once per message.
+
+        Pins the real ``session_factory`` (testcontainers PG) into the messaging
+        module, seeds one PENDING bet, and patches
+        ``bet_maker.api.messaging.PostgresUnitOfWork`` with a counting subclass.
+        ``TestRabbitBroker`` then drives the handler the same way production
+        does — through the full FastStream subscriber wrapper — so we run the
+        real ``_settle_with_retry`` end-to-end (no AsyncMock).
+
+        The interactor's own ``async with uow:`` accounts for the only enter.
+        Two enters means the handler reopened the UoW (CR-01 regression).
+        """
+        from sqlalchemy import select  # noqa: PLC0415
+
+        import bet_maker.api.messaging as msg_mod  # noqa: PLC0415
+        from bet_maker.models.bet import Bet  # noqa: PLC0415
+        from bet_maker.schemas.bets import BetStatus  # noqa: PLC0415
+        from bet_maker.uow.postgres import PostgresUnitOfWork  # noqa: PLC0415
+
+        # Pin the REAL session_factory so the handler builds a real UoW
+        # against the testcontainers PG.
+        set_sessionmaker(session_factory)
+
+        # Seed one PENDING bet so the interactor takes the non-noop branch.
+        event_id = uuid4()
+        async with session_factory.begin() as session:
+            session.add(Bet(event_id=event_id, amount=Decimal("10.00")))
+
+        enter_count = {"n": 0}
+
+        class CountingPostgresUoW(PostgresUnitOfWork):
+            async def __aenter__(self) -> CountingPostgresUoW:
+                enter_count["n"] += 1
+                await super().__aenter__()
+                return self
+
+        message = EventFinishedMessage(
+            schema_version=1,
+            event_id=event_id,
+            new_state=EventTerminalState.FINISHED_WIN,
+            coefficient=Decimal("1.50"),
+            occurred_at=datetime(2026, 5, 18, 10, 0, tzinfo=timezone.utc),
+            correlation_id="cr01-correlation",
+        )
+
+        # Patch PostgresUnitOfWork inside the handler module + drive the
+        # handler through TestRabbitBroker (same wrapping as production).
+        with patch.object(msg_mod, "PostgresUnitOfWork", CountingPostgresUoW):
+            async with TestRabbitBroker(router.broker) as br:
+                await br.publish(
+                    message,
+                    queue="bet_maker.events.finished",
+                    exchange=EXCHANGE,
+                    routing_key="event.finished.win",
+                )
+
+        # Exactly one __aenter__ — the interactor's. Two means CR-01 regressed.
+        assert enter_count["n"] == 1, (
+            f"CR-01 regression: PostgresUnitOfWork.__aenter__ called "
+            f"{enter_count['n']} times per message; expected exactly 1 "
+            f"(only the interactor opens the UoW context). When this fails, "
+            f"the outer `async with PostgresUnitOfWork` is back in messaging.py "
+            f"and happy-path messages are being rejected to DLQ."
+        )
+
+        # Sanity: the bet was settled (the inner UPDATE always commits, even
+        # under the CR-01 bug, so this assertion alone is NOT sufficient to
+        # catch the regression — the enter_count check above is the real
+        # regression net).
+        async with session_factory() as session:
+            settled = (
+                (await session.execute(select(Bet).where(Bet.event_id == event_id))).scalars().one()
+            )
+            assert settled.status == BetStatus.WON
